@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌤 Weather Commerce AI — System Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f9fc;--bg2:#ffffff;--bd:#e2e6ec;
+  --tx:#0f1117;--mu:#5a6478;
+  --browser:#0969da; --ctrl:#d1242f;   --svc:#6639ba;
+  --batch:#c05e00;   --pg:#1a7f37;     --ai:#8250df;
+  --ext:#4a5568;     --sched:#0f6e8a;  --cfg:#6b4f12;
+  --flow1:#0969da; --flow2:#1a7f37; --flow3:#8250df;
+  --flow4:#c05e00; --flow5:#d1242f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR','IBM Plex Mono',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+
+/* ── HEADER ── */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--bd);padding:16px 32px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.hdr-logo{font-size:22px;font-weight:900;letter-spacing:-1px;display:flex;align-items:center;gap:8px}
+.hdr-logo em{font-style:normal;color:var(--browser)}
+.hdr-sub{font-size:12px;color:var(--mu);font-family:'IBM Plex Mono',monospace}
+.hdr-ver{margin-left:auto;display:flex;gap:8px}
+.ver-tag{font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;font-family:'IBM Plex Mono',monospace;border:1px solid}
+.ver-tag.bl{background:#ddf4ff;color:#0969da;border-color:#54aeff}
+.ver-tag.gn{background:#dafbe1;color:#1a7f37;border-color:#4ac26b}
+.ver-tag.pu{background:#fbefff;color:#6639ba;border-color:#c297ff}
+
+/* ── TABS ── */
+.tab-bar{background:var(--bg2);border-bottom:2px solid var(--bd);padding:0 32px;display:flex;gap:0;position:sticky;top:57px;z-index:99}
+.tab-btn{padding:14px 20px;font-size:13px;font-weight:600;color:var(--mu);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;font-family:inherit;white-space:nowrap}
+.tab-btn:hover{color:var(--tx);background:var(--bg)}
+.tab-btn.active{color:var(--browser);border-bottom-color:var(--browser)}
+
+/* ── PANEL ── */
+.panel{display:none;padding:32px}
+.panel.active{display:block}
+.panel-title{font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:6px}
+.panel-sub{font-size:13px;color:var(--mu);margin-bottom:28px;line-height:1.7}
+
+/* ── LEGEND ── */
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px;padding:14px 18px;background:var(--bg2);border:1px solid var(--bd);border-radius:10px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600}
+.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+/* ── SVG Container ── */
+.svg-wrap{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;overflow:auto;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.arch-svg{width:100%;max-width:1200px;display:block;margin:0 auto}
+
+/* SVG element hover */
+.arch-svg .comp{cursor:pointer;transition:filter .2s}
+.arch-svg .comp:hover rect,.arch-svg .comp:hover .comp-box{filter:brightness(.93)}
+
+/* ── FLOW DIAGRAMS (CSS) ── */
+.flow-wrap{display:flex;flex-direction:column;gap:0}
+.flow-step{display:flex;align-items:stretch;gap:0;margin-bottom:0}
+.flow-node{
+  background:var(--bg2);border:2px solid;border-radius:10px;padding:14px 18px;
+  min-width:200px;flex-shrink:0;position:relative;
+}
+.flow-node .fn-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.flow-node .fn-title{font-size:14px;font-weight:800;margin-bottom:3px}
+.flow-node .fn-desc{font-size:11.5px;color:var(--mu);line-height:1.6}
+.flow-node .fn-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;margin-top:6px;font-family:'IBM Plex Mono',monospace}
+
+.flow-arr-h{display:flex;align-items:center;padding:0 8px;flex-shrink:0;color:var(--mu)}
+.flow-arr-h .arr-line{width:40px;height:2px;background:var(--mu);position:relative}
+.flow-arr-h .arr-line::after{content:'▶';position:absolute;right:-10px;top:-7px;font-size:12px;color:var(--mu)}
+
+.flow-arr-v{display:flex;justify-content:center;align-items:center;height:40px}
+.flow-arr-v-inner{width:2px;height:100%;background:var(--mu);position:relative;display:flex;justify-content:center;align-items:flex-end}
+.flow-arr-v-inner::after{content:'▼';position:absolute;bottom:-10px;left:-5px;font-size:12px;color:var(--mu)}
+
+/* ── PIPELINE FLOW ── */
+.pipeline-h{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:8px}
+.pip-node{
+  background:var(--bg2);border:2px solid;border-radius:12px;padding:16px 20px;
+  min-width:180px;max-width:220px;flex-shrink:0;position:relative;
+}
+.pip-node .pip-num{
+  width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#fff;
+  font-family:'IBM Plex Mono',monospace;
+}
+.pip-node .pip-title{font-size:13px;font-weight:800;margin-bottom:4px;line-height:1.3}
+.pip-node .pip-comp{font-size:11px;color:var(--mu);line-height:1.6;font-family:'IBM Plex Mono',monospace}
+.pip-node .pip-detail{font-size:10.5px;margin-top:6px;padding:4px 8px;border-radius:4px;line-height:1.5}
+.pip-arr{display:flex;align-items:center;padding:0 4px;flex-shrink:0}
+.pip-arr-inner{width:32px;height:2px;position:relative;display:flex;align-items:center}
+.pip-arr-inner::after{content:'▶';position:absolute;right:-9px;font-size:11px}
+
+/* ── SEQUENCE DIAGRAM ── */
+.seq-wrap{display:grid;gap:16px}
+.seq-card{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.seq-header{padding:14px 20px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bd)}
+.seq-body{padding:20px}
+.seq-flow{display:flex;align-items:center;flex-wrap:wrap;gap:0}
+.seq-node{padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;text-align:center;border:2px solid;min-width:110px;line-height:1.4}
+.seq-arrow{display:flex;flex-direction:column;align-items:center;padding:0 6px;flex-shrink:0;min-width:80px}
+.seq-arrow .sa-line{height:2px;width:100%;position:relative}
+.seq-arrow .sa-line::after{content:'▶';position:absolute;right:-9px;top:-6px;font-size:11px}
+.seq-arrow .sa-label{font-size:9.5px;color:var(--mu);margin-top:3px;text-align:center;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.seq-note{margin-top:12px;padding:10px 14px;border-radius:7px;font-size:12px;line-height:1.7;border-left:3px solid}
+
+/* ── BATCH DETAIL ── */
+.batch-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.batch-job{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.batch-header{padding:14px 20px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bd)}
+.batch-steps{padding:16px}
+.b-step{display:flex;gap:12px;margin-bottom:14px;position:relative}
+.b-step:not(:last-child)::after{content:'';position:absolute;left:16px;top:34px;width:2px;height:calc(100% - 6px);background:var(--bd)}
+.b-step-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:2px solid}
+.b-step-body{flex:1}
+.b-step-title{font-size:13px;font-weight:700;margin-bottom:3px}
+.b-step-desc{font-size:11.5px;color:var(--mu);line-height:1.6}
+.b-step-code{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:4px 8px;margin-top:4px;color:var(--tx)}
+
+/* ── COMPONENT TABLE ── */
+.comp-table{width:100%;border-collapse:collapse;font-size:12.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.comp-table th{background:var(--bg);padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--mu);border-bottom:2px solid var(--bd);font-weight:700}
+.comp-table td{padding:10px 14px;border-bottom:1px solid var(--bd);vertical-align:top}
+.comp-table tr:last-child td{border-bottom:none}
+.comp-table tr:hover td{background:var(--bg)}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:11px}
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;font-size:10.5px;font-weight:700;border:1px solid;margin:1px;font-family:'IBM Plex Mono',monospace}
+
+/* ── TOOLTIP ── */
+.tooltip-wrap{position:relative;cursor:help}
+.tooltip-box{
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--tx);color:#fff;padding:8px 12px;border-radius:7px;font-size:11.5px;
+  white-space:nowrap;z-index:200;pointer-events:none;opacity:0;transition:opacity .15s;
+  font-family:'Noto Sans KR',sans-serif;line-height:1.6;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+.tooltip-wrap:hover .tooltip-box{opacity:1}
+
+/* ── CARD ── */
+.arc-card{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.arc-card-hdr{padding:14px 20px;border-bottom:1px solid var(--bd);font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;background:var(--bg)}
+.arc-card-body{padding:20px}
+
+/* ── ANIMATED PULSE ── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pulse{animation:pulse 2s infinite}
+@keyframes flowMove{0%{stroke-dashoffset:20}100%{stroke-dashoffset:0}}
+
+/* Colors by component */
+.c-browser{border-color:var(--browser);background:#ddf4ff}
+.c-ctrl   {border-color:var(--ctrl);background:#ffebe9}
+.c-svc    {border-color:var(--svc);background:#fbefff}
+.c-batch  {border-color:var(--batch);background:#fff8c5}
+.c-pg     {border-color:var(--pg);background:#dafbe1}
+.c-ai     {border-color:var(--ai);background:#f5edff}
+.c-ext    {border-color:var(--ext);background:#f0f2f5}
+.c-sched  {border-color:var(--sched);background:#e6f4f8}
+.c-cfg    {border-color:var(--cfg);background:#fdf3d0}
+
+.text-browser{color:var(--browser)}.text-ctrl{color:var(--ctrl)}.text-svc{color:var(--svc)}
+.text-batch{color:var(--batch)}.text-pg{color:var(--pg)}.text-ai{color:var(--ai)}
+.text-ext{color:var(--ext)}.text-sched{color:var(--sched)}
+
+/* responsive */
+@media(max-width:900px){.batch-wrap{grid-template-columns:1fr}.pipeline-h{flex-wrap:nowrap}}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="hdr">
+  <div class="hdr-logo">🌤 Weather Commerce <em>AI</em></div>
+  <div class="hdr-sub">System Architecture & Data Flow</div>
+  <div class="hdr-ver">
+    <span class="ver-tag bl">Spring Boot 3.x</span>
+    <span class="ver-tag gn">Spring AI 1.0</span>
+    <span class="ver-tag pu">llama3.2 · nomic-embed</span>
+  </div>
+</header>
+
+<!-- ── TAB BAR ── -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('arch',this)">🏗️ 전체 아키텍처</button>
+  <button class="tab-btn" onclick="switchTab('pipeline',this)">📊 데이터 파이프라인</button>
+  <button class="tab-btn" onclick="switchTab('aiflow',this)">🤖 AI 서비스 흐름</button>
+  <button class="tab-btn" onclick="switchTab('batch',this)">⚙️ 배치 처리 상세</button>
+  <button class="tab-btn" onclick="switchTab('comp',this)">🔗 컴포넌트 명세</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 1: OVERALL ARCHITECTURE
+═══════════════════════════════════════════════════════ -->
+<div id="tab-arch" class="panel active">
+  <div class="panel-title">🏗️ 전체 시스템 아키텍처</div>
+  <div class="panel-sub">
+    Weather Commerce AI의 6개 레이어 구조. 브라우저 → Spring Boot 3.x → PostgreSQL (pgvector) / Ollama(llama3.2, nomic-embed-text) / OpenWeatherMap API
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--browser)"></div>Browser / Frontend</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ctrl)"></div>Controllers (REST API)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--svc)"></div>Services (Business Logic)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--batch)"></div>Batch / Scheduler</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pg)"></div>PostgreSQL + pgvector</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ai)"></div>Ollama AI (LLM + Embed)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ext)"></div>External API</div>
+  </div>
+
+  <!-- SVG Architecture -->
+  <div class="svg-wrap">
+  <svg class="arch-svg" viewBox="0 0 1180 730" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Arrowheads -->
+      <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#0969da"/>
+      </marker>
+      <marker id="ah-gray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#5a6478"/>
+      </marker>
+      <marker id="ah-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#1a7f37"/>
+      </marker>
+      <marker id="ah-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#8250df"/>
+      </marker>
+      <marker id="ah-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#c05e00"/>
+      </marker>
+      <!-- Flow dash -->
+      <style>
+        .flow-dash{stroke-dasharray:6 3;animation:flowMove 1s linear infinite}
+        @keyframes flowMove{0%{stroke-dashoffset:9}100%{stroke-dashoffset:0}}
+        .hover-bright:hover{filter:brightness(.92)}
+        text{font-family:'IBM Plex Mono',monospace}
+      </style>
+    </defs>
+
+    <!-- ══ Background ══ -->
+    <rect width="1180" height="730" fill="#f8f9fc" rx="0"/>
+
+    <!-- ══ BROWSER ══ -->
+    <g class="comp hover-bright" onclick="showDetail('browser')">
+      <rect x="390" y="12" width="400" height="62" rx="10" fill="#ddf4ff" stroke="#54aeff" stroke-width="2"/>
+      <text x="590" y="34" text-anchor="middle" font-size="10" font-weight="700" fill="#0969da" font-family="'Noto Sans KR',sans-serif" letter-spacing="1">🌐 BROWSER / VANILLA JS FRONTEND</text>
+      <text x="590" y="52" text-anchor="middle" font-size="10" fill="#0969da" font-family="'IBM Plex Mono',monospace">index.html · fetch() REST API · port 8090</text>
+      <text x="590" y="67" text-anchor="middle" font-size="9" fill="#0969da" font-family="'IBM Plex Mono',monospace">대시보드 · 날씨관리 · 배치실행 · AI추천 · RAG채팅 · 리포트</text>
+    </g>
+
+    <!-- Browser → Spring Boot arrow -->
+    <line x1="590" y1="74" x2="590" y2="104" stroke="#0969da" stroke-width="2" marker-end="url(#ah-blue)"/>
+    <text x="596" y="93" font-size="10" fill="#0969da" font-family="'IBM Plex Mono',monospace">HTTP REST</text>
+
+    <!-- ══ SPRING BOOT FRAME ══ -->
+    <rect x="14" y="108" width="1152" height="450" rx="12" fill="#fffbf5" stroke="#c05e00" stroke-width="2" stroke-dasharray="6 3"/>
+    <text x="30" y="130" font-size="11" font-weight="700" fill="#c05e00" font-family="'Noto Sans KR',sans-serif" letter-spacing=".5">🍃  Spring Boot 3.x  ·  port 8090  ·  weather-commerce-ai</text>
+
+    <!-- ── CONTROLLERS ROW ── -->
+    <rect x="24" y="140" width="1132" height="26" rx="6" fill="#fff0ef" stroke="#ff8182" stroke-width="1"/>
+    <text x="590" y="157" text-anchor="middle" font-size="9" font-weight="700" fill="#d1242f" font-family="'Noto Sans KR',sans-serif" letter-spacing="1">📡  REST CONTROLLERS  LAYER</text>
+
+    <!-- Mock Controller -->
+    <g class="comp hover-bright">
+      <rect x="28" y="172" width="178" height="54" rx="8" fill="#ffebe9" stroke="#d1242f" stroke-width="1.5"/>
+      <text x="117" y="192" text-anchor="middle" font-size="10" font-weight="700" fill="#d1242f" font-family="'Noto Sans KR',sans-serif">MockWeatherController</text>
+      <text x="117" y="208" text-anchor="middle" font-size="9" fill="#d1242f" font-family="'IBM Plex Mono',monospace">GET/POST /api/mock/*</text>
+      <text x="117" y="220" text-anchor="middle" font-size="8.5" fill="#86252b" font-family="'IBM Plex Mono',monospace">status·generate·seed·latest</text>
+    </g>
+
+    <!-- Recommendation Controller -->
+    <g class="comp hover-bright">
+      <rect x="216" y="172" width="188" height="54" rx="8" fill="#ffebe9" stroke="#d1242f" stroke-width="1.5"/>
+      <text x="310" y="192" text-anchor="middle" font-size="10" font-weight="700" fill="#d1242f" font-family="'Noto Sans KR',sans-serif">RecommendationController</text>
+      <text x="310" y="208" text-anchor="middle" font-size="9" fill="#d1242f" font-family="'IBM Plex Mono',monospace">GET /api/recommend</text>
+      <text x="310" y="220" text-anchor="middle" font-size="8.5" fill="#86252b" font-family="'IBM Plex Mono',monospace">?city=Seoul&amp;customerId=1</text>
+    </g>
+
+    <!-- Chat Controller -->
+    <g class="comp hover-bright">
+      <rect x="414" y="172" width="170" height="54" rx="8" fill="#ffebe9" stroke="#d1242f" stroke-width="1.5"/>
+      <text x="499" y="192" text-anchor="middle" font-size="10" font-weight="700" fill="#d1242f" font-family="'Noto Sans KR',sans-serif">ChatController</text>
+      <text x="499" y="208" text-anchor="middle" font-size="9" fill="#d1242f" font-family="'IBM Plex Mono',monospace">POST /api/chat</text>
+      <text x="499" y="220" text-anchor="middle" font-size="8.5" fill="#86252b" font-family="'IBM Plex Mono',monospace">RAG Q&amp;A · /city 도시필터</text>
+    </g>
+
+    <!-- Report Controller -->
+    <g class="comp hover-bright">
+      <rect x="594" y="172" width="165" height="54" rx="8" fill="#ffebe9" stroke="#d1242f" stroke-width="1.5"/>
+      <text x="676" y="192" text-anchor="middle" font-size="10" font-weight="700" fill="#d1242f" font-family="'Noto Sans KR',sans-serif">ReportController</text>
+      <text x="676" y="208" text-anchor="middle" font-size="9" fill="#d1242f" font-family="'IBM Plex Mono',monospace">GET /api/report</text>
+      <text x="676" y="220" text-anchor="middle" font-size="8.5" fill="#86252b" font-family="'IBM Plex Mono',monospace">?days=7 · /city</text>
+    </g>
+
+    <!-- Batch Controller -->
+    <g class="comp hover-bright">
+      <rect x="769" y="172" width="168" height="54" rx="8" fill="#ffebe9" stroke="#d1242f" stroke-width="1.5"/>
+      <text x="853" y="192" text-anchor="middle" font-size="10" font-weight="700" fill="#d1242f" font-family="'Noto Sans KR',sans-serif">BatchController</text>
+      <text x="853" y="208" text-anchor="middle" font-size="9" fill="#d1242f" font-family="'IBM Plex Mono',monospace">POST /api/batch/run</text>
+      <text x="853" y="220" text-anchor="middle" font-size="8.5" fill="#86252b" font-family="'IBM Plex Mono',monospace">/{weather-analysis|embedding-index}</text>
+    </g>
+
+    <!-- Schedulers -->
+    <g class="comp hover-bright">
+      <rect x="947" y="172" width="210" height="54" rx="8" fill="#e6f4f8" stroke="#0f6e8a" stroke-width="1.5"/>
+      <text x="1052" y="192" text-anchor="middle" font-size="10" font-weight="700" fill="#0f6e8a" font-family="'Noto Sans KR',sans-serif">Schedulers</text>
+      <text x="1052" y="208" text-anchor="middle" font-size="8.5" fill="#0f6e8a" font-family="'IBM Plex Mono',monospace">MockWeatherScheduler</text>
+      <text x="1052" y="220" text-anchor="middle" font-size="8.5" fill="#0f6e8a" font-family="'IBM Plex Mono',monospace">WeatherFetchScheduler · BatchScheduler</text>
+    </g>
+
+    <!-- Controller → Service arrows -->
+    <line x1="117" y1="226" x2="117" y2="256" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ah-gray)"/>
+    <line x1="310" y1="226" x2="310" y2="256" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ah-gray)"/>
+    <line x1="499" y1="226" x2="499" y2="256" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ah-gray)"/>
+    <line x1="676" y1="226" x2="676" y2="256" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ah-gray)"/>
+    <line x1="853" y1="226" x2="853" y2="256" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#ah-gray)"/>
+
+    <!-- ── SERVICES ROW ── -->
+    <rect x="24" y="260" width="1132" height="22" rx="6" fill="#f5edff" stroke="#c297ff" stroke-width="1"/>
+    <text x="590" y="275" text-anchor="middle" font-size="9" font-weight="700" fill="#6639ba" font-family="'Noto Sans KR',sans-serif" letter-spacing="1">⚙️  SERVICE LAYER  (Business Logic)</text>
+
+    <!-- MockWeatherService -->
+    <g class="comp hover-bright">
+      <rect x="28" y="288" width="178" height="62" rx="8" fill="#fbefff" stroke="#6639ba" stroke-width="1.5"/>
+      <text x="117" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#6639ba" font-family="'Noto Sans KR',sans-serif">MockWeatherService</text>
+      <text x="117" y="322" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">generateAll() · seedHistory()</text>
+      <text x="117" y="334" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">countRecords() · getLatestSummary()</text>
+      <text x="117" y="344" text-anchor="middle" font-size="8" fill="#8250df" font-family="'IBM Plex Mono',monospace">DataSeederRunner (startup)</text>
+    </g>
+
+    <!-- WeatherRecommendationService -->
+    <g class="comp hover-bright">
+      <rect x="216" y="288" width="188" height="62" rx="8" fill="#fbefff" stroke="#6639ba" stroke-width="1.5"/>
+      <text x="310" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#6639ba" font-family="'Noto Sans KR',sans-serif">WeatherRecommendationSvc</text>
+      <text x="310" y="322" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">recommend(city, customerId)</text>
+      <text x="310" y="334" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">recommendByWeatherOnly(city)</text>
+      <text x="310" y="344" text-anchor="middle" font-size="8" fill="#8250df" font-family="'IBM Plex Mono',monospace">ChatClient + @Transactional</text>
+    </g>
+
+    <!-- WeatherChatService -->
+    <g class="comp hover-bright">
+      <rect x="414" y="288" width="170" height="62" rx="8" fill="#fbefff" stroke="#6639ba" stroke-width="1.5"/>
+      <text x="499" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#6639ba" font-family="'Noto Sans KR',sans-serif">WeatherChatService</text>
+      <text x="499" y="322" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">chat(question)</text>
+      <text x="499" y="334" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">chatWithCityFilter(q, city)</text>
+      <text x="499" y="344" text-anchor="middle" font-size="8" fill="#8250df" font-family="'IBM Plex Mono',monospace">QuestionAnswerAdvisor topK=5</text>
+    </g>
+
+    <!-- WeatherReportService -->
+    <g class="comp hover-bright">
+      <rect x="594" y="288" width="165" height="62" rx="8" fill="#fbefff" stroke="#6639ba" stroke-width="1.5"/>
+      <text x="676" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#6639ba" font-family="'Noto Sans KR',sans-serif">WeatherReportService</text>
+      <text x="676" y="322" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">generateReport(days)</text>
+      <text x="676" y="334" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">generateCityReport(city)</text>
+      <text x="676" y="344" text-anchor="middle" font-size="8" fill="#8250df" font-family="'IBM Plex Mono',monospace">ChatClient + WeatherSalesCorr</text>
+    </g>
+
+    <!-- WeatherFetchService -->
+    <g class="comp hover-bright">
+      <rect x="769" y="288" width="168" height="62" rx="8" fill="#fbefff" stroke="#6639ba" stroke-width="1.5"/>
+      <text x="853" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#6639ba" font-family="'Noto Sans KR',sans-serif">WeatherFetchService</text>
+      <text x="853" y="322" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">fetchAndSave(city)</text>
+      <text x="853" y="334" text-anchor="middle" font-size="8.5" fill="#6639ba" font-family="'IBM Plex Mono',monospace">→ OpenWeatherMap API</text>
+      <text x="853" y="344" text-anchor="middle" font-size="8" fill="#8250df" font-family="'IBM Plex Mono',monospace">RestClient + WeatherData save</text>
+    </g>
+
+    <!-- Spring AI Config -->
+    <g class="comp hover-bright">
+      <rect x="947" y="288" width="210" height="62" rx="8" fill="#fdf3d0" stroke="#c05e00" stroke-width="1.5"/>
+      <text x="1052" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#c05e00" font-family="'Noto Sans KR',sans-serif">AiConfig + OpenApiConfig</text>
+      <text x="1052" y="322" text-anchor="middle" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">ChatClient Bean</text>
+      <text x="1052" y="334" text-anchor="middle" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">VectorStore (pgvector)</text>
+      <text x="1052" y="344" text-anchor="middle" font-size="8" fill="#c05e00" font-family="'IBM Plex Mono',monospace">dims=768 · hnsw · cosine</text>
+    </g>
+
+    <!-- ── BATCH LAYER ── -->
+    <rect x="24" y="376" width="1132" height="22" rx="6" fill="#fff3e0" stroke="#d4a72c" stroke-width="1"/>
+    <text x="590" y="391" text-anchor="middle" font-size="9" font-weight="700" fill="#c05e00" font-family="'Noto Sans KR',sans-serif" letter-spacing="1">📦  SPRING BATCH  LAYER</text>
+
+    <!-- WeatherAnalysisBatchConfig -->
+    <g class="comp hover-bright">
+      <rect x="28" y="404" width="280" height="90" rx="8" fill="#fff8c5" stroke="#c05e00" stroke-width="1.5"/>
+      <text x="168" y="424" text-anchor="middle" font-size="10" font-weight="700" fill="#c05e00" font-family="'Noto Sans KR',sans-serif">WeatherAnalysisBatchConfig</text>
+      <text x="168" y="437" text-anchor="middle" font-size="9" fill="#c05e00" font-family="'IBM Plex Mono',monospace">Job 1: weatherAnalysisJob</text>
+      <line x1="38" y1="444" x2="298" y2="444" stroke="#d4a72c" stroke-width="0.5" stroke-dasharray="3 2"/>
+      <text x="60" y="458" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">📖 Reader: JdbcCursorItemReader</text>
+      <text x="60" y="470" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">    weather_data JOIN orders (CURRENT_DATE)</text>
+      <text x="60" y="482" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">⚡ Processor: WeatherSalesRow 검증</text>
+      <text x="60" y="494" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">💾 Writer: weather_sales_corr UPSERT  chunk=10</text>
+    </g>
+
+    <!-- EmbeddingIndexBatchConfig -->
+    <g class="comp hover-bright">
+      <rect x="322" y="404" width="280" height="90" rx="8" fill="#fff8c5" stroke="#c05e00" stroke-width="1.5"/>
+      <text x="462" y="424" text-anchor="middle" font-size="10" font-weight="700" fill="#c05e00" font-family="'Noto Sans KR',sans-serif">EmbeddingIndexBatchConfig</text>
+      <text x="462" y="437" text-anchor="middle" font-size="9" fill="#c05e00" font-family="'IBM Plex Mono',monospace">Job 2: embeddingIndexJob</text>
+      <line x1="332" y1="444" x2="592" y2="444" stroke="#d4a72c" stroke-width="0.5" stroke-dasharray="3 2"/>
+      <text x="342" y="458" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">📖 Source: WeatherDataRepository.findAll()</text>
+      <text x="342" y="470" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">🔤 Convert: toText() → Document List</text>
+      <text x="342" y="482" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">🧠 Embed: nomic-embed-text (768 dims)</text>
+      <text x="342" y="494" font-size="8.5" fill="#c05e00" font-family="'IBM Plex Mono',monospace">💾 VectorStore.add() → embedding_log dedup</text>
+    </g>
+
+    <!-- Schedulers Detail -->
+    <g class="comp hover-bright">
+      <rect x="616" y="404" width="260" height="90" rx="8" fill="#e6f4f8" stroke="#0f6e8a" stroke-width="1.5"/>
+      <text x="746" y="424" text-anchor="middle" font-size="10" font-weight="700" fill="#0f6e8a" font-family="'Noto Sans KR',sans-serif">Schedulers</text>
+      <line x1="626" y1="430" x2="866" y2="430" stroke="#0f6e8a" stroke-width="0.5" stroke-dasharray="3 2"/>
+      <text x="630" y="445" font-size="8.5" fill="#0f6e8a" font-family="'IBM Plex Mono',monospace">⏰ MockWeatherScheduler</text>
+      <text x="630" y="457" font-size="8" fill="#0f6e8a" font-family="'IBM Plex Mono',monospace">   0 */5 * * * *  (5분마다)</text>
+      <text x="630" y="470" font-size="8.5" fill="#0f6e8a" font-family="'IBM Plex Mono',monospace">⏰ WeatherFetchScheduler</text>
+      <text x="630" y="482" font-size="8" fill="#0f6e8a" font-family="'IBM Plex Mono',monospace">   0 0 * * * *   (매시간 정각)</text>
+      <text x="630" y="495" font-size="8.5" fill="#0f6e8a" font-family="'IBM Plex Mono',monospace">⏰ BatchScheduler (daily)</text>
+    </g>
+
+    <!-- Domain / Repository -->
+    <g class="comp hover-bright">
+      <rect x="890" y="404" width="268" height="90" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"/>
+      <text x="1024" y="424" text-anchor="middle" font-size="10" font-weight="700" fill="#1a7f37" font-family="'Noto Sans KR',sans-serif">Domain &amp; Repository</text>
+      <line x1="900" y1="430" x2="1148" y2="430" stroke="#1a7f37" stroke-width="0.5" stroke-dasharray="3 2"/>
+      <text x="904" y="445" font-size="8.5" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">Entity: WeatherData · WeatherSalesCorr</text>
+      <text x="904" y="457" font-size="8.5" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">Entity: Customer · Product · SalesOrder</text>
+      <text x="904" y="470" font-size="8.5" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">Repo: WeatherDataRepository</text>
+      <text x="904" y="482" font-size="8.5" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">Repo: SalesOrderRepository (JOIN FETCH)</text>
+      <text x="904" y="494" font-size="8.5" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">Repo: CustomerRepository · ProductRepo</text>
+    </g>
+
+    <!-- ══ SPRING BOOT → DB/AI arrows ══ -->
+    <!-- Spring Boot → PostgreSQL -->
+    <path d="M 280 558 L 280 600" stroke="#1a7f37" stroke-width="2" fill="none" marker-end="url(#ah-green)"/>
+    <text x="284" y="584" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">JPA / JDBC</text>
+
+    <!-- Spring Boot → Ollama -->
+    <path d="M 700 558 L 700 600" stroke="#8250df" stroke-width="2" fill="none" marker-end="url(#ah-purple)"/>
+    <text x="704" y="584" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">Spring AI</text>
+
+    <!-- Spring Boot → pgvector (additional) -->
+    <path d="M 460 558 L 380 600" stroke="#1a7f37" stroke-width="1.5" fill="none" stroke-dasharray="4 2" marker-end="url(#ah-green)"/>
+    <text x="378" y="582" font-size="8.5" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">VectorStore</text>
+
+    <!-- WeatherFetchService → OpenWeatherMap -->
+    <path d="M 960 490 L 1020 600" stroke="#4a5568" stroke-width="1.5" fill="none" marker-end="url(#ah-gray)"/>
+    <text x="960" y="550" font-size="8.5" fill="#4a5568" font-family="'IBM Plex Mono',monospace">RestClient</text>
+
+    <!-- ══ POSTGRESQL ══ -->
+    <g class="comp hover-bright">
+      <rect x="60" y="604" width="560" height="104" rx="10" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+      <text x="340" y="626" text-anchor="middle" font-size="11" font-weight="700" fill="#1a7f37" font-family="'Noto Sans KR',sans-serif">🐘  PostgreSQL 15  ·  port 5432  ·  DB: airflow</text>
+      <line x1="70" y1="632" x2="610" y2="632" stroke="#4ac26b" stroke-width="1" stroke-dasharray="3 2"/>
+      <!-- Tables -->
+      <text x="90" y="648" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">weather schema</text>
+      <text x="90" y="661" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">  ├─ weather_data</text>
+      <text x="90" y="673" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">  └─ analytics.weather_sales_corr</text>
+
+      <text x="290" y="648" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">raw / public schema</text>
+      <text x="290" y="661" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">  ├─ customers · products</text>
+      <text x="290" y="673" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">  ├─ orders (sales)</text>
+      <text x="290" y="685" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">  └─ spring_batch_* (meta)</text>
+
+      <text x="490" y="648" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">pgvector ext.</text>
+      <text x="490" y="661" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">  └─ vector_store</text>
+      <text x="490" y="673" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">     hnsw · cosine</text>
+      <text x="490" y="685" font-size="9" fill="#1a7f37" font-family="'IBM Plex Mono',monospace">     dims=768</text>
+    </g>
+
+    <!-- ══ OLLAMA ══ -->
+    <g class="comp hover-bright">
+      <rect x="648" y="604" width="290" height="104" rx="10" fill="#f5edff" stroke="#8250df" stroke-width="2"/>
+      <text x="793" y="626" text-anchor="middle" font-size="11" font-weight="700" fill="#8250df" font-family="'Noto Sans KR',sans-serif">🦙  Ollama  ·  port 11434</text>
+      <line x1="658" y1="632" x2="928" y2="632" stroke="#c297ff" stroke-width="1" stroke-dasharray="3 2"/>
+      <text x="668" y="648" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">Chat Model</text>
+      <text x="668" y="661" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">  llama3.2</text>
+      <text x="668" y="673" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">  temp=0.7</text>
+      <text x="668" y="685" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">  max_tokens=1024</text>
+      <text x="800" y="648" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">Embedding</text>
+      <text x="800" y="661" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">  nomic-embed-text</text>
+      <text x="800" y="673" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">  768 dimensions</text>
+      <text x="800" y="685" font-size="9" fill="#8250df" font-family="'IBM Plex Mono',monospace">  cosine similarity</text>
+    </g>
+
+    <!-- ══ OpenWeatherMap ══ -->
+    <g class="comp hover-bright">
+      <rect x="958" y="604" width="202" height="104" rx="10" fill="#f0f2f5" stroke="#4a5568" stroke-width="2"/>
+      <text x="1059" y="626" text-anchor="middle" font-size="10" font-weight="700" fill="#4a5568" font-family="'Noto Sans KR',sans-serif">☁️  OpenWeatherMap</text>
+      <line x1="968" y1="632" x2="1150" y2="632" stroke="#a0aab8" stroke-width="1" stroke-dasharray="3 2"/>
+      <text x="972" y="648" font-size="9" fill="#4a5568" font-family="'IBM Plex Mono',monospace">External REST API</text>
+      <text x="972" y="661" font-size="9" fill="#4a5568" font-family="'IBM Plex Mono',monospace">  /data/2.5/weather</text>
+      <text x="972" y="673" font-size="9" fill="#4a5568" font-family="'IBM Plex Mono',monospace">  Free: 1M calls/month</text>
+      <text x="972" y="685" font-size="9" fill="#4a5568" font-family="'IBM Plex Mono',monospace">  Seoul·Busan·Daegu·Incheon</text>
+      <text x="972" y="698" font-size="8" fill="#4a5568" font-family="'IBM Plex Mono',monospace">  (실서비스용, Mock 대체 가능)</text>
+    </g>
+
+    <!-- ── Animated flow lines (sample) ── -->
+    <line x1="499" y1="350" x2="499" y2="404" stroke="#6639ba" stroke-width="1.5" stroke-dasharray="4 3" class="flow-dash" marker-end="url(#ah-purple)"/>
+    <line x1="676" y1="350" x2="730" y2="404" stroke="#6639ba" stroke-width="1.5" stroke-dasharray="4 3" class="flow-dash" marker-end="url(#ah-purple)"/>
+    <line x1="117" y1="350" x2="100" y2="404" stroke="#6639ba" stroke-width="1.5" stroke-dasharray="4 3" class="flow-dash" marker-end="url(#ah-purple)"/>
+
+    <!-- Spring Boot bottom line to DB -->
+    <line x1="595" y1="558" x2="595" y2="598" stroke="#0969da" stroke-width="1" stroke-dasharray="4 2"/>
+  </svg>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 2: DATA PIPELINE
+═══════════════════════════════════════════════════════ -->
+<div id="tab-pipeline" class="panel">
+  <div class="panel-title">📊 데이터 파이프라인 전체 흐름</div>
+  <div class="panel-sub">
+    날씨 데이터 수집부터 AI 서비스 응답까지의 6단계 파이프라인. Mock 데이터(개발용)와 실제 OpenWeatherMap 데이터(운영용) 두 경로를 모두 포함합니다.
+  </div>
+
+  <!-- Stage 1: Data Ingestion -->
+  <div class="arc-card">
+    <div class="arc-card-hdr" style="background:#e6f4f8;border-color:#0f6e8a">
+      <span style="color:#0f6e8a;font-size:18px">①</span>
+      <span style="color:#0f6e8a">데이터 수집 (Data Ingestion)</span>
+    </div>
+    <div class="arc-card-body">
+      <div class="pipeline-h">
+        <div class="pip-node c-ext">
+          <div class="pip-num" style="background:#4a5568">1a</div>
+          <div class="pip-title">Mock 날씨 생성</div>
+          <div class="pip-comp">MockWeatherScheduler<br>→ MockWeatherService</div>
+          <div class="pip-detail" style="background:#f0f2f5;color:#4a5568">
+            5분마다 자동 실행<br>또는 API 수동 호출<br>POST /api/mock/seed
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#4a5568;color:#4a5568">▶</div></div>
+        <div class="pip-node c-ext">
+          <div class="pip-num" style="background:#4a5568">1b</div>
+          <div class="pip-title">실제 날씨 수집</div>
+          <div class="pip-comp">WeatherFetchScheduler<br>→ WeatherFetchService</div>
+          <div class="pip-detail" style="background:#f0f2f5;color:#4a5568">
+            매시간 정각 실행<br>OpenWeatherMap API<br>/data/2.5/weather
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#1a7f37;color:#1a7f37">▶</div></div>
+        <div class="pip-node c-pg">
+          <div class="pip-num" style="background:#1a7f37">2</div>
+          <div class="pip-title">WeatherData 저장</div>
+          <div class="pip-comp">WeatherDataRepository<br>.save()</div>
+          <div class="pip-detail" style="background:#dafbe1;color:#1a7f37">
+            weather.weather_data<br>city·temp·humidity·<br>windSpeed·condition<br>collectedAt
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#c05e00;color:#c05e00">▶</div></div>
+        <div class="pip-node c-batch">
+          <div class="pip-num" style="background:#c05e00">3</div>
+          <div class="pip-title">weather-analysis 배치</div>
+          <div class="pip-comp">WeatherAnalysisBatchConfig<br>Job 1</div>
+          <div class="pip-detail" style="background:#fff8c5;color:#c05e00">
+            Reader: weather_data<br>JOIN orders (오늘)<br>Processor: 검증<br>Writer: UPSERT chunk=10
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#1a7f37;color:#1a7f37">▶</div></div>
+        <div class="pip-node c-pg">
+          <div class="pip-num" style="background:#1a7f37">4</div>
+          <div class="pip-title">weather_sales_corr</div>
+          <div class="pip-comp">analytics.weather_sales_corr</div>
+          <div class="pip-detail" style="background:#dafbe1;color:#1a7f37">
+            weather + sales 조인<br>상관관계 분석 결과<br>WeatherSalesCorr Entity
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#8250df;color:#8250df">▶</div></div>
+        <div class="pip-node c-ai">
+          <div class="pip-num" style="background:#8250df">5</div>
+          <div class="pip-title">embedding-index 배치</div>
+          <div class="pip-comp">EmbeddingIndexBatchConfig<br>Job 2 (Tasklet)</div>
+          <div class="pip-detail" style="background:#f5edff;color:#8250df">
+            toText() 변환<br>nomic-embed-text<br>768 dimensions<br>embedding_log dedup
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#1a7f37;color:#1a7f37">▶</div></div>
+        <div class="pip-node c-pg">
+          <div class="pip-num" style="background:#1a7f37">6</div>
+          <div class="pip-title">vector_store (pgvector)</div>
+          <div class="pip-comp">VectorStore.add()<br>pgvector 인덱스</div>
+          <div class="pip-detail" style="background:#dafbe1;color:#1a7f37">
+            hnsw 인덱스<br>cosine distance<br>RAG 검색 준비 완료<br>filterExpression 지원
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage 2: AI Serving -->
+  <div class="arc-card">
+    <div class="arc-card-hdr" style="background:#fbefff;border-color:#6639ba">
+      <span style="color:#6639ba;font-size:18px">②</span>
+      <span style="color:#6639ba">AI 서비스 제공 (AI Serving) — 파이프라인 종착점</span>
+    </div>
+    <div class="arc-card-body">
+      <div class="pipeline-h">
+        <div class="pip-node c-browser">
+          <div class="pip-num" style="background:#0969da">A</div>
+          <div class="pip-title">사용자 요청</div>
+          <div class="pip-comp">Browser → REST API</div>
+          <div class="pip-detail" style="background:#ddf4ff;color:#0969da">
+            GET /api/recommend<br>POST /api/chat<br>GET /api/report
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#d1242f;color:#d1242f">▶</div></div>
+        <div class="pip-node c-ctrl">
+          <div class="pip-num" style="background:#d1242f">B</div>
+          <div class="pip-title">Controller 수신</div>
+          <div class="pip-comp">Rec/Chat/ReportController</div>
+          <div class="pip-detail" style="background:#ffebe9;color:#d1242f">
+            요청 파라미터 검증<br>Service 위임
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#6639ba;color:#6639ba">▶</div></div>
+        <div class="pip-node c-svc">
+          <div class="pip-num" style="background:#6639ba">C</div>
+          <div class="pip-title">Service 처리</div>
+          <div class="pip-comp">WeatherRecommendation/<br>Chat/ReportService</div>
+          <div class="pip-detail" style="background:#fbefff;color:#6639ba">
+            DB 조회 + 컨텍스트 구성<br>ChatClient 프롬프트 생성
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#8250df;color:#8250df">▶</div></div>
+        <div class="pip-node c-ai">
+          <div class="pip-num" style="background:#8250df">D</div>
+          <div class="pip-title">Ollama LLM</div>
+          <div class="pip-comp">llama3.2<br>ChatClient.call()</div>
+          <div class="pip-detail" style="background:#f5edff;color:#8250df">
+            RAG: vector 검색 후<br>컨텍스트 주입<br>llama3.2 답변 생성
+          </div>
+        </div>
+        <div class="pip-arr"><div class="pip-arr-inner" style="background:#0969da;color:#0969da">▶</div></div>
+        <div class="pip-node c-browser">
+          <div class="pip-num" style="background:#0969da">E</div>
+          <div class="pip-title">응답 반환</div>
+          <div class="pip-comp">ResponseEntity&lt;Map&gt;</div>
+          <div class="pip-detail" style="background:#ddf4ff;color:#0969da">
+            JSON 응답<br>{recommendation/<br>answer/report,<br>generatedAt}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 3: AI SERVICE FLOWS
+═══════════════════════════════════════════════════════ -->
+<div id="tab-aiflow" class="panel">
+  <div class="panel-title">🤖 AI 서비스 상세 요청 흐름</div>
+  <div class="panel-sub">3가지 AI 서비스(추천·RAG 채팅·리포트)의 내부 처리 과정을 단계별로 설명합니다.</div>
+
+  <!-- Recommend Flow -->
+  <div class="seq-card">
+    <div class="seq-header" style="background:#ffebe9">
+      <span style="font-size:20px">🛍️</span>
+      <span style="color:#d1242f">GET /api/recommend?city=Seoul&amp;customerId=1 — AI 상품 추천 흐름</span>
+    </div>
+    <div class="seq-body">
+      <div class="seq-flow" style="gap:0">
+        <div class="seq-node c-browser" style="text-align:center">🌐 Browser<br><small>GET /api/recommend<br>?city=Seoul<br>&amp;customerId=1</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#d1242f;color:#d1242f">▶</div><div class="sa-label">HTTP GET</div></div>
+        <div class="seq-node c-ctrl">📡 Recommendation<br>Controller<br><small>@GetMapping</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#6639ba;color:#6639ba">▶</div><div class="sa-label">recommend()<br>@Transactional</div></div>
+        <div class="seq-node c-svc">⚙️ WeatherRec<br>Service<br><small>readOnly=true</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#1a7f37;color:#1a7f37">▶</div><div class="sa-label">findTop<br>ByCity...</div></div>
+        <div class="seq-node c-pg">🐘 weather_data<br><small>최신 날씨 1건</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#1a7f37;color:#1a7f37">▶</div><div class="sa-label">findTop10With<br>ProductByCustomerId</div></div>
+        <div class="seq-node c-pg">🐘 orders<br><small>최근 구매이력<br>JOIN FETCH</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#8250df;color:#8250df">▶</div><div class="sa-label">ChatClient<br>.prompt()</div></div>
+        <div class="seq-node c-ai">🦙 llama3.2<br><small>날씨+이력<br>컨텍스트 주입</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#0969da;color:#0969da">▶</div><div class="sa-label">추천 텍스트<br>반환</div></div>
+        <div class="seq-node c-browser">🌐 Browser<br><small>{recommendation<br>generatedAt}</small></div>
+      </div>
+      <div class="seq-note" style="background:#fff8c5;border-color:#c05e00;color:#c05e00">
+        <strong>⚠️ 주요 포인트</strong>: <code>@Transactional(readOnly=true)</code>이 필수. open-in-view=false 환경에서 <code>SalesOrder.product(LAZY)</code> 프록시를 세션 안에서 초기화해야 LazyInitializationException 방지. JOIN FETCH로 N+1 문제도 동시에 해결.
+      </div>
+    </div>
+  </div>
+
+  <!-- RAG Chat Flow -->
+  <div class="seq-card" style="margin-top:16px">
+    <div class="seq-header" style="background:#f5edff">
+      <span style="font-size:20px">💬</span>
+      <span style="color:#8250df">POST /api/chat — RAG 채팅 흐름 (QuestionAnswerAdvisor)</span>
+    </div>
+    <div class="seq-body">
+      <div class="seq-flow" style="gap:0">
+        <div class="seq-node c-browser">🌐 Browser<br><small>POST /api/chat<br>{"question":"비 올<br>때 잘 팔리는?"}</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#d1242f;color:#d1242f">▶</div><div class="sa-label">HTTP POST</div></div>
+        <div class="seq-node c-ctrl">📡 Chat<br>Controller<br><small>@PostMapping</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#6639ba;color:#6639ba">▶</div><div class="sa-label">chat(question)</div></div>
+        <div class="seq-node c-svc">⚙️ WeatherChat<br>Service<br><small>ChatClient</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#8250df;color:#8250df">▶</div><div class="sa-label">QA Advisor<br>빌더 패턴</div></div>
+        <div class="seq-node c-ai" style="border-color:#8250df;background:#f5edff">🔍 QuestionAnswer<br>Advisor<br><small>topK=5<br>threshold=0.5</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#1a7f37;color:#1a7f37">▶</div><div class="sa-label">similarity<br>search</div></div>
+        <div class="seq-node c-pg">🐘 vector_store<br><small>pgvector hnsw<br>cosine 검색<br>Top 5 청크 반환</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#8250df;color:#8250df">▶</div><div class="sa-label">컨텍스트<br>주입 프롬프트</div></div>
+        <div class="seq-node c-ai">🦙 llama3.2<br><small>RAG 컨텍스트<br>기반 답변</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#0969da;color:#0969da">▶</div><div class="sa-label">answer 반환</div></div>
+        <div class="seq-node c-browser">🌐 Browser<br><small>{question<br>answer<br>answeredAt}</small></div>
+      </div>
+      <div class="seq-note" style="background:#f5edff;border-color:#8250df;color:#8250df">
+        <strong>🔍 도시 필터 적용 시</strong> (<code>POST /api/chat/city</code>): <code>filterExpression("city == 'Seoul'")</code>로 pgvector 검색 범위를 특정 도시로 제한. QuestionAnswerAdvisor.builder(vectorStore).searchRequest(...)를 Builder 패턴으로 구성 (2-arg 생성자 없음 — Spring AI 1.0.0 GA).
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Flow -->
+  <div class="seq-card" style="margin-top:16px">
+    <div class="seq-header" style="background:#dafbe1">
+      <span style="font-size:20px">📊</span>
+      <span style="color:#1a7f37">GET /api/report?days=7 — AI 인사이트 리포트 흐름</span>
+    </div>
+    <div class="seq-body">
+      <div class="seq-flow" style="gap:0">
+        <div class="seq-node c-browser">🌐 Browser<br><small>GET /api/report<br>?days=7</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#d1242f;color:#d1242f">▶</div><div class="sa-label">HTTP GET</div></div>
+        <div class="seq-node c-ctrl">📡 Report<br>Controller</div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#6639ba;color:#6639ba">▶</div><div class="sa-label">generate<br>Report(7)</div></div>
+        <div class="seq-node c-svc">⚙️ WeatherReport<br>Service</div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#1a7f37;color:#1a7f37">▶</div><div class="sa-label">findByDate<br>Range()</div></div>
+        <div class="seq-node c-pg">🐘 weather_sales<br>_corr<br><small>최근 7일<br>상관관계 데이터</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#8250df;color:#8250df">▶</div><div class="sa-label">데이터 요약<br>프롬프트 생성</div></div>
+        <div class="seq-node c-ai">🦙 llama3.2<br><small>마크다운<br>리포트 생성</small></div>
+        <div class="seq-arrow"><div class="sa-line" style="background:#0969da;color:#0969da">▶</div><div class="sa-label">report 반환</div></div>
+        <div class="seq-node c-browser">🌐 Browser<br><small>{period:7일<br>report:##...<br>generatedAt}</small></div>
+      </div>
+      <div class="seq-note" style="background:#dafbe1;border-color:#1a7f37;color:#1a7f37">
+        <strong>📋 사전 조건</strong>: <code>weather-analysis 배치</code>가 실행되어 <code>analytics.weather_sales_corr</code>에 데이터가 있어야 합니다. 배치 미실행 시 빈 리포트 또는 503 응답이 반환됩니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 4: BATCH PROCESSING
+═══════════════════════════════════════════════════════ -->
+<div id="tab-batch" class="panel">
+  <div class="panel-title">⚙️ 배치 처리 상세 흐름</div>
+  <div class="panel-sub">Spring Batch 2개 Job의 내부 단계별 처리 과정. POST /api/batch/run/{jobName} 또는 BatchScheduler로 실행됩니다.</div>
+
+  <div class="batch-wrap">
+    <!-- Job 1 -->
+    <div class="batch-job">
+      <div class="batch-header" style="background:#fff8c5;color:#c05e00">
+        <span style="font-size:18px">📈</span>
+        weatherAnalysisJob
+        <span style="font-size:11px;font-weight:400;margin-left:8px;font-family:monospace">POST /api/batch/run/weather-analysis</span>
+      </div>
+      <div class="batch-steps">
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#fff8c5;border-color:#c05e00;color:#c05e00">▶</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#c05e00">JobLauncher.run(weatherAnalysisJob, params)</div>
+            <div class="b-step-desc">BatchController에서 수동 트리거. runAt + triggeredBy 파라미터로 매 실행 고유 JobInstance 생성.</div>
+            <div class="b-step-code">params: runAt=2024-11-20T10:30:00, triggeredBy=manual-api</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#fff8c5;border-color:#c05e00;color:#c05e00">📖</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#c05e00">Reader: JdbcCursorItemReader</div>
+            <div class="b-step-desc">weather.weather_data와 raw.orders를 JOIN하여 오늘 날짜 데이터를 스트리밍으로 읽습니다.</div>
+            <div class="b-step-code">SELECT w.*, o.* FROM weather_data w JOIN orders o WHERE DATE(w.collected_at) = CURRENT_DATE</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#fff8c5;border-color:#c05e00;color:#c05e00">⚡</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#c05e00">Processor: ItemProcessor&lt;WeatherSalesRow, WeatherSalesRow&gt;</div>
+            <div class="b-step-desc">WeatherSalesRow 데이터 유효성 검증 및 로깅. null이면 skip, 정상이면 그대로 통과.</div>
+            <div class="b-step-code">WeatherSalesRow { city, temperature, salesAmount, orderCount, ... }</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#fff8c5;border-color:#c05e00;color:#c05e00">💾</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#c05e00">Writer: JdbcBatchItemWriter  chunk=10</div>
+            <div class="b-step-desc">analytics.weather_sales_corr에 UPSERT. 10건씩 트랜잭션 묶음으로 처리하여 안정성 확보.</div>
+            <div class="b-step-code">INSERT INTO analytics.weather_sales_corr (...) ON CONFLICT DO UPDATE</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#dafbe1;border-color:#1a7f37;color:#1a7f37">✅</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#1a7f37">JobExecutionListener → COMPLETED</div>
+            <div class="b-step-desc">배치 완료. ReportService·RecommendationService에서 분석 결과 사용 가능.</div>
+            <div class="b-step-code">status: COMPLETED | startTime | endTime</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job 2 -->
+    <div class="batch-job">
+      <div class="batch-header" style="background:#f5edff;color:#8250df">
+        <span style="font-size:18px">🧠</span>
+        embeddingIndexJob
+        <span style="font-size:11px;font-weight:400;margin-left:8px;font-family:monospace">POST /api/batch/run/embedding-index</span>
+      </div>
+      <div class="batch-steps">
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#f5edff;border-color:#8250df;color:#8250df">▶</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#8250df">JobLauncher.run(embeddingIndexJob, params)</div>
+            <div class="b-step-desc">Tasklet 기반 단일 Step Job. weather-analysis 배치 완료 후 실행해야 최신 데이터 포함.</div>
+            <div class="b-step-code">Job 구조: JobBuilder → Tasklet Step (단순 처리)</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#f5edff;border-color:#8250df;color:#8250df">📖</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#8250df">WeatherDataRepository.findAll() — 미처리 데이터 조회</div>
+            <div class="b-step-desc">analytics.embedding_log와 LEFT JOIN하여 아직 임베딩되지 않은 WeatherData만 선별.</div>
+            <div class="b-step-code">SELECT * FROM weather_data w WHERE NOT EXISTS (SELECT 1 FROM embedding_log el WHERE el.source_id = w.id)</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#f5edff;border-color:#8250df;color:#8250df">🔤</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#8250df">toText() — 텍스트 변환</div>
+            <div class="b-step-desc">WeatherData 엔티티를 자연어 텍스트로 변환. 도시·날씨·매출 정보를 문장화.</div>
+            <div class="b-step-code">"서울 날씨 맑음, 기온 22.5°C, 습도 55%, 당일 매출 3,200,000원, 우산 판매 증가..."</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#f5edff;border-color:#8250df;color:#8250df">🧠</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#8250df">nomic-embed-text (Ollama) — 768차원 벡터 생성</div>
+            <div class="b-step-desc">텍스트를 768차원 dense vector로 변환. cosine similarity 기반 검색을 위한 임베딩.</div>
+            <div class="b-step-code">Document { content, metadata: {city, source_id(String), date} } → float[768]</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#f5edff;border-color:#8250df;color:#8250df">💾</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#8250df">VectorStore.add(documents) → vector_store 테이블</div>
+            <div class="b-step-desc">pgvector hnsw 인덱스에 벡터 저장. embedding_log에 처리 기록하여 중복 방지.</div>
+            <div class="b-step-code">vector_store: id, content, metadata(json), embedding(vector(768))</div>
+          </div>
+        </div>
+        <div class="b-step">
+          <div class="b-step-icon" style="background:#dafbe1;border-color:#1a7f37;color:#1a7f37">✅</div>
+          <div class="b-step-body">
+            <div class="b-step-title" style="color:#1a7f37">임베딩 완료 → RAG 채팅 서비스 활성화</div>
+            <div class="b-step-desc">vector_store에 인덱스 생성 완료. ChatService의 QuestionAnswerAdvisor가 유사도 검색 사용 가능.</div>
+            <div class="b-step-code">topK=5, similarityThreshold=0.5, filterExpression(city) 지원</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 배치 실행 트리거 -->
+  <div class="arc-card" style="margin-top:16px">
+    <div class="arc-card-hdr">⏰ 배치 실행 트리거 경로</div>
+    <div class="arc-card-body">
+      <div class="pipeline-h" style="gap:16px;flex-wrap:wrap">
+        <div class="pip-node c-ctrl" style="min-width:160px">
+          <div class="pip-num" style="background:#d1242f">A</div>
+          <div class="pip-title">수동 API 트리거</div>
+          <div class="pip-comp">POST /api/batch/run<br>/{jobName}</div>
+          <div class="pip-detail" style="background:#ffebe9;color:#d1242f">BatchController<br>즉시 실행</div>
+        </div>
+        <div style="display:flex;align-items:center;color:#5a6478;font-size:20px">→</div>
+        <div class="pip-node c-sched" style="min-width:160px;border-color:var(--sched);background:#e6f4f8">
+          <div class="pip-num" style="background:#0f6e8a">B</div>
+          <div class="pip-title">스케줄러 자동 실행</div>
+          <div class="pip-comp">BatchScheduler</div>
+          <div class="pip-detail" style="background:#e6f4f8;color:#0f6e8a">매일 정해진<br>시간 자동 실행</div>
+        </div>
+        <div style="display:flex;align-items:center;color:#5a6478;font-size:20px">→</div>
+        <div class="pip-node c-batch" style="min-width:220px">
+          <div class="pip-num" style="background:#c05e00">C</div>
+          <div class="pip-title">JobLauncher.run()</div>
+          <div class="pip-comp">JobParameters<br>runAt + triggeredBy</div>
+          <div class="pip-detail" style="background:#fff8c5;color:#c05e00">매 실행마다<br>고유 파라미터로<br>JobInstance 분리<br>(중복 실행 방지)</div>
+        </div>
+        <div style="display:flex;align-items:center;color:#5a6478;font-size:20px">→</div>
+        <div class="pip-node c-pg" style="min-width:160px">
+          <div class="pip-num" style="background:#1a7f37">D</div>
+          <div class="pip-title">Spring Batch Meta</div>
+          <div class="pip-comp">spring_batch_job<br>_execution</div>
+          <div class="pip-detail" style="background:#dafbe1;color:#1a7f37">COMPLETED/<br>FAILED/<br>STARTED 기록</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 5: COMPONENT SPEC
+═══════════════════════════════════════════════════════ -->
+<div id="tab-comp" class="panel">
+  <div class="panel-title">🔗 컴포넌트 명세 & 의존 관계</div>
+  <div class="panel-sub">모든 컴포넌트의 역할, 의존 대상, 주요 메서드를 정리한 레퍼런스입니다.</div>
+
+  <!-- Controllers -->
+  <div class="arc-card">
+    <div class="arc-card-hdr" style="background:#ffebe9;color:#d1242f">📡 Controllers (REST API Layer)</div>
+    <div class="arc-card-body" style="padding:0">
+      <table class="comp-table">
+        <thead><tr><th>컨트롤러</th><th>엔드포인트</th><th>의존 서비스</th><th>주요 기능</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong class="mono">MockWeatherController</strong></td>
+            <td class="mono">GET /api/mock/status<br>POST /api/mock/generate<br>POST /api/mock/seed<br>GET /api/mock/latest</td>
+            <td><span class="tag" style="background:#fbefff;color:#6639ba;border-color:#c297ff">MockWeatherService</span></td>
+            <td>테스트 날씨 데이터 생성·조회. AI 사용 전 필수 실행.</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">RecommendationController</strong></td>
+            <td class="mono">GET /api/recommend<br>GET /api/recommend/anonymous</td>
+            <td><span class="tag" style="background:#fbefff;color:#6639ba;border-color:#c297ff">WeatherRecommendationService</span></td>
+            <td>날씨 + 구매이력 기반 AI 추천 (개인화 / 익명)</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">ChatController</strong></td>
+            <td class="mono">POST /api/chat<br>POST /api/chat/city</td>
+            <td><span class="tag" style="background:#fbefff;color:#6639ba;border-color:#c297ff">WeatherChatService</span></td>
+            <td>RAG Q&A. record 타입 ChatRequest / ChatWithCityRequest.</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">ReportController</strong></td>
+            <td class="mono">GET /api/report<br>GET /api/report/city</td>
+            <td><span class="tag" style="background:#fbefff;color:#6639ba;border-color:#c297ff">WeatherReportService</span></td>
+            <td>기간별·도시별 AI 인사이트 리포트 생성.</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">BatchController</strong></td>
+            <td class="mono">POST /api/batch/run<br>/{jobName}</td>
+            <td><span class="tag" style="background:#fff8c5;color:#c05e00;border-color:#d4a72c">weatherAnalysisJob</span> <span class="tag" style="background:#fff8c5;color:#c05e00;border-color:#d4a72c">embeddingIndexJob</span> <span class="tag" style="background:#fff8c5;color:#c05e00;border-color:#d4a72c">JobLauncher</span></td>
+            <td>배치 수동 트리거. jobName 기반 switch 분기.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Services -->
+  <div class="arc-card" style="margin-top:16px">
+    <div class="arc-card-hdr" style="background:#fbefff;color:#6639ba">⚙️ Services (Business Logic Layer)</div>
+    <div class="arc-card-body" style="padding:0">
+      <table class="comp-table">
+        <thead><tr><th>서비스</th><th>주요 메서드</th><th>의존 컴포넌트</th><th>특이사항</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong class="mono">MockWeatherService</strong></td>
+            <td class="mono">generateAll()<br>seedHistory(int days)<br>countRecords()<br>getLatestSummary()</td>
+            <td><span class="tag" style="background:#dafbe1;color:#1a7f37;border-color:#4ac26b">WeatherDataRepository</span></td>
+            <td>Mock 날씨 랜덤 생성. CITIES 상수: Seoul·Busan·Daegu·Incheon</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">WeatherRecommendationService</strong></td>
+            <td class="mono">recommend(city, cid)<br>recommendByWeatherOnly(city)</td>
+            <td><span class="tag" style="background:#f5edff;color:#8250df;border-color:#c297ff">ChatClient</span> <span class="tag" style="background:#dafbe1;color:#1a7f37;border-color:#4ac26b">WeatherDataRepo</span> <span class="tag" style="background:#dafbe1;color:#1a7f37;border-color:#4ac26b">SalesOrderRepo</span></td>
+            <td><strong>@Transactional(readOnly=true)</strong> 필수. JOIN FETCH로 N+1 방지.</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">WeatherChatService</strong></td>
+            <td class="mono">chat(question)<br>chatWithCityFilter(q, city)</td>
+            <td><span class="tag" style="background:#f5edff;color:#8250df;border-color:#c297ff">ChatClient</span> <span class="tag" style="background:#f5edff;color:#8250df;border-color:#c297ff">VectorStore</span> <span class="tag" style="background:#f5edff;color:#8250df;border-color:#c297ff">QuestionAnswerAdvisor</span></td>
+            <td>Builder 패턴 필수 (2-arg 생성자 없음). topK=5, threshold=0.5</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">WeatherReportService</strong></td>
+            <td class="mono">generateReport(days)<br>generateCityReport(city)</td>
+            <td><span class="tag" style="background:#f5edff;color:#8250df;border-color:#c297ff">ChatClient</span> <span class="tag" style="background:#dafbe1;color:#1a7f37;border-color:#4ac26b">WeatherSalesCorrRepo</span></td>
+            <td>weather_sales_corr 데이터 요약 후 llama3.2에 전달.</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">WeatherFetchService</strong></td>
+            <td class="mono">fetchAndSave(city)</td>
+            <td><span class="tag" style="background:#f0f2f5;color:#4a5568;border-color:#a0aab8">RestClient</span> <span class="tag" style="background:#dafbe1;color:#1a7f37;border-color:#4ac26b">WeatherDataRepo</span></td>
+            <td>OpenWeatherMap 실시간 수집. Mock과 병행 사용 가능.</td>
+          </tr>
+          <tr>
+            <td><strong class="mono">DataSeederRunner</strong></td>
+            <td class="mono">run() @Bean</td>
+            <td><span class="tag" style="background:#fbefff;color:#6639ba;border-color:#c297ff">MockWeatherService</span></td>
+            <td>앱 시작 시 auto-seed-on-startup=true이면 자동 시딩.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Infrastructure -->
+  <div class="arc-card" style="margin-top:16px">
+    <div class="arc-card-hdr" style="background:#dafbe1;color:#1a7f37">🗄️ Infrastructure (DB / AI / External)</div>
+    <div class="arc-card-body" style="padding:0">
+      <table class="comp-table">
+        <thead><tr><th>컴포넌트</th><th>주소</th><th>역할</th><th>설정값</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>PostgreSQL 15</strong></td>
+            <td class="mono">localhost:5432<br>mds_postgres:5432</td>
+            <td>메인 데이터베이스. pgvector 익스텐션으로 벡터 저장.</td>
+            <td class="mono">DB: airflow · schema: raw/analytics/public · hikari maxPool=10</td>
+          </tr>
+          <tr>
+            <td><strong>Ollama (llama3.2)</strong></td>
+            <td class="mono">localhost:11434</td>
+            <td>채팅 LLM. 날씨+컨텍스트 기반 한국어 답변 생성.</td>
+            <td class="mono">temperature=0.7 · num-predict=1024</td>
+          </tr>
+          <tr>
+            <td><strong>Ollama (nomic-embed-text)</strong></td>
+            <td class="mono">localhost:11434</td>
+            <td>텍스트 임베딩 모델. 날씨 데이터 → 768차원 벡터 변환.</td>
+            <td class="mono">dimensions=768 · cosine · hnsw index</td>
+          </tr>
+          <tr>
+            <td><strong>OpenWeatherMap API</strong></td>
+            <td class="mono">api.openweathermap.org<br>/data/2.5/weather</td>
+            <td>실시간 날씨 데이터 수집 (운영 환경용). Mock 대체 가능.</td>
+            <td class="mono">Free: 1M calls/month · 4 cities: Seoul/Busan/Daegu/Incheon</td>
+          </tr>
+          <tr>
+            <td><strong>pgvector extension</strong></td>
+            <td class="mono">vector_store (table)</td>
+            <td>Spring AI VectorStore 구현체. QuestionAnswerAdvisor의 similarity search 대상.</td>
+            <td class="mono">index-type: hnsw · distance-type: cosine_distance · dims: 768</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Key Config -->
+  <div class="arc-card" style="margin-top:16px">
+    <div class="arc-card-hdr">🔧 핵심 설정 (application.yml)</div>
+    <div class="arc-card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:12.5px">
+        <div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:12px">
+          <div style="font-weight:700;color:#c05e00;margin-bottom:6px">🍃 Spring Batch</div>
+          <div class="mono" style="line-height:1.9;font-size:11px;color:var(--mu)">
+            batch.job.enabled: false<br>batch.jdbc.initialize-schema: always<br>→ 시작 시 Job 자동 실행 방지<br>→ Batch 메타 테이블 자동 생성
+          </div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:12px">
+          <div style="font-weight:700;color:#8250df;margin-bottom:6px">🤖 Spring AI</div>
+          <div class="mono" style="line-height:1.9;font-size:11px;color:var(--mu)">
+            ollama.chat.model: llama3.2<br>ollama.embedding.model: nomic-embed-text<br>pgvector.dimensions: 768<br>pgvector.initialize-schema: true
+          </div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:12px">
+          <div style="font-weight:700;color:#0969da;margin-bottom:6px">🌐 Server / Profile</div>
+          <div class="mono" style="line-height:1.9;font-size:11px;color:var(--mu)">
+            server.port: 8090<br>profiles.active: local (개발)<br>→ docker 프로파일: mds_postgres<br>jpa.open-in-view: false
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
