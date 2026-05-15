@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ollama + Spring Boot AI 설치 & 실행 가이드</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+:root {
+  --blue:#2563eb; --blue-l:#eff6ff; --blue-b:#bfdbfe;
+  --green:#16a34a; --green-l:#f0fdf4; --green-b:#bbf7d0;
+  --amber:#d97706; --amber-l:#fffbeb; --amber-b:#fde68a;
+  --red:#dc2626; --red-l:#fef2f2; --red-b:#fecaca;
+  --purple:#7c3aed; --purple-l:#f5f3ff; --purple-b:#ddd6fe;
+  --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb;
+  --gray-300:#d1d5db; --gray-400:#9ca3af; --gray-500:#6b7280;
+  --gray-700:#374151; --gray-900:#111827;
+  --border:#e5e7eb; --text:#374151;
+  --mono:'JetBrains Mono',monospace;
+  --body:'Noto Sans KR',sans-serif;
+  --r:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);background:#fff;color:var(--text);font-size:15px;line-height:1.7}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:12px;background:var(--gray-100);padding:1px 5px;border-radius:3px;border:1px solid var(--gray-200)}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--gray-50);border-right:1px solid var(--border);overflow-y:auto;padding:16px 0 40px;z-index:100}
+.nav-logo{padding:0 16px 14px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.nav-logo .t{font-size:13px;font-weight:700;color:var(--blue)}
+.nav-logo .s{font-size:11px;color:var(--gray-400);margin-top:2px}
+.nav-sec{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400);padding:12px 16px 3px}
+nav a{display:block;padding:6px 16px;font-size:12.5px;color:var(--gray-700);border-left:2px solid transparent;transition:all .12s}
+nav a:hover{background:var(--gray-100);color:var(--blue);text-decoration:none}
+nav a.active{background:var(--blue-l);color:var(--blue);border-left-color:var(--blue);font-weight:500}
+
+/* ── Layout ── */
+main{margin-left:220px}
+.hero{background:linear-gradient(135deg,var(--blue) 0%,#1d4ed8 100%);color:#fff;padding:48px 56px 40px}
+.hero .badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:14px}
+.hero h1{font-size:30px;font-weight:700;line-height:1.25;margin-bottom:10px}
+.hero p{font-size:14px;opacity:.85;line-height:1.7;max-width:560px}
+.hero .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.hero .chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);font-size:12px;padding:3px 10px;border-radius:4px}
+.hero .chip.n{background:rgba(255,255,255,.9);color:var(--blue);font-weight:700}
+
+section{padding:48px 56px;border-bottom:1px solid var(--border)}
+section:last-child{border-bottom:none}
+.sec-t{font-size:21px;font-weight:700;color:var(--gray-900);margin-bottom:5px;display:flex;align-items:center;gap:9px}
+.sec-t .ic{width:32px;height:32px;border-radius:7px;background:var(--blue-l);border:1px solid var(--blue-b);display:flex;align-items:center;justify-content:center;font-size:15px}
+.sec-s{font-size:13px;color:var(--gray-500);margin-bottom:24px}
+
+/* ── Code blocks ── */
+.cb{margin:14px 0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.cb-h{display:flex;align-items:center;background:var(--gray-100);padding:6px 13px;border-bottom:1px solid var(--border)}
+.cb-h .l{font-family:var(--mono);font-size:11.5px;color:var(--gray-500)}
+.cb pre{margin:0!important;border-radius:0!important}
+.cb pre code{font-family:var(--mono)!important;font-size:12.5px!important}
+
+/* ── Steps ── */
+.steps{display:flex;flex-direction:column;gap:18px}
+.step{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.step-h{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--gray-50);border-bottom:1px solid var(--border)}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-t{font-size:15px;font-weight:700;color:var(--gray-900)}
+.step-b{padding:16px 18px}
+.step-b p{font-size:13.5px;color:var(--gray-700);margin-bottom:10px}
+
+/* ── Alerts ── */
+.al{padding:11px 15px;border-radius:var(--r);font-size:13.5px;margin:10px 0;display:flex;gap:9px;align-items:flex-start}
+.al-i{font-size:15px;flex-shrink:0;line-height:1.5}
+.info{background:var(--blue-l);border:1px solid var(--blue-b);color:#1e40af}
+.success{background:var(--green-l);border:1px solid var(--green-b);color:#15803d}
+.warning{background:var(--amber-l);border:1px solid var(--amber-b);color:#92400e}
+.danger{background:var(--red-l);border:1px solid var(--red-b);color:#991b1b}
+
+/* ── API Table ── */
+.api-tbl{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-size:13px}
+.api-tbl th{background:var(--gray-100);padding:9px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--gray-500);border-bottom:1px solid var(--border)}
+.api-tbl td{padding:10px 14px;border-bottom:1px solid var(--gray-100);vertical-align:top}
+.api-tbl tr:last-child td{border-bottom:none}
+.m{font-family:var(--mono);font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:3px}
+.get{background:#e0f2fe;color:#0369a1}
+.post{background:#dcfce7;color:#15803d}
+
+/* ── Model table ── */
+.mtbl{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-size:13px}
+.mtbl th{background:var(--gray-100);padding:9px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--gray-500);border-bottom:1px solid var(--border)}
+.mtbl td{padding:10px 14px;border-bottom:1px solid var(--gray-100)}
+.mtbl tr:last-child td{border-bottom:none}
+
+/* ── File tree ── */
+.ft{background:var(--gray-50);border:1px solid var(--border);border-radius:var(--r);padding:18px 22px;font-family:var(--mono);font-size:13px;line-height:2.1}
+.ft .new{color:var(--green);font-weight:700}
+.ft .dir{color:#92400e;font-weight:600}
+.ft .dim{color:var(--gray-400)}
+.bnew{display:inline-block;background:var(--green-l);color:var(--green);border:1px solid var(--green-b);font-size:10px;font-weight:700;font-family:var(--body);padding:0 6px;border-radius:3px;vertical-align:middle;margin-left:4px}
+
+/* ── Trouble ── */
+.tr-item{border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.tr-q{padding:11px 15px;background:var(--red-l);border-bottom:1px solid var(--red-b);color:var(--red);font-size:13.5px;font-weight:500}
+.tr-a{padding:11px 15px;font-size:13px;color:var(--gray-700);line-height:1.8}
+.tr-a code{font-size:11.5px}
+
+@media(max-width:900px){nav{display:none}main{margin-left:0}section,.hero{padding:32px 20px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="t">⛅ Weather AI Stack</div>
+    <div class="s">Ollama + Spring Boot 가이드</div>
+  </div>
+  <div class="nav-sec">개요</div>
+  <a href="#overview">📐 전체 스택 구성</a>
+  <a href="#models">🧠 Ollama 모델 선택</a>
+  <div class="nav-sec">설치</div>
+  <a href="#step1">1️⃣ pgvector 설치</a>
+  <a href="#step2">2️⃣ Ollama 실행</a>
+  <a href="#step3">3️⃣ 모델 다운로드</a>
+  <a href="#step4">4️⃣ analytics 스키마</a>
+  <a href="#step5">5️⃣ Spring Boot 실행</a>
+  <div class="nav-sec">Deep Dive</div>
+  <a href="#arch">🏗️ 코드 아키텍처</a>
+  <a href="#api">🔌 API 레퍼런스</a>
+  <a href="#batch">⚙️ 배치 Job 설명</a>
+  <div class="nav-sec">운영</div>
+  <a href="#verify">✅ 동작 검증</a>
+  <a href="#trouble">🛠️ 트러블슈팅</a>
+</nav>
+
+<main>
+
+<div class="hero" id="overview">
+  <div class="badge">🤖 Local AI Stack</div>
+  <h1>Ollama + Spring AI<br>비용 없는 로컬 AI 파이프라인</h1>
+  <p>기존 Docker MDS 환경에 Ollama를 추가하여 OpenAI 없이 완전한 AI 파이프라인을 구성합니다. llama3.2로 상품 추천·리포트 생성, nomic-embed-text로 RAG 검색까지 비용 0원.</p>
+  <div class="chips">
+    <div class="chip">기존 Docker 유지</div>
+    <div class="chip">OpenAI API 불필요</div>
+    <div class="chip n">Ollama llama3.2</div>
+    <div class="chip n">Spring AI 1.0</div>
+    <div class="chip n">Spring Batch 5</div>
+  </div>
+</div>
+
+<!-- 전체 스택 -->
+<section id="overview" style="padding-top:40px">
+  <div class="sec-t"><div class="ic">📐</div>전체 스택 구성</div>
+  <div class="sec-s">기존 서비스(회색)에 신규 추가(파란 테두리) 항목</div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+    <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--gray-50)">
+      <div style="font-size:18px;margin-bottom:5px">🌤️</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:3px">Airflow :8080</div>
+      <div style="font-size:11px;color:var(--gray-400)">날씨 ETL 기존</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--gray-50)">
+      <div style="font-size:18px;margin-bottom:5px">🐘</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:3px">PostgreSQL :5432</div>
+      <div style="font-size:11px;color:var(--gray-400)">+pgvector +analytics</div>
+    </div>
+    <div style="border:2px solid var(--blue-b);border-radius:var(--r);padding:14px;background:var(--blue-l)">
+      <div style="font-size:18px;margin-bottom:5px">🦙</div>
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:3px">Ollama :11434</div>
+      <div style="font-size:11px;color:#3b82f6">llama3.2 + nomic NEW</div>
+    </div>
+    <div style="border:2px solid var(--blue-b);border-radius:var(--r);padding:14px;background:var(--blue-l)">
+      <div style="font-size:18px;margin-bottom:5px">☕</div>
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:3px">Spring Boot :8090</div>
+      <div style="font-size:11px;color:#3b82f6">AI + Batch API NEW</div>
+    </div>
+  </div>
+
+  <div class="al info"><span class="al-i">ℹ️</span>
+    <div>Spring Boot 앱은 <strong>로컬에서 실행</strong>하며 Docker 서비스에 <code>localhost:포트</code>로 연결합니다. Docker로 띄우려면 application.yml에서 <code>--spring.profiles.active=docker</code> 로 실행하세요.</div>
+  </div>
+</section>
+
+<!-- 모델 선택 -->
+<section id="models">
+  <div class="sec-t"><div class="ic">🧠</div>Ollama 모델 선택 가이드</div>
+  <div class="sec-s">환경에 따라 모델 크기를 선택하세요. 8GB RAM이면 llama3.2(3B) 충분합니다.</div>
+
+  <table class="mtbl">
+    <thead><tr><th>모델</th><th>용도</th><th>크기</th><th>최소 RAM</th><th>속도(CPU)</th><th>추천 환경</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>llama3.2:1b</code></td>
+        <td>채팅·추천</td>
+        <td>~1.3 GB</td>
+        <td>4 GB</td>
+        <td>빠름</td>
+        <td>개발 PC, RAM 8GB 미만</td>
+      </tr>
+      <tr style="background:var(--blue-l)">
+        <td><code>llama3.2</code> <span style="font-size:11px;background:var(--blue);color:#fff;padding:1px 6px;border-radius:3px;margin-left:4px">기본</span></td>
+        <td>채팅·추천·리포트</td>
+        <td>~2.0 GB</td>
+        <td>8 GB</td>
+        <td>보통</td>
+        <td>개발 PC, RAM 8GB 이상 <strong>★추천</strong></td>
+      </tr>
+      <tr>
+        <td><code>llama3.1:8b</code></td>
+        <td>고품질 생성</td>
+        <td>~4.7 GB</td>
+        <td>16 GB</td>
+        <td>느림</td>
+        <td>고사양 PC 또는 GPU</td>
+      </tr>
+      <tr>
+        <td><code>nomic-embed-text</code></td>
+        <td>임베딩(RAG 필수)</td>
+        <td>~274 MB</td>
+        <td>1 GB</td>
+        <td>매우 빠름</td>
+        <td>모든 환경</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="al warning" style="margin-top:12px"><span class="al-i">⚠️</span>
+    <div>llama3.2 첫 다운로드는 <strong>최대 30분</strong> 소요될 수 있습니다 (네트워크 환경에 따라). 한 번 다운로드하면 <code>ollama_data</code> 볼륨에 영구 저장됩니다.</div>
+  </div>
+</section>
+
+<!-- 설치 단계 -->
+<section id="step1">
+  <div class="sec-t"><div class="ic">🔧</div>설치 단계별 가이드</div>
+  <div class="sec-s">총 5단계, 약 30~60분 (모델 다운로드 포함)</div>
+
+  <div class="steps">
+
+    <div class="step" id="step1">
+      <div class="step-h"><div class="step-num">1</div><div class="step-t">pgvector 이미지 교체 (docker-compose.yml 수정)</div></div>
+      <div class="step-b">
+        <p>기존 <code>postgres:15</code>를 pgvector 포함 이미지로 교체합니다. 볼륨은 유지되어 데이터 손실이 없습니다.</p>
+        <div class="cb"><div class="cb-h"><span class="l">docker-compose.yml — 1줄 수정</span></div>
+<pre><code class="language-yaml">postgres:
+  image: pgvector/pgvector:pg15   # ← postgres:15 에서 변경
+  container_name: mds_postgres
+  # 나머지 동일 (볼륨, 포트, 환경변수 그대로)</code></pre></div>
+        <div class="cb"><div class="cb-h"><span class="l">bash — 컨테이너 재시작 + pgvector 활성화</span></div>
+<pre><code class="language-bash">docker compose up -d --force-recreate postgres
+
+# pgvector 확장 활성화 (1회만)
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# 확인 — 0.7.x 출력되면 성공
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "SELECT extversion FROM pg_extension WHERE extname = 'vector';"</code></pre></div>
+      </div>
+    </div>
+
+    <div class="step" id="step2">
+      <div class="step-h"><div class="step-num">2</div><div class="step-t">Ollama 서비스 시작</div></div>
+      <div class="step-b">
+        <p>docker-compose.ollama.yml 을 override 파일로 추가하여 Ollama를 기존 스택과 함께 실행합니다.</p>
+        <div class="cb"><div class="cb-h"><span class="l">bash</span></div>
+<pre><code class="language-bash"># Override 파일로 Ollama만 추가 기동
+docker compose -f docker-compose.yml -f docker-compose.ollama.yml up -d ollama
+
+# 상태 확인
+docker ps | grep ollama
+
+# Ollama API 동작 확인
+curl http://localhost:11434/api/tags</code></pre></div>
+        <div class="al success"><span class="al-i">✅</span>
+          <div><code>{"models":[]}</code> 응답이 오면 Ollama 서버 정상 실행. 아직 모델이 없으므로 빈 배열이 정상입니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" id="step3">
+      <div class="step-h"><div class="step-num">3</div><div class="step-t">모델 다운로드 (약 2.3GB, 시간 소요)</div></div>
+      <div class="step-b">
+        <p>자동(init 컨테이너) 또는 수동 중 선택하세요. 터미널에서 다운로드 진행률을 실시간으로 확인할 수 있습니다.</p>
+        <div class="cb"><div class="cb-h"><span class="l">방법 A — init 컨테이너로 자동 다운로드</span></div>
+<pre><code class="language-bash"># 별도 터미널에서 실행 (진행률 확인)
+docker compose -f docker-compose.yml -f docker-compose.ollama.yml \
+  up ollama-model-init
+
+# 완료 후 설치 확인
+docker exec mds_ollama ollama list</code></pre></div>
+        <div class="cb"><div class="cb-h"><span class="l">방법 B — 실행 중인 컨테이너에서 수동 다운로드</span></div>
+<pre><code class="language-bash">docker exec -it mds_ollama ollama pull llama3.2
+docker exec -it mds_ollama ollama pull nomic-embed-text
+
+# 저사양 PC라면 1b 모델 사용
+# docker exec -it mds_ollama ollama pull llama3.2:1b</code></pre></div>
+        <div class="cb"><div class="cb-h"><span class="l">방법 C — 로컬 Ollama (Docker 없이)</span></div>
+<pre><code class="language-bash"># Windows: https://ollama.com/download 에서 설치 후
+ollama pull llama3.2
+ollama pull nomic-embed-text
+# application.yml base-url 은 그대로 http://localhost:11434</code></pre></div>
+      </div>
+    </div>
+
+    <div class="step" id="step4">
+      <div class="step-h"><div class="step-num">4</div><div class="step-t">analytics 스키마 + Spring Batch 스키마 생성</div></div>
+      <div class="step-b">
+        <div class="cb"><div class="cb-h"><span class="l">bash — analytics 스키마 생성</span></div>
+<pre><code class="language-bash">docker cp scripts/analytics_schema.sql mds_postgres:/tmp/
+docker exec mds_postgres psql -U airflow -d airflow \
+  -f /tmp/analytics_schema.sql
+
+# 확인
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "\dt analytics.*"</code></pre></div>
+        <div class="al info"><span class="al-i">ℹ️</span>
+          <div>Spring Batch 메타 테이블은 <code>spring.batch.jdbc.initialize-schema=always</code> 설정으로 Spring Boot 앱 시작 시 자동 생성됩니다. 별도 SQL 실행 불필요.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" id="step5">
+      <div class="step-h"><div class="step-num">5</div><div class="step-t">Spring Boot 앱 빌드 & 실행</div></div>
+      <div class="step-b">
+        <div class="cb"><div class="cb-h"><span class="l">bash — 빌드 및 실행</span></div>
+<pre><code class="language-bash">cd weather-commerce-ai
+
+# Gradle Wrapper 생성 (최초 1회)
+gradle wrapper --gradle-version 8.10
+
+# 빌드
+./gradlew build -x test
+
+# 실행 (로컬 모드: Docker 서비스에 localhost로 연결)
+./gradlew bootRun
+
+# 또는 JAR 직접 실행
+java -jar build/libs/weather-commerce-ai-1.0.0.jar
+
+# Docker 내부에서 실행할 때
+java -jar build/libs/weather-commerce-ai-1.0.0.jar \
+  --spring.profiles.active=docker</code></pre></div>
+        <div class="al success"><span class="al-i">✅</span>
+          <div>앱 시작 후 <a href="http://localhost:8090/actuator/health">localhost:8090/actuator/health</a> 에서 <code>{"status":"UP"}</code> 확인</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 코드 아키텍처 -->
+<section id="arch">
+  <div class="sec-t"><div class="ic">🏗️</div>코드 아키텍처 & 파일 구조</div>
+
+  <div class="ft">
+<span class="dir">weather-commerce-ai/</span><br>
+<span class="dim">├── build.gradle</span>               <span style="font-size:11px;color:var(--gray-400)">spring-ai-ollama + pgvector + batch</span><br>
+<span class="dim">├── settings.gradle</span><br>
+<span class="dim">└── src/main/</span><br>
+<span class="dim">    ├── resources/</span><br>
+<span class="new">    │   └── application.yml</span>        <span style="font-size:11px;color:var(--green)">local/docker 프로파일 분리</span><br>
+<span class="dim">    └── java/com/mds/weather/</span><br>
+<span class="new">        ├── WeatherCommerceApplication.java</span>   <span style="font-size:11px;color:var(--green)">메인 + @EnableScheduling</span><br>
+<span class="dim">        ├── config/</span><br>
+<span class="new">        │   └── AiConfig.java</span>          <span style="font-size:11px;color:var(--green)">ChatClient 빈 (시스템 프롬프트)</span><br>
+<span class="dim">        ├── domain/</span><br>
+<span class="new">        │   ├── WeatherData.java</span>       <span style="font-size:11px;color:var(--green)">weather.weather_data 엔티티</span><br>
+<span class="new">        │   └── Entities.java</span>          <span style="font-size:11px;color:var(--green)">Customer·Product·SalesOrder·WeatherSalesCorr</span><br>
+<span class="dim">        ├── repository/</span><br>
+<span class="new">        │   └── Repositories.java</span>      <span style="font-size:11px;color:var(--green)">5개 JPA 리포지토리</span><br>
+<span class="dim">        ├── batch/</span><br>
+<span class="new">        │   ├── WeatherAnalysisBatchConfig.java</span>  <span style="font-size:11px;color:var(--green)">Job1: 날씨×매출 분석</span><br>
+<span class="new">        │   └── EmbeddingIndexBatchConfig.java</span>   <span style="font-size:11px;color:var(--green)">Job2: PgVector 임베딩</span><br>
+<span class="dim">        ├── service/</span><br>
+<span class="new">        │   ├── WeatherRecommendationService.java</span>  <span style="font-size:11px;color:var(--green)">LLM 상품 추천</span><br>
+<span class="new">        │   ├── WeatherChatService.java</span>  <span style="font-size:11px;color:var(--green)">RAG Q&A (QuestionAnswerAdvisor)</span><br>
+<span class="new">        │   └── WeatherReportService.java</span>  <span style="font-size:11px;color:var(--green)">AI 인사이트 리포트</span><br>
+<span class="dim">        ├── scheduler/</span><br>
+<span class="new">        │   └── BatchScheduler.java</span>    <span style="font-size:11px;color:var(--green)">@Scheduled 자동 Job 실행</span><br>
+<span class="dim">        └── controller/</span><br>
+<span class="new">            └── Controllers.java</span>       <span style="font-size:11px;color:var(--green)">REST API 4개 컨트롤러</span>
+  </div>
+</section>
+
+<!-- API 레퍼런스 -->
+<section id="api">
+  <div class="sec-t"><div class="ic">🔌</div>API 레퍼런스</div>
+  <div class="sec-s">모든 API는 localhost:8090 기준, JSON 응답</div>
+
+  <table class="api-tbl">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>설명</th><th>예시 파라미터</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="m get">GET</span></td>
+        <td><code>/api/recommend</code></td>
+        <td>고객 맞춤 AI 상품 추천</td>
+        <td><code>?city=Seoul&customerId=1</code></td>
+      </tr>
+      <tr>
+        <td><span class="m get">GET</span></td>
+        <td><code>/api/recommend/anonymous</code></td>
+        <td>날씨 기반 익명 추천</td>
+        <td><code>?city=Busan</code></td>
+      </tr>
+      <tr>
+        <td><span class="m post">POST</span></td>
+        <td><code>/api/chat</code></td>
+        <td>RAG 날씨-매출 Q&A</td>
+        <td><code>{"question":"비 올 때 잘 팔린 상품은?"}</code></td>
+      </tr>
+      <tr>
+        <td><span class="m post">POST</span></td>
+        <td><code>/api/chat/city</code></td>
+        <td>도시 필터 RAG Q&A</td>
+        <td><code>{"question":"...", "city":"Seoul"}</code></td>
+      </tr>
+      <tr>
+        <td><span class="m get">GET</span></td>
+        <td><code>/api/report</code></td>
+        <td>AI 날씨-매출 인사이트 리포트</td>
+        <td><code>?days=7</code></td>
+      </tr>
+      <tr>
+        <td><span class="m get">GET</span></td>
+        <td><code>/api/report/city</code></td>
+        <td>도시별 리포트</td>
+        <td><code>?city=Incheon</code></td>
+      </tr>
+      <tr>
+        <td><span class="m post">POST</span></td>
+        <td><code>/api/batch/run/weather-analysis</code></td>
+        <td>날씨-매출 분석 배치 수동 실행</td>
+        <td>–</td>
+      </tr>
+      <tr>
+        <td><span class="m post">POST</span></td>
+        <td><code>/api/batch/run/embedding-index</code></td>
+        <td>임베딩 인덱스 갱신 수동 실행</td>
+        <td>–</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cb" style="margin-top:16px"><div class="cb-h"><span class="l">curl — API 테스트 예시</span></div>
+<pre><code class="language-bash"># 1. 서울 날씨 기반 고객 1번 추천
+curl "http://localhost:8090/api/recommend?city=Seoul&customerId=1"
+
+# 2. RAG Q&A
+curl -X POST http://localhost:8090/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"비 오는 날 어떤 상품이 잘 팔렸어?"}'
+
+# 3. 7일치 인사이트 리포트
+curl "http://localhost:8090/api/report?days=7"
+
+# 4. 배치 수동 실행 (임베딩 인덱스 갱신)
+curl -X POST http://localhost:8090/api/batch/run/embedding-index</code></pre></div>
+</section>
+
+<!-- 배치 Job -->
+<section id="batch">
+  <div class="sec-t"><div class="ic">⚙️</div>배치 Job 설명</div>
+  <div class="sec-s">두 Job이 자동으로 스케줄 실행됩니다. 수동 트리거도 가능합니다.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div style="background:var(--amber-l);border-bottom:1px solid var(--amber-b);padding:12px 16px">
+        <div style="font-size:13px;font-weight:700;color:var(--amber)">Job 1 — weatherAnalysisJob</div>
+        <div style="font-size:11px;color:var(--amber);opacity:.8">스케줄: 매일 01:00</div>
+      </div>
+      <div style="padding:14px 16px;font-size:12.5px;color:var(--gray-700);line-height:1.8">
+        <strong>Reader:</strong> weather.weather_data + raw.orders JOIN SQL<br>
+        <strong>Processor:</strong> 로깅 및 데이터 검증<br>
+        <strong>Writer:</strong> analytics.weather_sales_corr UPSERT<br>
+        <br>
+        <strong>도시 매핑:</strong> Seoul→서울, Busan→부산 등<br>
+        CASE 구문으로 한/영 도시명 JOIN
+      </div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div style="background:var(--blue-l);border-bottom:1px solid var(--blue-b);padding:12px 16px">
+        <div style="font-size:13px;font-weight:700;color:var(--blue)">Job 2 — embeddingIndexJob</div>
+        <div style="font-size:11px;color:var(--blue);opacity:.8">스케줄: 6시간마다</div>
+      </div>
+      <div style="padding:14px 16px;font-size:12.5px;color:var(--gray-700);line-height:1.8">
+        <strong>Reader:</strong> analytics.embedding_log 기준 미처리 날씨 데이터<br>
+        <strong>Processor:</strong> WeatherData → Document 변환<br>
+        <strong>Writer:</strong> VectorStore.add() → pgvector 저장<br>
+        <br>
+        <strong>중복 방지:</strong> embedding_log 테이블로 처리 이력 관리
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 동작 검증 -->
+<section id="verify">
+  <div class="sec-t"><div class="ic">✅</div>동작 검증 체크리스트</div>
+
+  <div class="cb"><div class="cb-h"><span class="l">bash — 순서대로 확인</span></div>
+<pre><code class="language-bash"># 1. Ollama 모델 확인
+docker exec mds_ollama ollama list
+# → llama3.2, nomic-embed-text 보여야 함
+
+# 2. pgvector 확인
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "SELECT extversion FROM pg_extension WHERE extname='vector';"
+
+# 3. analytics 스키마 확인
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "\dt analytics.*"
+
+# 4. vector_store 테이블 확인 (Spring Boot 시작 후 자동 생성됨)
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "\dt public.vector_store"
+
+# 5. 배치 Job 수동 실행 (데이터 쌓기)
+curl -X POST http://localhost:8090/api/batch/run/weather-analysis
+curl -X POST http://localhost:8090/api/batch/run/embedding-index
+
+# 6. 임베딩 데이터 확인
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "SELECT COUNT(*) FROM public.vector_store;"
+
+# 7. AI 추천 테스트
+curl "http://localhost:8090/api/recommend/anonymous?city=Seoul"</code></pre></div>
+</section>
+
+<!-- 트러블슈팅 -->
+<section id="trouble">
+  <div class="sec-t"><div class="ic">🛠️</div>트러블슈팅</div>
+
+  <div class="tr-item">
+    <div class="tr-q">❌ "connection refused" — Ollama에 연결 안 됨</div>
+    <div class="tr-a">
+      <code>docker ps | grep ollama</code>로 컨테이너 실행 여부 확인.<br>
+      <code>curl http://localhost:11434/api/tags</code>로 API 응답 확인.<br>
+      포트 충돌 시 docker-compose.ollama.yml에서 <code>11435:11434</code>로 변경하고 application.yml의 base-url도 수정.
+    </div>
+  </div>
+
+  <div class="tr-item">
+    <div class="tr-q">❌ "model 'llama3.2' not found" — 모델 로드 실패</div>
+    <div class="tr-a">
+      <code>docker exec mds_ollama ollama list</code>로 설치된 모델 확인.<br>
+      없다면 <code>docker exec -it mds_ollama ollama pull llama3.2</code> 재실행.<br>
+      저사양이라면 <code>llama3.2:1b</code>를 사용하고 application.yml의 <code>chat.model</code>도 변경.
+    </div>
+  </div>
+
+  <div class="tr-item">
+    <div class="tr-q">❌ RAG 답변이 "데이터 없음" 또는 엉뚱한 답변</div>
+    <div class="tr-a">
+      임베딩 인덱스 갱신 먼저 필요: <code>POST /api/batch/run/embedding-index</code><br>
+      <code>SELECT COUNT(*) FROM public.vector_store</code>로 인덱스 데이터 수 확인.<br>
+      Airflow weather_etl_pipeline이 실행되지 않았다면 날씨 데이터 자체가 없음.
+    </div>
+  </div>
+
+  <div class="tr-item">
+    <div class="tr-q">❌ Spring Boot 시작 시 "relation 'analytics.weather_sales_corr' does not exist"</div>
+    <div class="tr-a">
+      <code>analytics_schema.sql</code>을 아직 실행하지 않은 경우.<br>
+      <code>docker cp scripts/analytics_schema.sql mds_postgres:/tmp/ && docker exec mds_postgres psql -U airflow -d airflow -f /tmp/analytics_schema.sql</code>
+    </div>
+  </div>
+
+  <div class="tr-item">
+    <div class="tr-q">❌ 응답이 너무 느림 (30초 이상)</div>
+    <div class="tr-a">
+      CPU-only 환경에서 llama3.2(3B)는 첫 응답까지 10~30초 소요될 수 있습니다.<br>
+      해결책: <code>llama3.2:1b</code>로 변경 (application.yml), 또는 GPU 설정(docker-compose.ollama.yml NVIDIA 섹션 주석 해제).<br>
+      또는 응답 timeout을 application.yml에서 늘리세요.
+    </div>
+  </div>
+
+  <div class="al info" style="margin-top:16px"><span class="al-i">💡</span>
+    <div><strong>OpenAI로 전환하고 싶을 때:</strong><br>
+    build.gradle에서 <code>spring-ai-ollama-spring-boot-starter</code> → <code>spring-ai-openai-spring-boot-starter</code> 로 변경,
+    application.yml에서 Ollama 설정 제거 후 <code>spring.ai.openai.api-key</code> 추가만 하면 됩니다. 서비스 코드 변경 없음.</div>
+  </div>
+</section>
+
+</main>
+
+<script>
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting) {
+      document.querySelectorAll('nav a').forEach(l => l.classList.remove('active'));
+      const l = document.querySelector(`nav a[href="#${e.target.id}"]`);
+      if(l) l.classList.add('active');
+    }
+  });
+}, {rootMargin:'-15% 0px -75% 0px'});
+document.querySelectorAll('section[id],.hero[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

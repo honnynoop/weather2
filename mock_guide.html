@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Commerce — OpenWeatherMap 없이 실행하기</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@400;500;700&family=Fraunces:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --ink:#111827;--ink2:#374151;--ink3:#6b7280;
+  --border:#e5e7eb;--bg2:#f9fafb;--bg3:#f3f4f6;
+  --blue:#2563eb;--blue-l:#eff6ff;--blue-b:#bfdbfe;
+  --green:#16a34a;--green-l:#f0fdf4;--green-b:#bbf7d0;
+  --amber:#d97706;--amber-l:#fffbeb;--amber-b:#fde68a;
+  --teal:#0f766e;--teal-l:#f0fdfa;--teal-b:#99f6e4;
+  --red:#dc2626;--red-l:#fef2f2;--red-b:#fecaca;
+  --purple:#7c3aed;--purple-l:#f5f3ff;--purple-b:#ddd6fe;
+  --mono:'JetBrains Mono',monospace;
+  --body:'Noto Sans KR',sans-serif;
+  --r:8px;
+}
+body{font-family:var(--body);background:#fff;color:var(--ink);font-size:15px;line-height:1.75}
+a{color:var(--blue)}
+code{font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 5px;border-radius:3px;border:1px solid var(--border)}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 40px;z-index:100}
+.nl{padding:0 16px 14px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.nl .t{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--blue)}
+.nl .s{font-size:11px;color:var(--ink3);margin-top:2px}
+.ng{font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink3);padding:12px 16px 3px}
+nav a{display:block;padding:6px 16px;font-size:12.5px;color:var(--ink2);border-left:2px solid transparent;text-decoration:none;transition:all .12s}
+nav a:hover,nav a.on{background:var(--blue-l);color:var(--blue);border-left-color:var(--blue)}
+nav a.on{font-weight:500}
+
+main{margin-left:220px}
+
+/* ── Hero ── */
+.hero{background:#fff;border-bottom:1.5px solid var(--ink);padding:56px 64px 44px}
+.hero .ey{font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.hero h1{font-family:'Fraunces',serif;font-size:40px;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:14px}
+.hero h1 span{color:var(--green)}
+.hero p{font-size:15.5px;color:var(--ink2);max-width:560px;line-height:1.75}
+.hero .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.chip{font-size:12px;padding:4px 12px;border-radius:20px;font-family:var(--mono)}
+.chip-g{background:var(--green-l);color:var(--green);border:1px solid var(--green-b)}
+.chip-b{background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-b)}
+.chip-k{background:var(--bg3);color:var(--ink3);border:1px solid var(--border)}
+
+/* ── Section ── */
+section{padding:48px 64px;border-bottom:1px solid var(--border)}
+section:last-child{border-bottom:none}
+.sl{font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.sh{font-size:24px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.ss{font-size:13.5px;color:var(--ink3);margin-bottom:26px}
+
+/* ── 변경 전/후 비교 ── */
+.diff{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.diff-box{border-radius:var(--r);padding:16px 18px}
+.diff-old{background:var(--red-l);border:1px solid var(--red-b)}
+.diff-new{background:var(--green-l);border:1px solid var(--green-b)}
+.diff-t{font-size:11px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.diff-t.t-o{color:var(--red)}
+.diff-t.t-n{color:var(--green)}
+.diff-item{font-size:13px;margin-bottom:5px;display:flex;align-items:flex-start;gap:6px;color:var(--ink2)}
+.diff-item .ic{flex-shrink:0;margin-top:2px}
+
+/* ── 파일 추가 목록 ── */
+.flist{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.fitem{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--r);background:#fff}
+.fitem-path{font-family:var(--mono);font-size:12.5px;color:var(--blue);flex:1}
+.fitem-desc{font-size:12.5px;color:var(--ink3)}
+.badge{display:inline-block;font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:3px}
+.b-new{background:var(--green-l);color:var(--green);border:1px solid var(--green-b)}
+.b-mod{background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-b)}
+.b-keep{background:var(--bg3);color:var(--ink3);border:1px solid var(--border)}
+
+/* ── Steps ── */
+.steps{display:flex;flex-direction:column;gap:16px}
+.step{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.step-h{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.step-n{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-t{font-size:14.5px;font-weight:700;color:var(--ink)}
+.step-b{padding:16px 18px}
+.step-b p{font-size:13.5px;color:var(--ink2);margin-bottom:10px}
+
+/* ── Code ── */
+.cb{margin:12px 0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.cb-h{display:flex;align-items:center;gap:8px;background:var(--bg3);padding:7px 13px;border-bottom:1px solid var(--border)}
+.cb-h span{font-family:var(--mono);font-size:11.5px;color:var(--ink3)}
+.cb pre{margin:0!important;border-radius:0!important}
+.cb pre code{font-family:var(--mono)!important;font-size:12.5px!important;line-height:1.7!important}
+
+/* ── Alert ── */
+.al{padding:11px 15px;border-radius:var(--r);font-size:13.5px;margin:10px 0;display:flex;gap:9px;align-items:flex-start}
+.al-i{font-size:16px;flex-shrink:0;line-height:1.5}
+.a-info{background:var(--blue-l);border:1px solid var(--blue-b);color:#1e40af}
+.a-ok{background:var(--green-l);border:1px solid var(--green-b);color:var(--green)}
+.a-warn{background:var(--amber-l);border:1px solid var(--amber-b);color:var(--amber)}
+.a-tip{background:var(--purple-l);border:1px solid var(--purple-b);color:var(--purple)}
+
+/* ── API 테이블 ── */
+.at{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-size:13px;margin:12px 0}
+.at th{background:var(--bg3);padding:9px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);border-bottom:1px solid var(--border)}
+.at td{padding:11px 14px;border-bottom:1px solid var(--bg3);vertical-align:top}
+.at tr:last-child td{border-bottom:none}
+.mg{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 7px;border-radius:3px;background:#dbeafe;color:#1e40af}
+.mp{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 7px;border-radius:3px;background:#dcfce7;color:#166534}
+.ep{font-family:var(--mono);font-size:12.5px}
+
+/* ── 검증 체크리스트 ── */
+.ck{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.ck-item{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ck-h{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:13.5px;font-weight:500;color:var(--ink)}
+.ck-h .num{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ck-body{padding:12px 16px}
+
+/* ── 예상 출력 ── */
+.output{background:#1e1e2e;border-radius:var(--r);padding:16px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.8;color:#cdd6f4;margin:10px 0;overflow-x:auto}
+.ok {color:#a6e3a1}
+.kw {color:#89b4fa}
+.st {color:#f9e2af}
+.cm {color:#6c7086}
+.nu {color:#fab387}
+
+/* ── 계절별 날씨 표 ── */
+.st{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-size:12.5px;margin:12px 0}
+.st th{background:var(--bg3);padding:8px 12px;text-align:center;font-weight:700;border-bottom:1px solid var(--border);color:var(--ink3);font-size:10.5px;text-transform:uppercase;letter-spacing:.7px}
+.st td{padding:9px 12px;border-bottom:1px solid var(--bg3);text-align:center}
+.st tr:last-child td{border-bottom:none}
+.st td:first-child{text-align:left;font-weight:500}
+
+/* ── 전체 흐름 시각화 ── */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin:16px 0}
+.fb{padding:12px 16px;border-radius:6px;text-align:center;min-width:120px;flex-shrink:0}
+.fb .ft{font-family:var(--mono);font-size:11px;font-weight:600;margin-bottom:3px}
+.fb .fd{font-size:11px;color:var(--ink3)}
+.fa{font-size:22px;color:var(--ink3);padding:0 8px;flex-shrink:0}
+
+@media(max-width:900px){nav{display:none}main{margin-left:0}section,.hero{padding:36px 20px}.diff{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nl"><div class="t">⛅ Weather Commerce</div><div class="s">API 키 없이 실행하기</div></div>
+  <div class="ng">개요</div>
+  <a href="#what">🔄 무엇이 달라지나</a>
+  <a href="#files">📁 추가 파일</a>
+  <div class="ng">실행</div>
+  <a href="#s1">1️⃣ DB & 서비스 시작</a>
+  <a href="#s2">2️⃣ 앱 빌드 & 실행</a>
+  <a href="#s3">3️⃣ 데이터 확인</a>
+  <a href="#s4">4️⃣ AI API 테스트</a>
+  <a href="#s5">5️⃣ Batch & 대시보드</a>
+  <div class="ng">레퍼런스</div>
+  <a href="#api">🔌 전체 API</a>
+  <a href="#data">🌡️ 생성 데이터 이해</a>
+  <a href="#trouble">🛠️ 트러블슈팅</a>
+</nav>
+
+<main>
+<div class="hero">
+  <div class="ey">No External API · Self-Contained</div>
+  <h1>OpenWeatherMap 없이<br><span>즉시 실행 가능</span>한 Weather Commerce</h1>
+  <p>API 키 불필요. 앱 시작 시 7일치 Mock 날씨 데이터를 자동 생성하고, 이후 매시간 새 데이터를 추가합니다. AI 추천·RAG 채팅·리포트 모두 즉시 사용 가능합니다.</p>
+  <div class="chips">
+    <span class="chip chip-g">✅ API 키 불필요</span>
+    <span class="chip chip-g">✅ 시작 시 자동 시딩</span>
+    <span class="chip chip-g">✅ 매시간 자동 갱신</span>
+    <span class="chip chip-b">Seoul · Busan · Incheon · Daegu</span>
+    <span class="chip chip-k">계절별 현실적 날씨</span>
+    <span class="chip chip-k">포트 8090</span>
+  </div>
+</div>
+
+<!-- 무엇이 달라지나 -->
+<section id="what">
+  <div class="sl">What Changed</div>
+  <div class="sh">무엇이 달라지나</div>
+  <div class="ss">Airflow + OpenWeatherMap 의존성을 Spring Boot 내부 Mock 생성기로 대체합니다</div>
+
+  <div class="diff">
+    <div class="diff-box diff-old">
+      <div class="diff-t t-o">❌ 기존 방식 (외부 API 필요)</div>
+      <div class="diff-item"><span class="ic">🔑</span><span>OpenWeatherMap API 키 필요 (발급 2시간 대기)</span></div>
+      <div class="diff-item"><span class="ic">✈️</span><span>Airflow DAG 실행 필요 (weather_etl_pipeline)</span></div>
+      <div class="diff-item"><span class="ic">🌐</span><span>인터넷 연결 필수</span></div>
+      <div class="diff-item"><span class="ic">⏱️</span><span>첫 데이터 수집까지 최소 1시간 대기</span></div>
+      <div class="diff-item"><span class="ic">💸</span><span>무료 플랜 호출 한도 (1,000회/일)</span></div>
+    </div>
+    <div class="diff-box diff-new">
+      <div class="diff-t t-n">✅ 새 방식 (완전 자체 포함)</div>
+      <div class="diff-item"><span class="ic">🎉</span><span>API 키 불필요 — 설정 없음</span></div>
+      <div class="diff-item"><span class="ic">🚀</span><span>앱 시작 시 7일치 자동 시딩 (30초 내)</span></div>
+      <div class="diff-item"><span class="ic">📴</span><span>오프라인 환경에서도 동작</span></div>
+      <div class="diff-item"><span class="ic">⚡</span><span>시작 즉시 AI API 사용 가능</span></div>
+      <div class="diff-item"><span class="ic">♾️</span><span>호출 한도 없음, 원하는 만큼 생성</span></div>
+    </div>
+  </div>
+
+  <!-- 전체 흐름 -->
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 10px">새 데이터 흐름</h3>
+  <div class="flow">
+    <div class="fb" style="background:var(--green-l);border:1.5px solid var(--green-b)">
+      <div class="ft" style="color:var(--green)">DataSeederRunner</div>
+      <div class="fd">시작 시 7일 자동 시딩</div>
+    </div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--green-l);border:1.5px solid var(--green-b)">
+      <div class="ft" style="color:var(--green)">MockWeatherScheduler</div>
+      <div class="fd">매시간 자동 생성</div>
+    </div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--purple-l);border:1.5px solid var(--purple-b)">
+      <div class="ft" style="color:var(--purple)">weather.weather_data</div>
+      <div class="fd">PostgreSQL 저장</div>
+    </div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--amber-l);border:1.5px solid var(--amber-b)">
+      <div class="ft" style="color:var(--amber)">Spring Batch</div>
+      <div class="fd">분석·임베딩</div>
+    </div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--blue-l);border:1.5px solid var(--blue-b)">
+      <div class="ft" style="color:var(--blue)">Spring AI API</div>
+      <div class="fd">추천·RAG·리포트</div>
+    </div>
+  </div>
+</section>
+
+<!-- 추가 파일 -->
+<section id="files">
+  <div class="sl">New Files</div>
+  <div class="sh">추가할 파일 4개</div>
+  <div class="ss">기존 파일은 수정하지 않습니다. application.yml에 app.mock-weather 블록만 추가합니다.</div>
+
+  <div class="flist">
+    <div class="fitem">
+      <span class="badge b-new">NEW</span>
+      <span class="fitem-path">service/MockWeatherService.java</span>
+      <span class="fitem-desc">계절별 날씨 생성 + DB 저장 핵심 서비스</span>
+    </div>
+    <div class="fitem">
+      <span class="badge b-new">NEW</span>
+      <span class="fitem-path">service/DataSeederRunner.java</span>
+      <span class="fitem-desc">앱 시작 시 데이터 없으면 자동 시딩 (ApplicationRunner)</span>
+    </div>
+    <div class="fitem">
+      <span class="badge b-new">NEW</span>
+      <span class="fitem-path">scheduler/MockWeatherScheduler.java</span>
+      <span class="fitem-desc">매시간 @Scheduled 자동 날씨 생성</span>
+    </div>
+    <div class="fitem">
+      <span class="badge b-new">NEW</span>
+      <span class="fitem-path">controller/MockWeatherController.java</span>
+      <span class="fitem-desc">REST API — /api/mock/status, /generate, /seed, /latest</span>
+    </div>
+    <div class="fitem">
+      <span class="badge b-mod">MODIFY</span>
+      <span class="fitem-path">resources/application.yml</span>
+      <span class="fitem-desc">app.mock-weather 블록 추가 (4줄)</span>
+    </div>
+    <div class="fitem">
+      <span class="badge b-keep">OPTIONAL</span>
+      <span class="fitem-path">scripts/weather_seed.sql</span>
+      <span class="fitem-desc">Spring Boot 없이 SQL만으로 데이터 생성하는 대안</span>
+    </div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-h"><span>application.yml — 추가할 4줄 (spring: 블록과 같은 레벨)</span></div>
+    <pre><code class="language-yaml">app:
+  mock-weather:
+    enabled: true               # false 로 스케줄 정지
+    auto-seed-on-startup: true  # 시작 시 자동 시딩
+    seed-days: 7                # 히스토리 일수
+    schedule: "0 0 * * * *"    # 매시간 정각 (cron)</code></pre>
+  </div>
+</section>
+
+<!-- STEP 1 -->
+<section id="s1">
+  <div class="sl">Step 1</div>
+  <div class="sh">DB 서비스 시작 확인</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-h"><div class="step-n">1</div><div class="step-t">기존 Docker 스택 실행 확인</div></div>
+      <div class="step-b">
+        <p>Airflow는 이번 실행에 필요하지 않습니다. PostgreSQL과 Ollama만 확인하세요.</p>
+        <div class="cb"><div class="cb-h"><span>PowerShell / bash</span></div>
+<pre><code class="language-bash"># 실행 중인 컨테이너 확인
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# 반드시 실행 중이어야 하는 컨테이너
+#  mds_postgres   ← PostgreSQL (날씨 데이터 저장)
+#  mds_ollama     ← Ollama LLM (AI 응답)
+#
+# Airflow는 없어도 됩니다 ✅</code></pre></div>
+        <div class="cb"><div class="cb-h"><span>PostgreSQL + pgvector 확인</span></div>
+<pre><code class="language-bash">docker exec mds_postgres psql -U airflow -d airflow \
+  -c "SELECT extversion FROM pg_extension WHERE extname='vector';"
+# → 0.7.x 가 출력되어야 함 (없으면 pgvector 설치 필요)</code></pre></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">2</div><div class="step-t">weather · analytics 스키마 생성 (최초 1회)</div></div>
+      <div class="step-b">
+        <div class="cb"><div class="cb-h"><span>bash</span></div>
+<pre><code class="language-bash"># weather 스키마 (weather_init.sql 이미 실행했다면 스킵)
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "CREATE SCHEMA IF NOT EXISTS weather;
+      CREATE TABLE IF NOT EXISTS weather.weather_data (
+          id SERIAL PRIMARY KEY, city VARCHAR(100), country VARCHAR(10),
+          description VARCHAR(200), temperature_c NUMERIC(5,2),
+          feels_like_c NUMERIC(5,2), temp_min_c NUMERIC(5,2), temp_max_c NUMERIC(5,2),
+          pressure_hpa INTEGER, humidity_pct INTEGER,
+          wind_speed_ms NUMERIC(6,2), wind_deg INTEGER,
+          visibility_m INTEGER, cloudiness_pct INTEGER,
+          time_of_record TIMESTAMP, sunrise_time TIMESTAMP, sunset_time TIMESTAMP,
+          collected_at TIMESTAMP DEFAULT NOW()
+      );"
+
+# analytics 스키마
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "CREATE SCHEMA IF NOT EXISTS analytics;
+      CREATE TABLE IF NOT EXISTS analytics.weather_sales_corr (
+          id SERIAL PRIMARY KEY, city VARCHAR(100), weather_desc VARCHAR(200),
+          avg_temp_c NUMERIC(5,2), total_orders INTEGER DEFAULT 0,
+          total_revenue NUMERIC(14,2) DEFAULT 0, top_category VARCHAR(100),
+          calc_date DATE DEFAULT CURRENT_DATE, created_at TIMESTAMP DEFAULT NOW(),
+          UNIQUE(city, calc_date)
+      );
+      CREATE TABLE IF NOT EXISTS analytics.embedding_log (
+          id SERIAL PRIMARY KEY, source_type VARCHAR(50),
+          source_id BIGINT, embedded_at TIMESTAMP DEFAULT NOW(),
+          UNIQUE(source_type, source_id)
+      );"</code></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 2 -->
+<section id="s2">
+  <div class="sl">Step 2</div>
+  <div class="sh">Spring Boot 앱 빌드 & 실행</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-h"><div class="step-n">1</div><div class="step-t">파일 배치 및 빌드</div></div>
+      <div class="step-b">
+        <p>4개 신규 Java 파일을 기존 프로젝트에 추가하고 application.yml을 수정합니다.</p>
+        <div class="cb"><div class="cb-h"><span>파일 배치</span></div>
+<pre><code class="language-bash">cd weather-commerce-ai
+
+# 신규 파일 복사
+cp weather-mock/src/main/java/com/mds/weather/service/MockWeatherService.java \
+   src/main/java/com/mds/weather/service/
+cp weather-mock/src/main/java/com/mds/weather/service/DataSeederRunner.java \
+   src/main/java/com/mds/weather/service/
+cp weather-mock/src/main/java/com/mds/weather/scheduler/MockWeatherScheduler.java \
+   src/main/java/com/mds/weather/scheduler/
+cp weather-mock/src/main/java/com/mds/weather/controller/MockWeatherController.java \
+   src/main/java/com/mds/weather/controller/
+
+# application.yml 에 app.mock-weather 블록 추가 (위 설정 참고)
+
+# 빌드
+./gradlew build -x test</code></pre></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">2</div><div class="step-t">앱 실행 — 자동 시딩 로그 확인</div></div>
+      <div class="step-b">
+        <div class="cb"><div class="cb-h"><span>실행</span></div>
+<pre><code class="language-bash">./gradlew bootRun
+
+# 또는
+java -jar build/libs/weather-commerce-ai-1.0.0.jar</code></pre></div>
+
+        <p>시작 로그에서 아래 메시지를 확인하세요:</p>
+        <div class="output">
+<span class="ok">┌─────────────────────────────────────────</span>
+<span class="ok">│  [DataSeeder] 날씨 데이터 없음 감지</span>
+<span class="ok">│  7일치 Mock 데이터 자동 생성 시작...</span>
+<span class="ok">└─────────────────────────────────────────</span>
+...
+<span class="ok">┌─────────────────────────────────────────</span>
+<span class="ok">│  [DataSeeder] 시딩 완료!</span>
+<span class="ok">│  생성 건수: 112건</span>
+<span class="ok">│  소요 시간: 847ms</span>
+<span class="ok">│  AI API 사용 가능: http://localhost:8090</span>
+<span class="ok">└─────────────────────────────────────────</span>
+<span class="cm">... Started WeatherCommerceApplication in 12.3 seconds</span>
+</div>
+        <div class="al a-ok"><span class="al-i">✅</span><div>시딩 완료 메시지 후 Spring Boot 시작이 완료되면 모든 AI API를 바로 사용할 수 있습니다.</div></div>
+        <div class="al a-info"><span class="al-i">ℹ️</span><div>두 번째 시작부터는 데이터가 이미 있으므로 <code>[DataSeeder] 기존 날씨 데이터 N건 — 시딩 스킵</code> 메시지가 출력됩니다.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 3 데이터 확인 -->
+<section id="s3">
+  <div class="sl">Step 3</div>
+  <div class="sh">데이터 확인</div>
+  <div class="ss">DB 쿼리와 REST API로 생성된 데이터를 검증합니다</div>
+
+  <div class="ck">
+    <div class="ck-item">
+      <div class="ck-h"><div class="num">①</div>Mock API로 상태 확인 (가장 쉬움)</div>
+      <div class="ck-body">
+        <div class="cb"><div class="cb-h"><span>curl</span></div>
+<pre><code class="language-bash">curl http://localhost:8090/api/mock/status</code></pre></div>
+        <div class="output"><span class="st">{</span>
+  <span class="kw">"status"</span>:       <span class="ok">"✅ READY"</span>,
+  <span class="kw">"totalRecords"</span>: <span class="nu">112</span>,
+  <span class="kw">"cities"</span>:       <span class="ok">["Seoul","Busan","Incheon","Daegu"]</span>,
+  <span class="kw">"aiApis"</span>: {
+    <span class="kw">"recommend"</span>: <span class="ok">"✅ 사용 가능"</span>,
+    <span class="kw">"chat"</span>:      <span class="ok">"✅ 사용 가능 (배치 후 RAG 가능)"</span>,
+    <span class="kw">"report"</span>:    <span class="ok">"✅ 사용 가능 (배치 후)"</span>
+  }
+<span class="st">}</span></div>
+      </div>
+    </div>
+
+    <div class="ck-item">
+      <div class="ck-h"><div class="num">②</div>최신 도시별 날씨 확인</div>
+      <div class="ck-body">
+        <div class="cb"><div class="cb-h"><span>curl</span></div>
+<pre><code class="language-bash">curl http://localhost:8090/api/mock/latest</code></pre></div>
+        <div class="output"><span class="st">{</span>
+  <span class="kw">"count"</span>: <span class="nu">4</span>,
+  <span class="kw">"weather"</span>: [
+    { <span class="kw">"city"</span>: <span class="ok">"Busan"</span>,   <span class="kw">"temperature_c"</span>: <span class="nu">24.3</span>, <span class="kw">"description"</span>: <span class="ok">"clear sky"</span>,   <span class="kw">"humidity_pct"</span>: <span class="nu">65</span> },
+    { <span class="kw">"city"</span>: <span class="ok">"Daegu"</span>,   <span class="kw">"temperature_c"</span>: <span class="nu">26.1</span>, <span class="kw">"description"</span>: <span class="ok">"scattered clouds"</span>, <span class="kw">"humidity_pct"</span>: <span class="nu">61</span> },
+    { <span class="kw">"city"</span>: <span class="ok">"Incheon"</span>, <span class="kw">"temperature_c"</span>: <span class="nu">21.7</span>, <span class="kw">"description"</span>: <span class="ok">"broken clouds"</span>,   <span class="kw">"humidity_pct"</span>: <span class="nu">68</span> },
+    { <span class="kw">"city"</span>: <span class="ok">"Seoul"</span>,   <span class="kw">"temperature_c"</span>: <span class="nu">22.8</span>, <span class="kw">"description"</span>: <span class="ok">"few clouds"</span>,      <span class="kw">"humidity_pct"</span>: <span class="nu">64</span> }
+  ]
+<span class="st">}</span></div>
+      </div>
+    </div>
+
+    <div class="ck-item">
+      <div class="ck-h"><div class="num">③</div>PostgreSQL 직접 확인</div>
+      <div class="ck-body">
+        <div class="cb"><div class="cb-h"><span>PowerShell / bash</span></div>
+<pre><code class="language-bash">docker exec mds_postgres psql -U airflow -d airflow -c "
+SELECT city,
+       COUNT(*)                          AS 건수,
+       ROUND(AVG(temperature_c)::NUMERIC,1) AS 평균기온,
+       ROUND(AVG(humidity_pct)::NUMERIC,0)  AS 평균습도,
+       MIN(collected_at::DATE)           AS 시작일,
+       MAX(collected_at::DATE)           AS 종료일
+FROM weather.weather_data
+GROUP BY city ORDER BY city;"</code></pre></div>
+        <div class="output"> city    | 건수 | 평균기온 | 평균습도 | 시작일     | 종료일
+---------+------+----------+----------+------------+------------
+ Busan   |   28 |    24.8  |      65  | 2025-05-06 | 2025-05-13
+ Daegu   |   28 |    26.3  |      63  | 2025-05-06 | 2025-05-13
+ Incheon |   28 |    21.9  |      67  | 2025-05-06 | 2025-05-13
+ Seoul   |   28 |    22.6  |      66  | 2025-05-06 | 2025-05-13
+<span class="cm">(4 rows)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 4 AI API 테스트 -->
+<section id="s4">
+  <div class="sl">Step 4</div>
+  <div class="sh">AI API 순서대로 테스트</div>
+  <div class="ss">Ollama llama3.2가 실행 중이어야 합니다. 첫 응답은 10~30초 소요됩니다.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-h"><div class="step-n">1</div><div class="step-t">상품 추천 API (즉시 사용 가능)</div></div>
+      <div class="step-b">
+        <p>날씨 + 구매 이력 기반 개인화 추천. 데이터 시딩 직후 사용 가능합니다.</p>
+        <div class="cb"><div class="cb-h"><span>curl — 익명 추천 (구매 이력 불필요)</span></div>
+<pre><code class="language-bash">curl "http://localhost:8090/api/recommend/anonymous?city=Seoul"</code></pre></div>
+        <div class="cb"><div class="cb-h"><span>curl — 고객 맞춤 추천</span></div>
+<pre><code class="language-bash">curl "http://localhost:8090/api/recommend?city=Busan&customerId=1"</code></pre></div>
+        <div class="output"><span class="st">{</span>
+  <span class="kw">"city"</span>: <span class="ok">"Seoul"</span>,
+  <span class="kw">"recommendation"</span>: <span class="ok">"현재 서울의 날씨는 22.8°C, 흐린 구름이 조금 있는 날씨입니다. 이런 날씨에는...
+
+1. **경량 아우터** (가디건, 바람막이)
+   - 이유: 기온이 쾌적하나 저녁에는 서늘해질 수 있어 가볍게 걸칠 옷이 필요합니다.
+   - 추천 문구: '오늘 같은 날, 스타일과 편안함을 동시에!'
+
+2. **커피/음료**
+   ..."</span>
+<span class="st">}</span></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">2</div><div class="step-t">Batch 실행 → RAG & 리포트 준비</div></div>
+      <div class="step-b">
+        <p>RAG 채팅과 리포트 API는 Batch가 먼저 실행되어야 합니다.</p>
+        <div class="cb"><div class="cb-h"><span>curl — Batch 순서대로 실행</span></div>
+<pre><code class="language-bash"># ① 날씨-매출 상관 분석 (analytics 테이블 채우기)
+curl -X POST http://localhost:8090/api/batch/run/weather-analysis
+
+# ② 임베딩 인덱스 생성 (RAG 준비)
+curl -X POST http://localhost:8090/api/batch/run/embedding-index</code></pre></div>
+        <div class="output"><span class="st">{</span>
+  <span class="kw">"jobName"</span>: <span class="ok">"weather-analysis"</span>,
+  <span class="kw">"status"</span>:  <span class="ok">"COMPLETED"</span>,
+  <span class="kw">"startTime"</span>: <span class="ok">"2025-05-13T14:32:11"</span>
+<span class="st">}</span></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">3</div><div class="step-t">RAG 채팅 (Batch 완료 후)</div></div>
+      <div class="step-b">
+        <div class="cb"><div class="cb-h"><span>curl</span></div>
+<pre><code class="language-bash"># 날씨-매출 관련 자연어 질문
+curl -X POST http://localhost:8090/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question": "비 오는 날 어떤 상품 카테고리 매출이 높았어?"}'
+
+# 도시 필터 질문
+curl -X POST http://localhost:8090/api/chat/city \
+  -H "Content-Type: application/json" \
+  -d '{"question": "기온이 25도 이상일 때 인기 상품은?", "city": "Daegu"}'</code></pre></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="step-n">4</div><div class="step-t">AI 인사이트 리포트 (Batch 완료 후)</div></div>
+      <div class="step-b">
+        <div class="cb"><div class="cb-h"><span>curl</span></div>
+<pre><code class="language-bash"># 7일치 전체 리포트
+curl "http://localhost:8090/api/report?days=7"
+
+# 도시별 리포트
+curl "http://localhost:8090/api/report/city?city=Seoul"</code></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 5 -->
+<section id="s5">
+  <div class="sl">Step 5</div>
+  <div class="sh">Superset 대시보드 연동</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-h"><div class="step-n">✓</div><div class="step-t">Superset에서 날씨 데이터 시각화</div></div>
+      <div class="step-b">
+        <div class="cb"><div class="cb-h"><span>Superset SQL Lab 확인 쿼리</span></div>
+<pre><code class="language-sql">-- 1. 도시별 기온 트렌드
+SELECT DATE_TRUNC('hour', collected_at) AS hour,
+       city, AVG(temperature_c) AS avg_temp
+FROM weather.weather_data
+WHERE collected_at >= NOW() - INTERVAL '7 days'
+GROUP BY 1, 2 ORDER BY 1;
+
+-- 2. 날씨별 매출 상관관계 (Batch 실행 후)
+SELECT city, weather_desc, avg_temp_c,
+       total_orders, total_revenue, top_category
+FROM analytics.weather_sales_corr
+ORDER BY calc_date DESC, city;
+
+-- 3. RAG 임베딩 인덱스 현황
+SELECT COUNT(*) AS embedded_docs FROM public.vector_store;</code></pre></div>
+        <div class="al a-info"><span class="al-i">💡</span><div>Superset은 <a href="http://localhost:8088" target="_blank">localhost:8088</a> (admin/admin) → SQL Lab → Database: postgres → Schema: weather 선택</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 전체 API 레퍼런스 -->
+<section id="api">
+  <div class="sl">API Reference</div>
+  <div class="sh">전체 API 목록 (포트 8090)</div>
+
+  <table class="at">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>설명</th><th>선행 조건</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="mg">GET</span></td>
+        <td><span class="ep">/api/mock/status</span></td>
+        <td>데이터 현황 + AI API 준비 상태</td>
+        <td>없음</td>
+      </tr>
+      <tr>
+        <td><span class="mp">POST</span></td>
+        <td><span class="ep">/api/mock/generate</span></td>
+        <td>현재 시각 4개 도시 날씨 즉시 생성</td>
+        <td>없음</td>
+      </tr>
+      <tr>
+        <td><span class="mp">POST</span></td>
+        <td><span class="ep">/api/mock/seed?days=7</span></td>
+        <td>N일치 히스토리 데이터 일괄 생성</td>
+        <td>없음</td>
+      </tr>
+      <tr>
+        <td><span class="mg">GET</span></td>
+        <td><span class="ep">/api/mock/latest</span></td>
+        <td>도시별 최신 날씨 1건씩 조회</td>
+        <td>시딩 완료</td>
+      </tr>
+      <tr style="border-top:2px solid var(--border)">
+        <td><span class="mg">GET</span></td>
+        <td><span class="ep">/api/recommend/anonymous?city=Seoul</span></td>
+        <td>날씨 기반 익명 추천</td>
+        <td>시딩 완료</td>
+      </tr>
+      <tr>
+        <td><span class="mg">GET</span></td>
+        <td><span class="ep">/api/recommend?city=Seoul&customerId=1</span></td>
+        <td>고객 맞춤 AI 추천</td>
+        <td>시딩 완료</td>
+      </tr>
+      <tr style="border-top:2px solid var(--border)">
+        <td><span class="mp">POST</span></td>
+        <td><span class="ep">/api/batch/run/weather-analysis</span></td>
+        <td>날씨-매출 분석 Batch 실행</td>
+        <td>시딩 완료</td>
+      </tr>
+      <tr>
+        <td><span class="mp">POST</span></td>
+        <td><span class="ep">/api/batch/run/embedding-index</span></td>
+        <td>RAG 임베딩 인덱스 생성</td>
+        <td>Batch 완료</td>
+      </tr>
+      <tr style="border-top:2px solid var(--border)">
+        <td><span class="mp">POST</span></td>
+        <td><span class="ep">/api/chat</span></td>
+        <td>RAG 날씨-매출 Q&A</td>
+        <td>임베딩 완료</td>
+      </tr>
+      <tr>
+        <td><span class="mp">POST</span></td>
+        <td><span class="ep">/api/chat/city</span></td>
+        <td>도시 필터 RAG Q&A</td>
+        <td>임베딩 완료</td>
+      </tr>
+      <tr>
+        <td><span class="mg">GET</span></td>
+        <td><span class="ep">/api/report?days=7</span></td>
+        <td>AI 마케팅 인사이트 리포트</td>
+        <td>Batch 완료</td>
+      </tr>
+      <tr>
+        <td><span class="mg">GET</span></td>
+        <td><span class="ep">/api/report/city?city=Seoul</span></td>
+        <td>도시별 리포트</td>
+        <td>Batch 완료</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 생성 데이터 이해 -->
+<section id="data">
+  <div class="sl">Generated Data</div>
+  <div class="sh">생성 데이터 이해하기</div>
+  <div class="ss">한국 기후 패턴을 기반으로 계절별 현실적인 날씨 데이터를 생성합니다</div>
+
+  <h3 style="font-size:15px;font-weight:700;margin-bottom:10px">월별 기온 (서울 기준)</h3>
+  <table class="st">
+    <thead><tr><th>월</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th></tr></thead>
+    <tbody>
+      <tr><td>평균기온(°C)</td><td>-2</td><td>0</td><td>7</td><td>13</td><td>18</td><td>23</td><td>27</td><td>28</td><td>22</td><td>15</td><td>7</td><td>1</td></tr>
+      <tr><td>평균습도(%)</td><td>55</td><td>55</td><td>58</td><td>62</td><td>65</td><td>75</td><td>82</td><td>82</td><td>70</td><td>62</td><td>62</td><td>58</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;font-weight:700;margin:18px 0 8px">도시별 기온 오프셋 (서울 기준)</h3>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+    <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center">
+      <div style="font-size:22px;margin-bottom:4px">🏙️</div>
+      <div style="font-weight:700;margin-bottom:2px">Seoul</div>
+      <div style="font-family:var(--mono);color:var(--ink3)">± 0.0°C (기준)</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center">
+      <div style="font-size:22px;margin-bottom:4px">🌊</div>
+      <div style="font-weight:700;margin-bottom:2px">Busan</div>
+      <div style="font-family:var(--mono);color:var(--blue)">+ 2.5°C (해양성)</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center">
+      <div style="font-size:22px;margin-bottom:4px">🛳️</div>
+      <div style="font-weight:700;margin-bottom:2px">Incheon</div>
+      <div style="font-family:var(--mono);color:var(--ink3)">- 1.0°C (해풍)</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center">
+      <div style="font-size:22px;margin-bottom:4px">🌡️</div>
+      <div style="font-weight:700;margin-bottom:2px">Daegu</div>
+      <div style="font-family:var(--mono);color:var(--red)">+ 3.5°C (분지)</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin-bottom:8px">날씨 설명 결정 기준 (습도 기반)</h3>
+  <div class="cb"><div class="cb-h"><span>MockWeatherService.java — resolveDescription()</span></div>
+<pre><code class="language-java">if (month IN [12,1,2] && temp < 1.0°C && humidity > 70%) → "light snow"
+if (humidity > 85%) → "heavy rain" | "thunderstorm"
+if (humidity > 75%) → "moderate rain"
+if (humidity > 67%) → "light rain"
+if (humidity > 60%) → "overcast clouds"
+if (humidity > 53%) → "broken clouds"
+if (humidity > 45%) → "scattered clouds"
+else               → "clear sky" | "few clouds"</code></pre></div>
+</section>
+
+<!-- 트러블슈팅 -->
+<section id="trouble">
+  <div class="sl">Troubleshooting</div>
+  <div class="sh">트러블슈팅</div>
+
+  <div class="ck">
+    <div class="ck-item">
+      <div class="ck-h" style="background:var(--red-l)"><div class="num" style="background:var(--red)">!</div>시작 시 "relation weather.weather_data does not exist"</div>
+      <div class="ck-body">
+        <p style="font-size:13px;color:var(--ink2)">weather 스키마가 없습니다. Step 1의 스키마 생성 명령을 실행하거나:</p>
+        <div class="cb"><div class="cb-h"><span>bash</span></div>
+<pre><code class="language-bash">docker exec mds_postgres psql -U airflow -d airflow \
+  -c "CREATE SCHEMA IF NOT EXISTS weather;"
+# 이후 weather_init.sql 실행 또는 Step 1의 CREATE TABLE 명령 실행</code></pre></div>
+      </div>
+    </div>
+    <div class="ck-item">
+      <div class="ck-h" style="background:var(--red-l)"><div class="num" style="background:var(--red)">!</div>status API에서 totalRecords = 0</div>
+      <div class="ck-body">
+        <p style="font-size:13px;color:var(--ink2)">DataSeederRunner가 실패했거나 auto-seed가 꺼진 경우. 수동으로 시딩하세요:</p>
+        <div class="cb"><div class="cb-h"><span>curl</span></div>
+<pre><code class="language-bash">curl -X POST "http://localhost:8090/api/mock/seed?days=7"</code></pre></div>
+      </div>
+    </div>
+    <div class="ck-item">
+      <div class="ck-h" style="background:var(--red-l)"><div class="num" style="background:var(--red)">!</div>RAG 채팅 응답이 "관련 데이터를 찾을 수 없습니다"</div>
+      <div class="ck-body">
+        <p style="font-size:13px;color:var(--ink2)">임베딩 인덱스 미생성. Batch Job 2를 실행하세요:</p>
+        <div class="cb"><div class="cb-h"><span>curl</span></div>
+<pre><code class="language-bash">curl -X POST http://localhost:8090/api/batch/run/embedding-index
+# 완료 후 vector_store 테이블 건수 확인
+docker exec mds_postgres psql -U airflow -d airflow \
+  -c "SELECT COUNT(*) FROM public.vector_store;"</code></pre></div>
+      </div>
+    </div>
+    <div class="ck-item">
+      <div class="ck-h" style="background:var(--red-l)"><div class="num" style="background:var(--red)">!</div>AI 응답이 매우 느림 (30초 이상)</div>
+      <div class="ck-body">
+        <p style="font-size:13px;color:var(--ink2)">CPU-only 환경에서 llama3.2(3B)의 정상 속도입니다. 빠른 테스트를 원하면:</p>
+        <div class="cb"><div class="cb-h"><span>application.yml 변경</span></div>
+<pre><code class="language-yaml">spring:
+  ai:
+    ollama:
+      chat:
+        model: llama3.2:1b   # 3B → 1B 로 변경 (약 3배 빠름)</code></pre></div>
+      </div>
+    </div>
+    <div class="ck-item">
+      <div class="ck-h" style="background:var(--amber-l)"><div class="num" style="background:var(--amber)">?</div>더 많은 날씨 데이터를 빠르게 만들고 싶을 때</div>
+      <div class="ck-body">
+        <p style="font-size:13px;color:var(--ink2)">SQL 방식이 Java보다 훨씬 빠릅니다 (112건 → 0.1초):</p>
+        <div class="cb"><div class="cb-h"><span>bash</span></div>
+<pre><code class="language-bash">docker cp scripts/weather_seed.sql mds_postgres:/tmp/
+docker exec mds_postgres psql -U airflow -d airflow \
+  -f /tmp/weather_seed.sql</code></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+const obs = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if(e.isIntersecting){
+      document.querySelectorAll('nav a').forEach(l => l.classList.remove('on'));
+      const l = document.querySelector(`nav a[href="#${e.target.id}"]`);
+      if(l) l.classList.add('on');
+    }
+  });
+},{rootMargin:'-15% 0px -75% 0px'});
+document.querySelectorAll('section[id],.hero[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

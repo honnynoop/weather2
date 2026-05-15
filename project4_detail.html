@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>날씨 × 커머스 AI 플랫폼 — 프로젝트 4 상세 가이드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Variables ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --ink:#111827;
+  --ink2:#374151;
+  --ink3:#6b7280;
+  --rule:#e5e7eb;
+  --rule2:#f3f4f6;
+  --blue:#1e3a8a;
+  --blue-m:#2563eb;
+  --blue-l:#eff6ff;
+  --blue-b:#bfdbfe;
+  --teal:#0f766e;
+  --teal-l:#f0fdfa;
+  --teal-b:#99f6e4;
+  --amber:#92400e;
+  --amber-l:#fffbeb;
+  --amber-b:#fde68a;
+  --green:#166534;
+  --green-l:#f0fdf4;
+  --green-b:#bbf7d0;
+  --purple:#5b21b6;
+  --purple-l:#f5f3ff;
+  --purple-b:#ddd6fe;
+  --red:#991b1b;
+  --red-l:#fef2f2;
+  --red-b:#fecaca;
+  --mono:'JetBrains Mono',monospace;
+  --serif:'Fraunces','Noto Sans KR',serif;
+  --sans:'Noto Sans KR',sans-serif;
+}
+body{font-family:var(--sans);background:#fff;color:var(--ink);font-size:15px;line-height:1.75}
+a{color:var(--blue-m)}
+
+/* ─── Nav ─── */
+.sidenav{position:fixed;top:0;left:0;width:210px;height:100vh;background:#fafafa;border-right:1px solid var(--rule);overflow-y:auto;padding:20px 0 40px;z-index:200}
+.sidenav-logo{padding:0 18px 16px;border-bottom:1px solid var(--rule);margin-bottom:10px}
+.sidenav-logo .t{font-family:var(--serif);font-size:14px;font-weight:700;color:var(--blue);line-height:1.3}
+.sidenav-logo .s{font-size:11px;color:var(--ink3);margin-top:3px}
+.nav-grp{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);padding:12px 18px 3px}
+.sidenav a{display:block;padding:6px 18px;font-size:12.5px;color:var(--ink2);border-left:2px solid transparent;text-decoration:none;transition:all .12s}
+.sidenav a:hover,.sidenav a.on{background:var(--blue-l);color:var(--blue);border-left-color:var(--blue)}
+.sidenav a.on{font-weight:500}
+
+/* ─── Layout ─── */
+main{margin-left:210px}
+
+/* ─── Hero ─── */
+.hero{background:#fff;border-bottom:2px solid var(--ink);padding:64px 72px 52px;position:relative;overflow:hidden}
+.hero::after{content:'4';position:absolute;right:-20px;bottom:-40px;font-family:var(--serif);font-size:380px;font-weight:700;color:#f3f4f6;line-height:1;pointer-events:none;user-select:none}
+.hero .eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:14px}
+.hero h1{font-family:var(--serif);font-size:48px;font-weight:700;color:var(--ink);line-height:1.15;margin-bottom:18px;position:relative;z-index:1}
+.hero h1 em{font-style:italic;color:var(--blue)}
+.hero .lead{font-size:16px;color:var(--ink2);max-width:580px;line-height:1.75;position:relative;z-index:1}
+.hero .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px;position:relative;z-index:1}
+.tag{display:inline-block;font-size:11.5px;padding:4px 12px;border-radius:3px;font-family:var(--mono);letter-spacing:.3px}
+.tag-b{background:var(--blue);color:#fff}
+.tag-o{background:#fff;color:var(--ink);border:1.5px solid var(--rule)}
+.tag-t{background:var(--teal);color:#fff}
+.tag-a{background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-b)}
+
+/* ─── Section ─── */
+section{padding:56px 72px;border-bottom:1px solid var(--rule)}
+section:last-child{border-bottom:none}
+.sec-label{font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.sec-h{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--ink);margin-bottom:8px;line-height:1.25}
+.sec-sub{font-size:14px;color:var(--ink3);margin-bottom:32px}
+h3.block-h{font-size:17px;font-weight:700;color:var(--ink);margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+h3.block-h .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ─── 4 Project Cards ─── */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px}
+.card{border:1.5px solid var(--rule);border-radius:10px;padding:22px 24px;cursor:default;transition:box-shadow .15s;background:#fff}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.card.featured{border:2px solid var(--blue);background:var(--blue-l);position:relative}
+.card.featured::before{content:'추천';position:absolute;top:-11px;right:16px;background:var(--blue);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 10px;border-radius:20px;font-family:var(--mono)}
+.card-no{font-size:11px;color:var(--ink3);font-weight:700;margin-bottom:6px}
+.card-icon{font-size:26px;margin-bottom:8px}
+.card-t{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.card-d{font-size:12.5px;color:var(--ink3);line-height:1.65;margin-bottom:12px}
+.card-tags{display:flex;flex-wrap:wrap;gap:5px}
+.ctag{font-size:10.5px;padding:2px 8px;border-radius:3px;font-family:var(--mono)}
+.ctag-b{background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-b)}
+.ctag-t{background:var(--teal-l);color:var(--teal);border:1px solid var(--teal-b)}
+.ctag-a{background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-b)}
+.ctag-g{background:var(--green-l);color:var(--green);border:1px solid var(--green-b)}
+.ctag-p{background:var(--purple-l);color:var(--purple);border:1px solid var(--purple-b)}
+
+/* ─── Architecture SVG wrapper ─── */
+.arch-wrap{background:#fafafa;border:1.5px solid var(--rule);border-radius:12px;padding:28px;margin:24px 0;overflow-x:auto}
+.arch-wrap svg{display:block;margin:0 auto;width:100%;max-width:820px}
+
+/* ─── Detail grid ─── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.dcard{border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.dcard-head{padding:12px 16px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--rule)}
+.dcard-body{padding:14px 16px;font-size:13px;color:var(--ink2);line-height:1.75}
+.dcard-body ul{padding-left:18px}
+.dcard-body li{margin-bottom:4px}
+.dh-b{background:var(--blue-l);color:var(--blue)}
+.dh-t{background:var(--teal-l);color:var(--teal)}
+.dh-a{background:var(--amber-l);color:var(--amber)}
+.dh-g{background:var(--green-l);color:var(--green)}
+.dh-p{background:var(--purple-l);color:var(--purple)}
+
+/* ─── Code block ─── */
+.cb{border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:14px 0;font-size:0}
+.cb-hd{background:var(--rule2);padding:7px 14px;font-family:var(--mono);font-size:11.5px;color:var(--ink3);border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between}
+.cb pre{background:#1e1e2e;margin:0;padding:18px 20px;overflow-x:auto}
+.cb pre code{font-family:var(--mono)!important;font-size:12.5px!important;line-height:1.7;color:#cdd6f4}
+/* Minimal syntax highlight */
+.kw{color:#89b4fa}.st{color:#a6e3a1}.cm{color:#6c7086;font-style:italic}
+.fn{color:#89dceb}.num{color:#fab387}.py{color:#cba6f7}
+
+/* ─── API table ─── */
+.api-t{width:100%;border-collapse:collapse;border:1px solid var(--rule);border-radius:8px;overflow:hidden;font-size:13px;margin:14px 0}
+.api-t th{background:var(--rule2);padding:9px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);border-bottom:1px solid var(--rule)}
+.api-t td{padding:11px 14px;border-bottom:1px solid var(--rule2);vertical-align:top}
+.api-t tr:last-child td{border-bottom:none}
+.mget{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:#dbeafe;color:#1e40af}
+.mpost{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:#dcfce7;color:#166534}
+.ep{font-family:var(--mono);font-size:12px;color:var(--ink)}
+
+/* ─── Flow ─── */
+.flow-row{display:flex;align-items:center;gap:0;overflow-x:auto;padding:4px 0;margin:12px 0}
+.fbox{flex-shrink:0;border-radius:7px;padding:14px 16px;text-align:center;min-width:140px}
+.farr{font-size:20px;color:var(--ink3);padding:0 10px;flex-shrink:0}
+.fb-t{font-family:var(--mono);font-size:11px;font-weight:600;margin-bottom:3px}
+.fb-d{font-size:11px;color:var(--ink3)}
+
+/* ─── Alert ─── */
+.al{padding:12px 16px;border-radius:7px;font-size:13.5px;margin:12px 0;display:flex;gap:9px}
+.al-i{flex-shrink:0;font-size:16px;line-height:1.5}
+.al-inf{background:var(--blue-l);border:1px solid var(--blue-b);color:#1e40af}
+.al-suc{background:var(--green-l);border:1px solid var(--green-b);color:var(--green)}
+.al-wrn{background:var(--amber-l);border:1px solid var(--amber-b);color:var(--amber)}
+
+/* ─── Stack pill row ─── */
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.pill{padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:6px}
+.pill-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+
+/* ─── Portfolio value ─── */
+.portfolio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.pv-card{border:1px solid var(--rule);border-radius:8px;padding:16px;text-align:center}
+.pv-n{font-family:var(--serif);font-size:32px;font-weight:700;color:var(--blue);margin-bottom:4px}
+.pv-l{font-size:12px;color:var(--ink3)}
+
+/* ─── Roadmap ─── */
+.roadmap{display:flex;flex-direction:column;gap:0;margin:16px 0}
+.rm-item{display:flex;gap:0}
+.rm-left{display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0}
+.rm-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.rm-line{width:2px;background:var(--rule);flex:1;min-height:20px}
+.rm-content{padding:0 0 28px 16px}
+.rm-phase{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.rm-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.rm-desc{font-size:13px;color:var(--ink3);line-height:1.65}
+
+@media(max-width:900px){
+  .sidenav{display:none}
+  main{margin-left:0}
+  section,.hero{padding:36px 24px}
+  .cards,.detail-grid,.portfolio-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── 사이드 네비 ─── -->
+<nav class="sidenav">
+  <div class="sidenav-logo">
+    <div class="t">⛅ Weather × Commerce AI</div>
+    <div class="s">프로젝트 4 상세 가이드</div>
+  </div>
+  <div class="nav-grp">Overview</div>
+  <a href="#compare">📋 4가지 프로젝트 비교</a>
+  <a href="#arch">🏗️ 전체 아키텍처</a>
+  <div class="nav-grp">Project 4 상세</div>
+  <a href="#overview4">💡 프로젝트 개요</a>
+  <a href="#stack">🧱 기술 스택</a>
+  <a href="#batch">⚙️ Spring Batch Jobs</a>
+  <a href="#ai">🤖 Spring AI 기능</a>
+  <a href="#api">🔌 REST API</a>
+  <a href="#dataflow">🔄 데이터 플로우</a>
+  <div class="nav-grp">실행</div>
+  <a href="#portfolio">🏆 포트폴리오 가치</a>
+  <a href="#roadmap">🗺️ 구현 로드맵</a>
+</nav>
+
+<main>
+
+<!-- ─── HERO ─── -->
+<div class="hero" id="top">
+  <div class="eyebrow">Spring Boot × Spring AI × Spring Batch × Airflow</div>
+  <h1>날씨 × 커머스<br><em>통합 AI 인텔리전스 플랫폼</em></h1>
+  <p class="lead">OpenWeatherMap ETL 파이프라인과 기존 커머스 DB를 연결하여, 날씨 기반 상품 추천·RAG 채팅·마케팅 리포트를 자동 생성하는 풀스택 AI 시스템입니다.</p>
+  <div class="tag-row">
+    <span class="tag tag-b">Spring Boot 3.3</span>
+    <span class="tag tag-b">Spring AI 1.0</span>
+    <span class="tag tag-b">Spring Batch 5</span>
+    <span class="tag tag-t">Ollama llama3.2</span>
+    <span class="tag tag-t">PgVector RAG</span>
+    <span class="tag tag-a">PostgreSQL 15</span>
+    <span class="tag tag-o">Airflow ETL 연동</span>
+    <span class="tag tag-o">포트 8090</span>
+  </div>
+</div>
+
+<!-- ─── 4가지 프로젝트 비교 ─── -->
+<section id="compare">
+  <div class="sec-label">Project Selection</div>
+  <div class="sec-h">4가지 프로젝트 아이디어</div>
+  <div class="sec-sub">기존 PostgreSQL(raw.orders, raw.customers, weather.weather_data)을 그대로 활용하는 조합입니다</div>
+
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-no">프로젝트 01 · 추천</div>
+      <div class="card-icon">✨</div>
+      <div class="card-t">날씨 기반 AI 상품 추천 API</div>
+      <div class="card-d">비가 오면 우산·장화 추천, 폭염엔 선풍기·냉음료. 현재 날씨 + 고객 구매 이력을 LLM에 전달해 개인화 추천 생성. 가장 구현이 단순하고 즉시 데모 가능.</div>
+      <div class="card-tags">
+        <span class="ctag ctag-b">Spring AI · ChatClient</span>
+        <span class="ctag ctag-a">Spring Batch · 점수계산</span>
+        <span class="ctag ctag-g">GET /recommend</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-no">프로젝트 02 · 마케팅</div>
+      <div class="card-icon">📧</div>
+      <div class="card-t">날씨 트리거 마케팅 자동화</div>
+      <div class="card-d">폭설·한파·폭염 감지 시 Spring Batch가 고객 세그먼트를 분류하고, Spring AI가 이메일·푸시 카피를 자동 생성. 이벤트 드리븐 구조로 운영 자동화.</div>
+      <div class="card-tags">
+        <span class="ctag ctag-a">Spring Batch · 세그먼트</span>
+        <span class="ctag ctag-b">Spring AI · 카피생성</span>
+        <span class="ctag ctag-t">Event-Driven</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-no">프로젝트 03 · RAG</div>
+      <div class="card-icon">💬</div>
+      <div class="card-t">날씨 × 매출 데이터 RAG 챗봇</div>
+      <div class="card-d">"비 올 때 어떤 상품이 잘 팔렸어?" → Spring AI QuestionAnswerAdvisor가 PgVector에서 관련 데이터 검색 후 자연어 답변. 벡터 DB 임베딩·검색 학습에 최적.</div>
+      <div class="card-tags">
+        <span class="ctag ctag-b">Spring AI · RAG</span>
+        <span class="ctag ctag-p">PgVector</span>
+        <span class="ctag ctag-a">Batch · 임베딩갱신</span>
+      </div>
+    </div>
+
+    <div class="card featured">
+      <div class="card-no">프로젝트 04 · 통합형</div>
+      <div class="card-icon">🧠</div>
+      <div class="card-t">날씨 × 커머스 통합 AI 인텔리전스</div>
+      <div class="card-d">1~3번을 단일 Spring Boot 애플리케이션에 통합. Batch가 날씨 분석·임베딩 인덱싱, AI가 추천·RAG·리포트를 동시 처리. 학습 밀도 최고, 포트폴리오 최강.</div>
+      <div class="card-tags">
+        <span class="ctag ctag-b">Spring Boot</span>
+        <span class="ctag ctag-b">Spring AI</span>
+        <span class="ctag ctag-a">Spring Batch</span>
+        <span class="ctag ctag-t">PgVector RAG</span>
+        <span class="ctag ctag-p">Ollama LLM</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="al al-inf">
+    <span class="al-i">💡</span>
+    <div>프로젝트 4는 1~3번의 완전한 슈퍼셋입니다. 하나만 구현하면 나머지도 자동으로 포함됩니다. 학습 순서는 <strong>1 → 3 → 2 → 4</strong> 순으로 난이도가 올라갑니다.</div>
+  </div>
+</section>
+
+<!-- ─── 아키텍처 다이어그램 ─── -->
+<section id="arch">
+  <div class="sec-label">System Architecture</div>
+  <div class="sec-h">전체 아키텍처</div>
+  <div class="sec-sub">기존 MDS Docker 환경(회색)에 신규 레이어(색상)를 추가합니다</div>
+
+  <div class="arch-wrap">
+    <svg viewBox="0 0 820 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="날씨 커머스 AI 시스템 전체 아키텍처 다이어그램">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M2 2 L8 5 L2 8" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="arb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M2 2 L8 5 L2 8" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <filter id="sh" x="-5%" y="-5%" width="110%" height="110%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".08"/>
+        </filter>
+      </defs>
+
+      <!-- ── 레이어 배경 ── -->
+      <!-- L1 수집 -->
+      <rect x="36" y="20" width="748" height="82" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="48" y="36" font-size="10" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1">LAYER 1 — 데이터 수집 (기존)</text>
+      <!-- L2 저장 -->
+      <rect x="36" y="118" width="748" height="106" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="48" y="134" font-size="10" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1">LAYER 2 — 저장소 (기존 PostgreSQL + 신규 스키마)</text>
+      <!-- L3 처리 -->
+      <rect x="36" y="240" width="748" height="168" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+      <text x="48" y="256" font-size="10" fill="#2563eb" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1">LAYER 3 — Spring Boot 애플리케이션 (신규 · 포트 8090)</text>
+      <!-- L4 API -->
+      <rect x="36" y="424" width="748" height="96" rx="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+      <text x="48" y="440" font-size="10" fill="#166534" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1">LAYER 4 — REST API 엔드포인트</text>
+
+      <!-- ── L1 박스 ── -->
+      <!-- OpenWeatherMap -->
+      <rect x="56" y="44" width="150" height="48" rx="7" fill="#fff" stroke="#e5e7eb" filter="url(#sh)"/>
+      <text x="131" y="63" text-anchor="middle" font-size="12" font-weight="600" fill="#374151" font-family="'Noto Sans KR',sans-serif">OpenWeatherMap</text>
+      <text x="131" y="81" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="'JetBrains Mono',monospace">Free API · HTTPS</text>
+
+      <!-- Airflow -->
+      <rect x="240" y="44" width="150" height="48" rx="7" fill="#fff" stroke="#e5e7eb" filter="url(#sh)"/>
+      <text x="315" y="63" text-anchor="middle" font-size="12" font-weight="600" fill="#374151" font-family="'Noto Sans KR',sans-serif">Airflow DAG</text>
+      <text x="315" y="81" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="'JetBrains Mono',monospace">@hourly · :8080</text>
+
+      <!-- L1 화살표 -->
+      <line x1="206" y1="68" x2="238" y2="68" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- ── L2 박스 ── -->
+      <!-- weather -->
+      <rect x="56" y="140" width="152" height="68" rx="7" fill="#fff" stroke="#ddd6fe" filter="url(#sh)"/>
+      <rect x="56" y="140" width="152" height="12" rx="7" fill="#ede9fe"/>
+      <rect x="56" y="146" width="152" height="6" fill="#ede9fe"/>
+      <text x="132" y="164" text-anchor="middle" font-size="11" font-weight="700" fill="#5b21b6" font-family="'JetBrains Mono',monospace">weather</text>
+      <text x="132" y="181" text-anchor="middle" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">weather_data</text>
+      <text x="132" y="198" text-anchor="middle" font-size="9.5" fill="#9ca3af" font-family="'JetBrains Mono',monospace">4개 도시 · 매시간</text>
+
+      <!-- raw -->
+      <rect x="228" y="140" width="152" height="68" rx="7" fill="#fff" stroke="#ddd6fe" filter="url(#sh)"/>
+      <rect x="228" y="140" width="152" height="12" rx="7" fill="#ede9fe"/>
+      <rect x="228" y="146" width="152" height="6" fill="#ede9fe"/>
+      <text x="304" y="164" text-anchor="middle" font-size="11" font-weight="700" fill="#5b21b6" font-family="'JetBrains Mono',monospace">raw</text>
+      <text x="304" y="181" text-anchor="middle" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">orders · customers</text>
+      <text x="304" y="198" text-anchor="middle" font-size="9.5" fill="#9ca3af" font-family="'JetBrains Mono',monospace">products · marketing</text>
+
+      <!-- analytics (new) -->
+      <rect x="400" y="140" width="152" height="68" rx="7" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="400" y="140" width="152" height="12" rx="7" fill="#bfdbfe"/>
+      <rect x="400" y="146" width="152" height="6" fill="#bfdbfe"/>
+      <text x="476" y="164" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a" font-family="'JetBrains Mono',monospace">analytics ★NEW</text>
+      <text x="476" y="181" text-anchor="middle" font-size="10" fill="#1e40af" font-family="'Noto Sans KR',sans-serif">weather_sales_corr</text>
+      <text x="476" y="198" text-anchor="middle" font-size="9.5" fill="#3b82f6" font-family="'JetBrains Mono',monospace">Batch 결과 집계</text>
+
+      <!-- pgvector (new) -->
+      <rect x="572" y="140" width="192" height="68" rx="7" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="572" y="140" width="192" height="12" rx="7" fill="#bfdbfe"/>
+      <rect x="572" y="146" width="192" height="6" fill="#bfdbfe"/>
+      <text x="668" y="164" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a" font-family="'JetBrains Mono',monospace">pgvector ★NEW</text>
+      <text x="668" y="181" text-anchor="middle" font-size="10" fill="#1e40af" font-family="'Noto Sans KR',sans-serif">vector_store (RAG)</text>
+      <text x="668" y="198" text-anchor="middle" font-size="9.5" fill="#3b82f6" font-family="'JetBrains Mono',monospace">nomic-embed-text</text>
+
+      <!-- L1→L2 화살표 -->
+      <line x1="315" y1="92" x2="315" y2="138" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- ── L3 박스: Spring Batch ── -->
+      <rect x="56" y="266" width="188" height="126" rx="8" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="56" y="266" width="188" height="26" rx="8" fill="#fde68a"/>
+      <rect x="56" y="282" width="188" height="10" fill="#fde68a"/>
+      <text x="150" y="284" text-anchor="middle" font-size="11.5" font-weight="700" fill="#92400e" font-family="'JetBrains Mono',monospace">Spring Batch</text>
+      <text x="72" y="308" font-size="10.5" fill="#92400e" font-family="'Noto Sans KR',sans-serif">Job 1 날씨×매출 상관분석</text>
+      <text x="72" y="326" font-size="10.5" fill="#92400e" font-family="'Noto Sans KR',sans-serif">Job 2 임베딩 인덱스 갱신</text>
+      <text x="72" y="344" font-size="10" fill="#b45309" font-family="'JetBrains Mono',monospace">Chunk: R → P → W</text>
+      <text x="72" y="362" font-size="10" fill="#b45309" font-family="'JetBrains Mono',monospace">@Scheduled 자동실행</text>
+      <text x="72" y="379" font-size="10" fill="#b45309" font-family="'JetBrains Mono',monospace">JobLauncher API트리거</text>
+
+      <!-- Spring AI -->
+      <rect x="268" y="266" width="188" height="126" rx="8" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="268" y="266" width="188" height="26" rx="8" fill="#99f6e4"/>
+      <rect x="268" y="282" width="188" height="10" fill="#99f6e4"/>
+      <text x="362" y="284" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f766e" font-family="'JetBrains Mono',monospace">Spring AI</text>
+      <text x="284" y="308" font-size="10.5" fill="#0f766e" font-family="'Noto Sans KR',sans-serif">ChatClient → 상품 추천</text>
+      <text x="284" y="326" font-size="10.5" fill="#0f766e" font-family="'Noto Sans KR',sans-serif">QuestionAnswerAdvisor RAG</text>
+      <text x="284" y="344" font-size="10.5" fill="#0f766e" font-family="'Noto Sans KR',sans-serif">LLM → 리포트 자동생성</text>
+      <text x="284" y="362" font-size="10" fill="#0d9488" font-family="'JetBrains Mono',monospace">Ollama llama3.2</text>
+      <text x="284" y="379" font-size="10" fill="#0d9488" font-family="'JetBrains Mono',monospace">VectorStore PgVector</text>
+
+      <!-- Spring Boot Core -->
+      <rect x="480" y="266" width="284" height="126" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5" filter="url(#sh)"/>
+      <rect x="480" y="266" width="284" height="26" rx="8" fill="#bfdbfe"/>
+      <rect x="480" y="282" width="284" height="10" fill="#bfdbfe"/>
+      <text x="622" y="284" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e3a8a" font-family="'JetBrains Mono',monospace">Spring Boot Core</text>
+      <text x="498" y="308" font-size="10.5" fill="#1e3a8a" font-family="'Noto Sans KR',sans-serif">REST Controller (4개)</text>
+      <text x="498" y="326" font-size="10.5" fill="#1e3a8a" font-family="'Noto Sans KR',sans-serif">JPA Repository (5개)</text>
+      <text x="498" y="344" font-size="10.5" fill="#1e3a8a" font-family="'Noto Sans KR',sans-serif">BatchScheduler @Scheduled</text>
+      <text x="498" y="362" font-size="10" fill="#2563eb" font-family="'JetBrains Mono',monospace">PostgreSQL (airflow DB)</text>
+      <text x="498" y="379" font-size="10" fill="#2563eb" font-family="'JetBrains Mono',monospace">Ollama http://localhost:11434</text>
+
+      <!-- Batch ↔ AI -->
+      <line x1="244" y1="329" x2="266" y2="329" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- AI ↔ Core -->
+      <line x1="456" y1="329" x2="478" y2="329" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- L2→L3 -->
+      <line x1="132" y1="208" x2="132" y2="264" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)" stroke-dasharray="4 3"/>
+      <line x1="476" y1="208" x2="476" y2="264" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arb)" stroke-dasharray="4 3"/>
+      <line x1="668" y1="208" x2="668" y2="264" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arb)" stroke-dasharray="4 3"/>
+
+      <!-- ── L4 API 박스 ── -->
+      <rect x="56" y="448" width="156" height="52" rx="7" fill="#fff" stroke="#bbf7d0" filter="url(#sh)"/>
+      <text x="134" y="468" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="'JetBrains Mono',monospace">GET /recommend</text>
+      <text x="134" y="488" text-anchor="middle" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">AI 상품 추천</text>
+
+      <rect x="228" y="448" width="156" height="52" rx="7" fill="#fff" stroke="#bbf7d0" filter="url(#sh)"/>
+      <text x="306" y="468" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="'JetBrains Mono',monospace">POST /chat</text>
+      <text x="306" y="488" text-anchor="middle" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">RAG 날씨 Q&amp;A</text>
+
+      <rect x="400" y="448" width="156" height="52" rx="7" fill="#fff" stroke="#bbf7d0" filter="url(#sh)"/>
+      <text x="478" y="468" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="'JetBrains Mono',monospace">GET /report</text>
+      <text x="478" y="488" text-anchor="middle" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">AI 인사이트 리포트</text>
+
+      <rect x="572" y="448" width="192" height="52" rx="7" fill="#fff" stroke="#bbf7d0" filter="url(#sh)"/>
+      <text x="668" y="468" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="'JetBrains Mono',monospace">POST /batch/run</text>
+      <text x="668" y="488" text-anchor="middle" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">배치 수동 트리거</text>
+
+      <!-- L3→L4 -->
+      <line x1="410" y1="394" x2="410" y2="446" stroke="#166534" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- ── 범례 ── -->
+      <rect x="56" y="520" width="708" height="46" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+      <text x="72" y="538" font-size="10" font-weight="700" fill="#9ca3af" font-family="'JetBrains Mono',monospace">범례</text>
+      <rect x="106" y="528" width="10" height="10" rx="2" fill="#e5e7eb"/>
+      <text x="120" y="538" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">기존 인프라</text>
+      <rect x="196" y="528" width="10" height="10" rx="2" fill="#2563eb"/>
+      <text x="210" y="538" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">신규 추가</text>
+      <rect x="278" y="528" width="10" height="10" rx="2" fill="#fde68a"/>
+      <text x="292" y="538" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">Spring Batch</text>
+      <rect x="376" y="528" width="10" height="10" rx="2" fill="#99f6e4"/>
+      <text x="390" y="538" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">Spring AI</text>
+      <rect x="454" y="528" width="10" height="10" rx="2" fill="#bfdbfe"/>
+      <text x="468" y="538" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">Spring Boot</text>
+      <rect x="548" y="528" width="10" height="10" rx="2" fill="#bbf7d0"/>
+      <text x="562" y="538" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">REST API</text>
+
+      <!-- 범례 두 번째 줄 -->
+      <text x="72" y="557" font-size="10" fill="#9ca3af" font-family="'JetBrains Mono',monospace">연결</text>
+      <line x1="106" y1="552" x2="130" y2="552" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="136" y="556" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">기존 데이터 흐름</text>
+      <line x1="252" y1="552" x2="276" y2="552" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arb)"/>
+      <text x="282" y="556" font-size="10" fill="#6b7280" font-family="'Noto Sans KR',sans-serif">신규 데이터 흐름</text>
+    </svg>
+  </div>
+
+  <div class="al al-inf">
+    <span class="al-i">🔗</span>
+    <div><strong>기존 컨테이너는 그대로 유지</strong>됩니다. Spring Boot 앱(포트 8090)은 로컬에서 실행하며 PostgreSQL(:5432)과 Ollama(:11434)에 localhost로 연결합니다.</div>
+  </div>
+</section>
+
+<!-- ─── 프로젝트 4 개요 ─── -->
+<section id="overview4">
+  <div class="sec-label">Project 4 — 핵심 개요</div>
+  <div class="sec-h">왜 통합형이 가장 가치 있는가?</div>
+  <div class="sec-sub">세 가지 Spring 기술이 유기적으로 연동되어 실제 비즈니스 문제를 해결합니다</div>
+
+  <div class="detail-grid">
+    <div class="dcard">
+      <div class="dcard-head dh-a">⚙️ Spring Batch — 데이터 파이프라인</div>
+      <div class="dcard-body">
+        <ul>
+          <li><strong>Job 1</strong>: weather + orders JOIN → analytics.weather_sales_corr 집계</li>
+          <li><strong>Job 2</strong>: 날씨 데이터 → nomic-embed-text → pgvector 인덱싱</li>
+          <li>ItemReader / ItemProcessor / ItemWriter 3단계 아키텍처</li>
+          <li>@Scheduled 자동 스케줄 + REST API 수동 트리거</li>
+          <li>동일 Job 재실행: JobParameters에 runAt 타임스탬프 포함</li>
+        </ul>
+      </div>
+    </div>
+    <div class="dcard">
+      <div class="dcard-head dh-t">🤖 Spring AI — LLM 통합</div>
+      <div class="dcard-body">
+        <ul>
+          <li><strong>ChatClient</strong>: 날씨 + 구매 이력 → llama3.2 → 개인화 추천</li>
+          <li><strong>QuestionAnswerAdvisor</strong>: 질문 임베딩 → PgVector 검색 → RAG 답변</li>
+          <li><strong>Report 생성</strong>: analytics 집계 데이터 → LLM → 마크다운 리포트</li>
+          <li>System Prompt로 한국어 + 이커머스 맥락 고정</li>
+          <li>Ollama → OpenAI 전환 시 의존성 1줄만 변경</li>
+        </ul>
+      </div>
+    </div>
+    <div class="dcard">
+      <div class="dcard-head dh-b">🌐 Spring Boot — REST API</div>
+      <div class="dcard-body">
+        <ul>
+          <li>4개 Controller, 8개 엔드포인트 (포트 8090)</li>
+          <li>JPA + 5개 Repository로 다중 스키마 접근</li>
+          <li>기존 postgres_default Connection 재사용</li>
+          <li>local/docker 프로파일로 환경 분리</li>
+          <li>Actuator: /health, /metrics 운영 모니터링</li>
+        </ul>
+      </div>
+    </div>
+    <div class="dcard">
+      <div class="dcard-head dh-p">🐘 PostgreSQL — 다중 스키마</div>
+      <div class="dcard-body">
+        <ul>
+          <li><strong>weather</strong>: Airflow가 수집한 날씨 데이터</li>
+          <li><strong>raw</strong>: 기존 커머스 데이터 (orders, customers, products)</li>
+          <li><strong>analytics</strong>: Batch 집계 결과 (신규)</li>
+          <li><strong>public.vector_store</strong>: RAG 임베딩 벡터 (신규)</li>
+          <li>pgvector 확장: HNSW 인덱스로 코사인 유사도 검색</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 기술 스택 ─── -->
+<section id="stack">
+  <div class="sec-label">Technology Stack</div>
+  <div class="sec-h">기술 스택 상세</div>
+  <div class="sec-sub">build.gradle 의존성과 각 라이브러리의 역할</div>
+
+  <div class="cb">
+    <div class="cb-hd"><span>build.gradle — 핵심 의존성</span></div>
+    <pre><code><span class="cm">// ── Spring Boot 3.3.5 ──────────────────────────────────────</span>
+<span class="fn">implementation</span> <span class="st">'org.springframework.boot:spring-boot-starter-web'</span>
+<span class="fn">implementation</span> <span class="st">'org.springframework.boot:spring-boot-starter-data-jpa'</span>
+<span class="fn">implementation</span> <span class="st">'org.springframework.boot:spring-boot-starter-actuator'</span>
+
+<span class="cm">// ── Spring Batch 5 ─────────────────────────────────────────</span>
+<span class="fn">implementation</span> <span class="st">'org.springframework.boot:spring-boot-starter-batch'</span>
+
+<span class="cm">// ── Spring AI 1.0.0 ────────────────────────────────────────</span>
+<span class="cm">// Ollama: llama3.2(채팅) + nomic-embed-text(임베딩)</span>
+<span class="fn">implementation</span> <span class="st">'org.springframework.ai:spring-ai-ollama-spring-boot-starter'</span>
+<span class="cm">// PgVector: RAG 벡터 저장소</span>
+<span class="fn">implementation</span> <span class="st">'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter'</span>
+
+<span class="cm">// ── PostgreSQL + Lombok ────────────────────────────────────</span>
+<span class="fn">runtimeOnly</span>    <span class="st">'org.postgresql:postgresql'</span>
+<span class="fn">compileOnly</span>    <span class="st">'org.projectlombok:lombok'</span></code></pre>
+  </div>
+
+  <div class="detail-grid" style="margin-top:16px">
+    <div class="dcard">
+      <div class="dcard-head dh-t">🦙 Ollama 모델</div>
+      <div class="dcard-body">
+        <ul>
+          <li><strong>llama3.2 (3B)</strong>: 채팅·추천·리포트 생성. ~2GB. CPU에서 약 10~30초/응답</li>
+          <li><strong>nomic-embed-text</strong>: 텍스트 → 768차원 벡터 변환. ~274MB. 매우 빠름</li>
+          <li>저사양 PC: llama3.2:1b (~1.3GB)으로 대체 가능</li>
+          <li>프로덕션: OpenAI text-embedding-3-small (1536차원)으로 교체 가능</li>
+        </ul>
+      </div>
+    </div>
+    <div class="dcard">
+      <div class="dcard-head dh-b">⚙️ application.yml 핵심 설정</div>
+      <div class="dcard-body">
+        <ul>
+          <li><code>spring.ai.ollama.chat.model: llama3.2</code></li>
+          <li><code>spring.ai.ollama.embedding.model: nomic-embed-text</code></li>
+          <li><code>spring.ai.vectorstore.pgvector.dimensions: 768</code></li>
+          <li><code>spring.ai.vectorstore.pgvector.initialize-schema: true</code></li>
+          <li><code>spring.batch.job.enabled: false</code> → 시작 시 자동실행 방지</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Spring Batch ─── -->
+<section id="batch">
+  <div class="sec-label">Spring Batch 5</div>
+  <div class="sec-h">배치 Job 설계</div>
+  <div class="sec-sub">두 Job이 서로 다른 스케줄로 독립 실행됩니다</div>
+
+  <h3 class="block-h"><span class="dot" style="background:var(--amber)"></span>Job 1 — weatherAnalysisJob (매일 01:00)</h3>
+  <div class="flow-row">
+    <div class="fbox" style="background:var(--amber-l);border:1.5px solid var(--amber-b)">
+      <div class="fb-t" style="color:var(--amber)">ItemReader</div>
+      <div class="fb-d">weather + orders<br>JOIN SQL 쿼리</div>
+    </div>
+    <div class="farr">→</div>
+    <div class="fbox" style="background:var(--amber-l);border:1.5px solid var(--amber-b)">
+      <div class="fb-t" style="color:var(--amber)">ItemProcessor</div>
+      <div class="fb-d">로깅 · 검증<br>도시명 한/영 매핑</div>
+    </div>
+    <div class="farr">→</div>
+    <div class="fbox" style="background:var(--amber-l);border:1.5px solid var(--amber-b)">
+      <div class="fb-t" style="color:var(--amber)">ItemWriter</div>
+      <div class="fb-d">analytics.<br>weather_sales_corr<br>UPSERT</div>
+    </div>
+    <div class="farr">→</div>
+    <div class="fbox" style="background:var(--green-l);border:1.5px solid var(--green-b)">
+      <div class="fb-t" style="color:var(--green)">결과</div>
+      <div class="fb-d">도시별 날씨×매출<br>상관관계 저장</div>
+    </div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-hd"><span>WeatherAnalysisBatchConfig.java — Reader SQL 핵심</span></div>
+    <pre><code><span class="cm">// 날씨-매출 JOIN: Seoul↔서울, Busan↔부산 CASE 매핑</span>
+<span class="kw">String</span> sql = <span class="st">"""
+    SELECT w.city, w.description AS weather_desc,
+           AVG(w.temperature_c) AS avg_temp_c,
+           COUNT(DISTINCT o.order_id) AS total_orders,
+           COALESCE(SUM(o.quantity * o.unit_price * (1 - o.discount_rate)), 0) AS total_revenue,
+           (상위 카테고리 서브쿼리...) AS top_category
+    FROM weather.weather_data w
+    LEFT JOIN raw.customers c ON c.city LIKE (
+        CASE w.city
+            WHEN 'Seoul'   THEN '서울%'
+            WHEN 'Busan'   THEN '부산%'
+            WHEN 'Incheon' THEN '인천%'
+            WHEN 'Daegu'   THEN '대구%'
+        END)
+    LEFT JOIN raw.orders o ON o.customer_id = c.customer_id
+        AND o.order_date = CURRENT_DATE AND o.status = 'completed'
+    WHERE DATE(w.collected_at) = CURRENT_DATE
+    GROUP BY w.city, w.description
+    """</span>;</code></pre>
+  </div>
+
+  <h3 class="block-h" style="margin-top:24px"><span class="dot" style="background:var(--teal)"></span>Job 2 — embeddingIndexJob (6시간마다)</h3>
+  <div class="flow-row">
+    <div class="fbox" style="background:var(--teal-l);border:1.5px solid var(--teal-b)">
+      <div class="fb-t" style="color:var(--teal)">Tasklet</div>
+      <div class="fb-d">embedding_log<br>기준 미처리<br>데이터 조회</div>
+    </div>
+    <div class="farr">→</div>
+    <div class="fbox" style="background:var(--teal-l);border:1.5px solid var(--teal-b)">
+      <div class="fb-t" style="color:var(--teal)">변환</div>
+      <div class="fb-d">WeatherData<br>→ Document<br>(content + metadata)</div>
+    </div>
+    <div class="farr">→</div>
+    <div class="fbox" style="background:var(--teal-l);border:1.5px solid var(--teal-b)">
+      <div class="fb-t" style="color:var(--teal)">VectorStore</div>
+      <div class="fb-d">nomic-embed-text<br>임베딩 생성<br>pgvector 저장</div>
+    </div>
+    <div class="farr">→</div>
+    <div class="fbox" style="background:var(--green-l);border:1.5px solid var(--green-b)">
+      <div class="fb-t" style="color:var(--green)">기록</div>
+      <div class="fb-d">embedding_log<br>처리 이력 저장<br>(중복 방지)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Spring AI ─── -->
+<section id="ai">
+  <div class="sec-label">Spring AI 1.0.0</div>
+  <div class="sec-h">AI 서비스 3가지</div>
+  <div class="sec-sub">Ollama llama3.2와 PgVector를 사용하는 세 가지 AI 기능</div>
+
+  <h3 class="block-h"><span class="dot" style="background:var(--blue-m)"></span>① WeatherRecommendationService — ChatClient 추천</h3>
+  <div class="cb">
+    <div class="cb-hd"><span>WeatherRecommendationService.java</span></div>
+    <pre><code><span class="kw">public</span> String <span class="fn">recommend</span>(String city, Long customerId) {
+    <span class="cm">// 1. 현재 날씨 조회 (weather.weather_data)</span>
+    WeatherData weather = weatherRepo
+        .findTopByCityOrderByCollectedAtDesc(city).orElseThrow();
+
+    <span class="cm">// 2. 고객 구매 이력 (raw.orders + raw.products)</span>
+    List&lt;SalesOrder&gt; history = orderRepo
+        .findTop10ByCustomer_CustomerIdOrderByOrderDateDesc(customerId);
+
+    <span class="cm">// 3. llama3.2에 컨텍스트 전달 → 추천 생성</span>
+    <span class="kw">return</span> chatClient.prompt()
+        .user(u -&gt; u.text(<span class="st">"""
+            현재 날씨 ({city}): {weather}
+            구매 이력: {history}
+            날씨에 맞는 상품 3개를 추천하고 이유를 설명해주세요.
+            """</span>)
+            .param(<span class="st">"city"</span>, city)
+            .param(<span class="st">"weather"</span>, weather.toText())
+            .param(<span class="st">"history"</span>, historyText))
+        .call().content();
+}</code></pre>
+  </div>
+
+  <h3 class="block-h" style="margin-top:20px"><span class="dot" style="background:var(--teal)"></span>② WeatherChatService — RAG Q&amp;A</h3>
+  <div class="cb">
+    <div class="cb-hd"><span>WeatherChatService.java — QuestionAnswerAdvisor</span></div>
+    <pre><code><span class="kw">public</span> String <span class="fn">chat</span>(String question) {
+    <span class="kw">return</span> chatClient.prompt()
+        <span class="cm">// QuestionAnswerAdvisor = RAG 자동 처리</span>
+        <span class="cm">// ① 질문을 nomic-embed-text로 임베딩</span>
+        <span class="cm">// ② PgVector에서 코사인 유사도 상위 5개 검색</span>
+        <span class="cm">// ③ 검색 결과를 컨텍스트로 추가해 llama3.2에 전달</span>
+        .advisors(QuestionAnswerAdvisor.builder(vectorStore)
+            .searchRequest(SearchRequest.builder()
+                .query(question)
+                .topK(<span class="num">5</span>)
+                .similarityThreshold(<span class="num">0.5</span>)
+                .build())
+            .build())
+        .user(question)
+        .call().content();
+}
+<span class="cm">// 도시 필터 버전: filterExpression("city == 'Seoul'") 추가</span></code></pre>
+  </div>
+
+  <h3 class="block-h" style="margin-top:20px"><span class="dot" style="background:var(--amber)"></span>③ WeatherReportService — AI 리포트 생성</h3>
+  <div class="cb">
+    <div class="cb-hd"><span>WeatherReportService.java</span></div>
+    <pre><code><span class="kw">public</span> String <span class="fn">generateReport</span>(<span class="kw">int</span> days) {
+    <span class="cm">// analytics.weather_sales_corr 집계 데이터 조회</span>
+    List&lt;WeatherSalesCorr&gt; data = corrRepo.findBetween(
+        LocalDate.now().minusDays(days), LocalDate.now());
+
+    String dataText = data.stream()
+        .map(WeatherSalesCorr::toText)  <span class="cm">// 텍스트 변환</span>
+        .collect(Collectors.joining(<span class="st">"\n"</span>));
+
+    <span class="cm">// llama3.2가 5개 섹션 마크다운 리포트 생성</span>
+    <span class="kw">return</span> chatClient.prompt()
+        .user(u -&gt; u.text(<span class="st">"""
+            최근 {days}일 날씨-매출 데이터: {data}
+            
+            1. 핵심 요약  2. 상관관계  3. 도시별 특이사항
+            4. 인기 카테고리  5. 마케팅 제안 3가지
+            마크다운으로 작성하고 수치를 포함하세요.
+            """</span>)
+            .param(<span class="st">"days"</span>, String.valueOf(days))
+            .param(<span class="st">"data"</span>, dataText))
+        .call().content();
+}</code></pre>
+  </div>
+</section>
+
+<!-- ─── REST API ─── -->
+<section id="api">
+  <div class="sec-label">REST API Reference</div>
+  <div class="sec-h">8개 API 엔드포인트</div>
+  <div class="sec-sub">모든 API는 localhost:8090 / JSON 응답 / 한국어 답변</div>
+
+  <table class="api-t">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Controller</th><th>설명</th><th>예시 파라미터</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="mget">GET</span></td>
+        <td><span class="ep">/api/recommend</span></td>
+        <td>RecommendationController</td>
+        <td>고객 맞춤 AI 추천 (구매 이력 반영)</td>
+        <td><code>?city=Seoul&customerId=1</code></td>
+      </tr>
+      <tr>
+        <td><span class="mget">GET</span></td>
+        <td><span class="ep">/api/recommend/anonymous</span></td>
+        <td>RecommendationController</td>
+        <td>비로그인 날씨 기반 추천</td>
+        <td><code>?city=Busan</code></td>
+      </tr>
+      <tr>
+        <td><span class="mpost">POST</span></td>
+        <td><span class="ep">/api/chat</span></td>
+        <td>ChatController</td>
+        <td>전체 데이터 RAG Q&amp;A</td>
+        <td><code>{"question":"비 올 때 잘 팔린 상품?"}</code></td>
+      </tr>
+      <tr>
+        <td><span class="mpost">POST</span></td>
+        <td><span class="ep">/api/chat/city</span></td>
+        <td>ChatController</td>
+        <td>도시 필터 RAG Q&amp;A</td>
+        <td><code>{"question":"...", "city":"Seoul"}</code></td>
+      </tr>
+      <tr>
+        <td><span class="mget">GET</span></td>
+        <td><span class="ep">/api/report</span></td>
+        <td>ReportController</td>
+        <td>기간별 AI 마케팅 인사이트 리포트</td>
+        <td><code>?days=7</code></td>
+      </tr>
+      <tr>
+        <td><span class="mget">GET</span></td>
+        <td><span class="ep">/api/report/city</span></td>
+        <td>ReportController</td>
+        <td>도시별 날씨-매출 분석 리포트</td>
+        <td><code>?city=Incheon</code></td>
+      </tr>
+      <tr>
+        <td><span class="mpost">POST</span></td>
+        <td><span class="ep">/api/batch/run/weather-analysis</span></td>
+        <td>BatchController</td>
+        <td>날씨-매출 분석 Job 수동 실행</td>
+        <td>–</td>
+      </tr>
+      <tr>
+        <td><span class="mpost">POST</span></td>
+        <td><span class="ep">/api/batch/run/embedding-index</span></td>
+        <td>BatchController</td>
+        <td>임베딩 인덱스 갱신 Job 수동 실행</td>
+        <td>–</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cb" style="margin-top:16px">
+    <div class="cb-hd"><span>curl — 전체 API 테스트 시퀀스</span></div>
+    <pre><code><span class="cm"># ① Batch로 데이터 준비 (순서 중요)</span>
+curl -X POST http://localhost:8090/api/batch/run/weather-analysis
+curl -X POST http://localhost:8090/api/batch/run/embedding-index
+
+<span class="cm"># ② AI 추천 (날씨 + 구매 이력)</span>
+curl "http://localhost:8090/api/recommend?city=Seoul&amp;customerId=1"
+
+<span class="cm"># ③ RAG 채팅</span>
+curl -X POST http://localhost:8090/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"폭염일 때 매출이 가장 높은 카테고리는?"}'
+
+<span class="cm"># ④ 7일치 AI 인사이트 리포트</span>
+curl "http://localhost:8090/api/report?days=7"
+
+<span class="cm"># ⑤ 도시별 리포트</span>
+curl "http://localhost:8090/api/report/city?city=Busan"</code></pre>
+  </div>
+</section>
+
+<!-- ─── 데이터 플로우 ─── -->
+<section id="dataflow">
+  <div class="sec-label">Data Flow</div>
+  <div class="sec-h">엔드-투-엔드 데이터 흐름</div>
+  <div class="sec-sub">Airflow ETL부터 AI 응답까지 전체 경로</div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;margin:16px 0">
+
+    <div style="border:1px solid var(--rule);border-radius:8px;overflow:hidden">
+      <div style="background:var(--amber-l);border-bottom:1px solid var(--amber-b);padding:10px 16px;font-size:12px;font-weight:700;color:var(--amber)">경로 A — 추천 API 흐름</div>
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="font-size:12px;background:var(--rule2);padding:5px 10px;border-radius:4px">클라이언트<br>GET /recommend</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--rule2);padding:5px 10px;border-radius:4px">weather.weather_data<br>최신 날씨 조회</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--rule2);padding:5px 10px;border-radius:4px">raw.orders<br>구매 이력 조회</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--teal-l);border:1px solid var(--teal-b);padding:5px 10px;border-radius:4px">Ollama llama3.2<br>프롬프트 + 생성</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--green-l);border:1px solid var(--green-b);padding:5px 10px;border-radius:4px">JSON 응답<br>추천 3가지</div>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--rule);border-radius:8px;overflow:hidden">
+      <div style="background:var(--teal-l);border-bottom:1px solid var(--teal-b);padding:10px 16px;font-size:12px;font-weight:700;color:var(--teal)">경로 B — RAG 채팅 흐름</div>
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="font-size:12px;background:var(--rule2);padding:5px 10px;border-radius:4px">클라이언트<br>POST /chat</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--teal-l);border:1px solid var(--teal-b);padding:5px 10px;border-radius:4px">nomic-embed-text<br>질문 임베딩</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--purple-l);border:1px solid var(--purple-b);padding:5px 10px;border-radius:4px">PgVector<br>유사도 검색 Top5</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--teal-l);border:1px solid var(--teal-b);padding:5px 10px;border-radius:4px">llama3.2<br>컨텍스트+질문</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--green-l);border:1px solid var(--green-b);padding:5px 10px;border-radius:4px">JSON 응답<br>자연어 답변</div>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--rule);border-radius:8px;overflow:hidden">
+      <div style="background:var(--blue-l);border-bottom:1px solid var(--blue-b);padding:10px 16px;font-size:12px;font-weight:700;color:var(--blue)">경로 C — Batch + 리포트 흐름</div>
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="font-size:12px;background:var(--rule2);padding:5px 10px;border-radius:4px">@Scheduled<br>매일 01:00</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--amber-l);border:1px solid var(--amber-b);padding:5px 10px;border-radius:4px">Batch Job1<br>weather+orders JOIN</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--rule2);padding:5px 10px;border-radius:4px">analytics.<br>weather_sales_corr</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--rule2);padding:5px 10px;border-radius:4px">GET /report<br>집계 데이터 조회</div>
+        <span style="color:var(--ink3)">→</span>
+        <div style="font-size:12px;background:var(--teal-l);border:1px solid var(--teal-b);padding:5px 10px;border-radius:4px">llama3.2<br>리포트 생성</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── 포트폴리오 가치 ─── -->
+<section id="portfolio">
+  <div class="sec-label">Portfolio Value</div>
+  <div class="sec-h">포트폴리오 & 학습 가치</div>
+  <div class="sec-sub">취업·이직 포트폴리오와 실무 학습 양쪽에서 최상위 수준</div>
+
+  <div class="portfolio-grid">
+    <div class="pv-card">
+      <div class="pv-n">5</div>
+      <div class="pv-l">핵심 Spring 기술<br>(Boot · AI · Batch · Data JPA · Actuator)</div>
+    </div>
+    <div class="pv-card">
+      <div class="pv-n">4</div>
+      <div class="pv-l">AI 기술 패턴<br>(LLM · RAG · 임베딩 · 프롬프트 엔지니어링)</div>
+    </div>
+    <div class="pv-card">
+      <div class="pv-n">8</div>
+      <div class="pv-l">REST API 엔드포인트<br>(추천·채팅·리포트·배치 트리거)</div>
+    </div>
+    <div class="pv-card">
+      <div class="pv-n">4</div>
+      <div class="pv-l">DB 스키마 동시 활용<br>(weather · raw · analytics · pgvector)</div>
+    </div>
+    <div class="pv-card">
+      <div class="pv-n">2</div>
+      <div class="pv-l">Batch Job 설계<br>(Chunk 기반 + Tasklet 두 패턴)</div>
+    </div>
+    <div class="pv-card">
+      <div class="pv-n">0원</div>
+      <div class="pv-l">운영 비용<br>(Ollama 로컬 실행 · 클라우드 불필요)</div>
+    </div>
+  </div>
+
+  <div class="al al-suc" style="margin-top:8px">
+    <span class="al-i">🏆</span>
+    <div><strong>이 프로젝트 하나로 이력서에 쓸 수 있는 것:</strong> Spring Boot 풀스택 개발, AI 서비스 통합(RAG, LLM), 데이터 엔지니어링(ETL + 배치), PostgreSQL 다중 스키마 설계, Docker 기반 MSA 연동</div>
+  </div>
+</section>
+
+<!-- ─── 구현 로드맵 ─── -->
+<section id="roadmap">
+  <div class="sec-label">Implementation Roadmap</div>
+  <div class="sec-h">단계별 구현 로드맵</div>
+  <div class="sec-sub">초보자는 Phase 1부터, 경험자는 Phase 2부터 시작해도 됩니다</div>
+
+  <div class="roadmap">
+    <div class="rm-item">
+      <div class="rm-left">
+        <div class="rm-dot" style="background:var(--blue-m)">1</div>
+        <div class="rm-line"></div>
+      </div>
+      <div class="rm-content">
+        <div class="rm-phase" style="color:var(--blue-m)">Phase 1 · 1~2일</div>
+        <div class="rm-title">인프라 준비</div>
+        <div class="rm-desc">pgvector 이미지 교체 → analytics 스키마 생성 → Ollama 실행 → 모델 다운로드(llama3.2, nomic-embed-text) → Spring Boot 프로젝트 빌드 성공 확인</div>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-left">
+        <div class="rm-dot" style="background:var(--amber)">2</div>
+        <div class="rm-line"></div>
+      </div>
+      <div class="rm-content">
+        <div class="rm-phase" style="color:var(--amber)">Phase 2 · 2~3일</div>
+        <div class="rm-title">Spring Batch 구현</div>
+        <div class="rm-desc">WeatherAnalysisBatchConfig → JdbcCursorItemReader SQL 작성 → analytics 테이블 UPSERT → EmbeddingIndexBatchConfig → VectorStore.add() 동작 확인</div>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-left">
+        <div class="rm-dot" style="background:var(--teal)">3</div>
+        <div class="rm-line"></div>
+      </div>
+      <div class="rm-content">
+        <div class="rm-phase" style="color:var(--teal)">Phase 3 · 2~3일</div>
+        <div class="rm-title">Spring AI 서비스 구현</div>
+        <div class="rm-desc">WeatherRecommendationService → ChatClient 프롬프트 튜닝 → WeatherChatService → QuestionAnswerAdvisor RAG 검증 → WeatherReportService → 리포트 품질 확인</div>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-left">
+        <div class="rm-dot" style="background:var(--green)">4</div>
+        <div class="rm-line"></div>
+      </div>
+      <div class="rm-content">
+        <div class="rm-phase" style="color:var(--green)">Phase 4 · 1~2일</div>
+        <div class="rm-title">REST API + 검증</div>
+        <div class="rm-desc">4개 Controller 구현 → curl 또는 Postman으로 전 엔드포인트 테스트 → BatchScheduler @Scheduled 스케줄 확인 → Superset에서 analytics 데이터 시각화 연동</div>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-left">
+        <div class="rm-dot" style="background:var(--purple)">5</div>
+        <div class="rm-line" style="display:none"></div>
+      </div>
+      <div class="rm-content" style="padding-bottom:0">
+        <div class="rm-phase" style="color:var(--purple)">Phase 5 · 선택</div>
+        <div class="rm-title">고도화 (선택)</div>
+        <div class="rm-desc">OpenAI / Claude API로 모델 교체 → Spring Security JWT 인증 추가 → Docker Compose에 Spring Boot 서비스 포함 → Swagger UI 문서화 → 이력서·포트폴리오 작성</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="al al-wrn" style="margin-top:20px">
+    <span class="al-i">⏱️</span>
+    <div><strong>총 예상 시간:</strong> Phase 1~4 기준 약 <strong>7~10일</strong> (하루 2~3시간 기준). 제공된 소스코드를 기반으로 하면 Phase 1~2를 하루 안에 끝낼 수 있습니다.</div>
+  </div>
+</section>
+
+</main>
+
+<script>
+const links = document.querySelectorAll('.sidenav a');
+const secs  = document.querySelectorAll('section[id], .hero[id]');
+const obs   = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      links.forEach(l => l.classList.remove('on'));
+      const l = document.querySelector(`.sidenav a[href="#${e.target.id}"]`);
+      if(l) l.classList.add('on');
+    }
+  });
+}, {rootMargin:'-15% 0px -75% 0px'});
+secs.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

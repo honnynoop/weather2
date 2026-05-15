@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather ETL — MDS 기존 환경 추가 가이드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ─── 기본 ─── */
+:root {
+  --primary:   #2563eb;
+  --primary-l: #eff6ff;
+  --primary-b: #bfdbfe;
+  --green:     #16a34a;
+  --green-l:   #f0fdf4;
+  --green-b:   #bbf7d0;
+  --amber:     #d97706;
+  --amber-l:   #fffbeb;
+  --amber-b:   #fde68a;
+  --red:       #dc2626;
+  --red-l:     #fef2f2;
+  --red-b:     #fecaca;
+  --purple:    #7c3aed;
+  --purple-l:  #f5f3ff;
+  --purple-b:  #ddd6fe;
+  --gray-50:   #f9fafb;
+  --gray-100:  #f3f4f6;
+  --gray-200:  #e5e7eb;
+  --gray-300:  #d1d5db;
+  --gray-400:  #9ca3af;
+  --gray-500:  #6b7280;
+  --gray-700:  #374151;
+  --gray-900:  #111827;
+  --border:    #e5e7eb;
+  --text:      #374151;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Noto Sans KR', sans-serif;
+  --radius:    8px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: #ffffff;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* ─── 레이아웃 ─── */
+.layout { display: flex; min-height: 100vh; }
+
+/* ─── 사이드바 ─── */
+nav {
+  position: fixed; top: 0; left: 0;
+  width: 230px; height: 100vh;
+  background: var(--gray-50);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 20px 0 40px;
+  z-index: 100;
+}
+.nav-logo {
+  padding: 0 18px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.nav-logo .title {
+  font-size: 13px; font-weight: 700;
+  color: var(--primary);
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-logo .sub {
+  font-size: 11px; color: var(--gray-500);
+  margin-top: 3px;
+}
+.nav-section {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--gray-400);
+  padding: 14px 18px 4px;
+}
+nav a {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 18px;
+  font-size: 13px; color: var(--gray-700);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all .12s;
+}
+nav a:hover { background: var(--gray-100); color: var(--primary); }
+nav a.active { background: var(--primary-l); color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
+
+/* ─── 메인 ─── */
+main { margin-left: 230px; padding: 0; width: 100%; }
+
+/* ─── 헤더 배너 ─── */
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
+  color: #fff;
+  padding: 52px 64px 44px;
+}
+.hero .badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.35);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 3px 11px; border-radius: 20px;
+  margin-bottom: 16px;
+}
+.hero h1 { font-size: 32px; font-weight: 700; line-height: 1.25; margin-bottom: 12px; }
+.hero p  { font-size: 15px; opacity: .85; max-width: 580px; line-height: 1.7; }
+.hero .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.hero .chip {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  font-size: 12px; padding: 3px 12px; border-radius: 4px;
+}
+.hero .chip.new { background: rgba(255,255,255,.9); color: var(--primary); font-weight: 700; }
+
+/* ─── 섹션 ─── */
+section {
+  padding: 52px 64px;
+  border-bottom: 1px solid var(--border);
+}
+section:last-child { border-bottom: none; }
+.sec-title {
+  font-size: 22px; font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-title .icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--primary-l);
+  border: 1px solid var(--primary-b);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.sec-sub {
+  font-size: 14px; color: var(--gray-500);
+  margin-bottom: 28px;
+}
+
+/* ─── 비교 테이블 ─── */
+.compare {
+  width: 100%; border-collapse: collapse;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; font-size: 13.5px;
+}
+.compare th {
+  background: var(--gray-100); padding: 11px 16px;
+  text-align: left; font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.compare th:nth-child(2) { color: var(--red); }
+.compare th:nth-child(3) { color: var(--green); }
+.compare td { padding: 11px 16px; border-bottom: 1px solid var(--gray-100); }
+.compare tr:last-child td { border-bottom: none; }
+.compare td:first-child { font-weight: 500; color: var(--gray-500); width: 120px; }
+.compare .old { color: var(--red); font-family: var(--font-mono); font-size: 12px; }
+.compare .new { color: var(--green); font-family: var(--font-mono); font-size: 12px; }
+
+/* ─── 파이프라인 플로우 ─── */
+.flow {
+  display: flex; align-items: stretch; gap: 0;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin: 24px 0;
+}
+.flow-step {
+  flex: 1; padding: 20px 16px; text-align: center;
+  border-right: 1px solid var(--border);
+  background: #fff;
+  position: relative;
+}
+.flow-step:last-child { border-right: none; }
+.flow-step .fs-tag {
+  display: inline-block;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px;
+  margin-bottom: 8px;
+}
+.flow-step .fs-name {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  margin-bottom: 4px;
+}
+.flow-step .fs-desc { font-size: 11.5px; color: var(--gray-500); }
+.flow-step.s1 { background: var(--amber-l); }
+.flow-step.s1 .fs-tag { background: var(--amber-b); color: var(--amber); }
+.flow-step.s2 { background: var(--primary-l); }
+.flow-step.s2 .fs-tag { background: var(--primary-b); color: var(--primary); }
+.flow-step.s3 { background: var(--green-l); }
+.flow-step.s3 .fs-tag { background: var(--green-b); color: var(--green); }
+.flow-step.s0 { background: var(--gray-50); flex: 0.6; }
+.flow-step.s0 .fs-tag { background: var(--gray-200); color: var(--gray-500); }
+
+/* ─── 파일 트리 ─── */
+.filetree {
+  background: var(--gray-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  font-family: var(--font-mono);
+  font-size: 13px; line-height: 2.1;
+}
+.filetree .dir  { color: #92400e; font-weight: 600; }
+.filetree .new  { color: var(--green); font-weight: 700; }
+.filetree .keep { color: var(--gray-400); }
+.filetree .note { color: var(--gray-400); font-family: var(--font-body); font-size: 12px; }
+.badge-new {
+  display: inline-block;
+  background: var(--green-l); color: var(--green);
+  border: 1px solid var(--green-b);
+  font-size: 10px; font-weight: 700; font-family: var(--font-body);
+  padding: 0px 6px; border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.badge-keep {
+  display: inline-block;
+  background: var(--gray-100); color: var(--gray-400);
+  border: 1px solid var(--gray-200);
+  font-size: 10px; font-weight: 700; font-family: var(--font-body);
+  padding: 0px 6px; border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* ─── 코드 블록 ─── */
+.codeblock {
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.codeblock-header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--gray-100); padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.codeblock-header .lang {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--gray-500);
+  display: flex; align-items: center; gap: 6px;
+}
+.codeblock pre { margin: 0 !important; border-radius: 0 !important; }
+.codeblock pre code { font-family: var(--font-mono) !important; font-size: 12.5px !important; }
+
+/* ─── 스텝 카드 ─── */
+.steps { display: flex; flex-direction: column; gap: 20px; }
+.step {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.step-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--border);
+}
+.step-num {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-title { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+.step-body { padding: 18px 20px; }
+.step-body p { font-size: 14px; color: var(--gray-700); margin-bottom: 12px; }
+
+/* ─── 알림 박스 ─── */
+.alert {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 16px; border-radius: var(--radius);
+  font-size: 13.5px; margin: 12px 0;
+}
+.alert-icon { font-size: 16px; flex-shrink: 0; line-height: 1.5; }
+.alert.info    { background: var(--primary-l); border: 1px solid var(--primary-b); color: #1e40af; }
+.alert.success { background: var(--green-l);   border: 1px solid var(--green-b);   color: #15803d; }
+.alert.warning { background: var(--amber-l);   border: 1px solid var(--amber-b);   color: #92400e; }
+.alert.error   { background: var(--red-l);     border: 1px solid var(--red-b);     color: #991b1b; }
+
+/* ─── DB 스키마 테이블 ─── */
+.schema-tbl {
+  width: 100%; border-collapse: collapse;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; font-size: 13px;
+}
+.schema-tbl th {
+  background: var(--gray-100); padding: 9px 14px; text-align: left;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.7px; color: var(--gray-500);
+  border-bottom: 1px solid var(--border);
+}
+.schema-tbl td { padding: 10px 14px; border-bottom: 1px solid var(--gray-100); }
+.schema-tbl tr:last-child td { border-bottom: none; }
+.schema-tbl .col  { font-family: var(--font-mono); color: var(--primary); }
+.schema-tbl .type { font-family: var(--font-mono); color: var(--purple); font-size: 12px; }
+.schema-tbl .desc { color: var(--gray-500); font-size: 12px; }
+
+/* ─── Superset 설정 카드 ─── */
+.ss-steps { counter-reset: ss; display: flex; flex-direction: column; gap: 10px; }
+.ss-step {
+  counter-increment: ss;
+  position: relative;
+  padding: 14px 18px 14px 54px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  font-size: 13.5px;
+}
+.ss-step::before {
+  content: counter(ss);
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--primary-l); color: var(--primary);
+  border: 1px solid var(--primary-b);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px;
+}
+.ss-step strong { color: var(--gray-900); }
+.ss-step .path {
+  font-family: var(--font-mono); font-size: 11.5px;
+  background: var(--gray-100); color: var(--primary);
+  padding: 1px 6px; border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+/* ─── SQL 예시 그리드 ─── */
+.sql-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sql-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.sql-card .sql-title {
+  background: var(--gray-50); padding: 8px 14px;
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--green); font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.sql-card pre { margin: 0 !important; border-radius: 0 !important; }
+.sql-card pre code { font-size: 11.5px !important; }
+
+/* ─── 트러블슈팅 ─── */
+.trouble {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.trouble-q {
+  padding: 12px 16px;
+  background: var(--red-l);
+  border-bottom: 1px solid var(--red-b);
+  color: var(--red); font-size: 13.5px; font-weight: 500;
+}
+.trouble-a {
+  padding: 12px 16px;
+  background: #fff;
+  font-size: 13px; color: var(--gray-700);
+  line-height: 1.8;
+}
+.trouble-a code {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--gray-100); padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--gray-200);
+}
+
+/* ─── 포트 테이블 ─── */
+.port-tbl {
+  width: 100%; border-collapse: collapse;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; font-size: 13.5px;
+}
+.port-tbl th {
+  background: var(--gray-100); padding: 10px 16px; text-align: left;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.7px; color: var(--gray-500);
+  border-bottom: 1px solid var(--border);
+}
+.port-tbl td { padding: 11px 16px; border-bottom: 1px solid var(--gray-100); }
+.port-tbl tr:last-child td { border-bottom: none; }
+.port-badge {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--primary-l); color: var(--primary);
+  padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--primary-b);
+}
+.badge-new2 {
+  background: var(--green-l); color: var(--green);
+  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 3px;
+  border: 1px solid var(--green-b);
+}
+.badge-exist {
+  background: var(--gray-100); color: var(--gray-500);
+  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 3px;
+  border: 1px solid var(--gray-200);
+}
+
+/* ─── 반응형 ─── */
+@media (max-width: 900px) {
+  nav { display: none; }
+  main { margin-left: 0; }
+  section, .hero { padding: 36px 20px; }
+  .sql-grid { grid-template-columns: 1fr; }
+  .flow { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<nav>
+  <div class="nav-logo">
+    <div class="title">⛅ Weather ETL 추가</div>
+    <div class="sub">기존 MDS 환경 통합 가이드</div>
+  </div>
+  <div class="nav-section">Overview</div>
+  <a href="#overview">📋 개요 & 전략</a>
+  <a href="#architecture">🏗️ 아키텍처</a>
+  <a href="#files">📁 파일 구조</a>
+  <div class="nav-section">Setup</div>
+  <a href="#step1">1️⃣ API 키 발급</a>
+  <a href="#step2">2️⃣ 파일 배치</a>
+  <a href="#step3">3️⃣ 스크립트 실행</a>
+  <a href="#step4">4️⃣ DAG 활성화</a>
+  <div class="nav-section">Deep Dive</div>
+  <a href="#dag">✈️ DAG 코드 분석</a>
+  <a href="#db">🗄️ DB 스키마</a>
+  <a href="#superset">📊 Superset 설정</a>
+  <div class="nav-section">Operations</div>
+  <a href="#verify">✅ 동작 검증</a>
+  <a href="#trouble">🛠️ 트러블슈팅</a>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<div class="hero" id="overview">
+  <div class="badge">🔧 Add-on 설치 가이드</div>
+  <h1>Weather ETL<br>기존 MDS 환경에 추가하기</h1>
+  <p>
+    이미 실행 중인 Docker 환경(Airflow + Superset + PostgreSQL)에<br>
+    날씨 수집 파이프라인을 <strong>재빌드 없이</strong> 추가하는 완전한 가이드입니다.
+  </p>
+  <div class="chips">
+    <div class="chip">기존 컨테이너 유지</div>
+    <div class="chip">docker-compose 수정 없음</div>
+    <div class="chip new">NEW: weather 스키마 추가</div>
+    <div class="chip new">NEW: weather_etl_dag.py</div>
+    <div class="chip new">NEW: weathermap_api Connection</div>
+  </div>
+</div>
+
+<!-- 개요 & 전략 -->
+<section id="overview" style="padding-top:44px">
+  <div class="sec-title"><div class="icon">📋</div>추가 전략 — 무엇을 건드리지 않는가</div>
+  <div class="sec-sub">기존 환경을 최대한 보존하고, 새로운 레이어만 얹습니다</div>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>항목</th>
+        <th>❌ 수정하지 않는 것</th>
+        <th>✅ 추가하는 것</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>docker-compose</td>
+        <td class="old">docker-compose.yml 변경 없음</td>
+        <td class="new">— (수정 불필요)</td>
+      </tr>
+      <tr>
+        <td>Dockerfile</td>
+        <td class="old">Dockerfile.airflow 변경 없음</td>
+        <td class="new">— (이미 pandas, psycopg2 설치됨)</td>
+      </tr>
+      <tr>
+        <td>init-db.sql</td>
+        <td class="old">기존 raw/staging/marts 테이블 그대로</td>
+        <td class="new">weather_init.sql 별도 실행</td>
+      </tr>
+      <tr>
+        <td>PostgreSQL DB</td>
+        <td class="old">airflow DB 구조 유지</td>
+        <td class="new">weather 스키마만 추가</td>
+      </tr>
+      <tr>
+        <td>Airflow 연결</td>
+        <td class="old">postgres_default 그대로 재사용</td>
+        <td class="new">weathermap_api HTTP Connection 추가</td>
+      </tr>
+      <tr>
+        <td>API 키 관리</td>
+        <td class="old">컨테이너 재빌드 필요 없음</td>
+        <td class="new">Airflow Variable로 런타임 등록</td>
+      </tr>
+      <tr>
+        <td>DAG</td>
+        <td class="old">기존 DAG 파일 유지</td>
+        <td class="new">weather_etl_dag.py 신규 추가</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 아키텍처 -->
+<section id="architecture">
+  <div class="sec-title"><div class="icon">🏗️</div>아키텍처 — 기존 vs 추가 후</div>
+  <div class="sec-sub">회색은 기존 서비스, 파란색 테두리가 새로 추가되는 요소입니다</div>
+
+  <!-- 서비스 포트 현황 -->
+  <table class="port-tbl" style="margin-bottom:28px">
+    <thead>
+      <tr><th>서비스</th><th>컨테이너</th><th>포트</th><th>상태</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Airflow Webserver</td>
+        <td><code>mds_airflow_web</code></td>
+        <td><span class="port-badge">8080</span></td>
+        <td><span class="badge-exist">기존</span></td>
+      </tr>
+      <tr>
+        <td>PostgreSQL</td>
+        <td><code>mds_postgres</code></td>
+        <td><span class="port-badge">5432</span></td>
+        <td><span class="badge-exist">기존</span></td>
+      </tr>
+      <tr>
+        <td>pgAdmin</td>
+        <td><code>mds_pgadmin</code></td>
+        <td><span class="port-badge">5050</span></td>
+        <td><span class="badge-exist">기존</span></td>
+      </tr>
+      <tr>
+        <td>Superset</td>
+        <td><code>mds_superset</code></td>
+        <td><span class="port-badge">8088</span></td>
+        <td><span class="badge-exist">기존</span></td>
+      </tr>
+      <tr>
+        <td>Portal (Nginx)</td>
+        <td><code>mds_portal</code></td>
+        <td><span class="port-badge">80</span></td>
+        <td><span class="badge-exist">기존</span></td>
+      </tr>
+      <tr>
+        <td>OpenWeatherMap API</td>
+        <td>외부 API (HTTP)</td>
+        <td>443</td>
+        <td><span class="badge-new2">신규 연결</span></td>
+      </tr>
+      <tr>
+        <td>weather 스키마</td>
+        <td>mds_postgres 내부</td>
+        <td>—</td>
+        <td><span class="badge-new2">신규 추가</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- DAG 흐름 -->
+  <h3 style="font-size:16px; font-weight:700; color:var(--gray-900); margin-bottom:14px">
+    Weather DAG 태스크 흐름 (도시별 병렬 실행)
+  </h3>
+  <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px">
+    <div style="display:flex; align-items:stretch; gap:0; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden">
+      <div style="background:var(--gray-50); padding:12px 16px; flex:0 0 80px; text-align:center; font-size:12px; color:var(--gray-500); font-weight:600; display:flex; align-items:center; justify-content:center; border-right:1px solid var(--border)">Seoul</div>
+      <div class="flow-step s1" style="flex:1; padding:12px 10px;">
+        <div class="fs-tag">HttpSensor</div>
+        <div class="fs-name">is_api_ready_Seoul</div>
+        <div class="fs-desc">API 200 응답 확인</div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:18px; color:var(--gray-400)">→</div>
+      <div class="flow-step s2" style="flex:1; padding:12px 10px;">
+        <div class="fs-tag">SimpleHttpOp</div>
+        <div class="fs-name">extract_weather_Seoul</div>
+        <div class="fs-desc">JSON 응답 → XCom</div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:18px; color:var(--gray-400)">→</div>
+      <div class="flow-step s3" style="flex:1; padding:12px 10px;">
+        <div class="fs-tag">PythonOp</div>
+        <div class="fs-name">transform_load_Seoul</div>
+        <div class="fs-desc">K→°C 변환 + DB 저장</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:stretch; gap:0; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden">
+      <div style="background:var(--gray-50); padding:12px 16px; flex:0 0 80px; text-align:center; font-size:12px; color:var(--gray-500); font-weight:600; display:flex; align-items:center; justify-content:center; border-right:1px solid var(--border)">Busan</div>
+      <div class="flow-step s1" style="flex:1; padding:12px 10px; opacity:.75">
+        <div class="fs-tag">HttpSensor</div><div class="fs-name">is_api_ready_Busan</div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:18px; color:var(--gray-400)">→</div>
+      <div class="flow-step s2" style="flex:1; padding:12px 10px; opacity:.75">
+        <div class="fs-tag">SimpleHttpOp</div><div class="fs-name">extract_weather_Busan</div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:18px; color:var(--gray-400)">→</div>
+      <div class="flow-step s3" style="flex:1; padding:12px 10px; opacity:.75">
+        <div class="fs-tag">PythonOp</div><div class="fs-name">transform_load_Busan</div>
+      </div>
+    </div>
+    <div style="text-align:center; font-size:12px; color:var(--gray-400); padding:4px">
+      ↓ Incheon, Daegu 동일 구조 (변수로 도시 목록 관리)
+    </div>
+  </div>
+
+  <div class="alert info">
+    <span class="alert-icon">💾</span>
+    <div>
+      <strong>저장 위치:</strong>
+      기존 <code>postgres_default</code> Connection을 재사용하여
+      <code>airflow</code> DB의 <strong>weather 스키마</strong>에 저장합니다.
+      기존 raw / staging / marts 스키마와 완전히 격리됩니다.
+    </div>
+  </div>
+</section>
+
+<!-- 파일 구조 -->
+<section id="files">
+  <div class="sec-title"><div class="icon">📁</div>파일 배치 구조</div>
+  <div class="sec-sub">초록색이 새로 추가할 파일입니다. 기존 파일은 절대 수정하지 않습니다.</div>
+
+  <div class="filetree">
+<span class="dir">프로젝트_루트/</span><br>
+<span class="keep">├── docker-compose.yml</span>    <span class="badge-keep">기존 유지</span><br>
+<span class="keep">├── Dockerfile.airflow</span>    <span class="badge-keep">기존 유지</span><br>
+<span class="keep">├── .env</span>                  <span class="badge-keep">기존 유지</span><br>
+│<br>
+<span class="keep">├── dags/</span><br>
+<span class="keep">│   └── (기존 DAG 파일들...)</span>    <span class="badge-keep">기존 유지</span><br>
+<span class="new">│   └── weather_etl_dag.py</span>    <span class="badge-new">NEW ✨</span><br>
+│<br>
+<span class="keep">├── scripts/</span><br>
+<span class="keep">│   └── init-db.sql</span>           <span class="badge-keep">기존 유지 (수정 금지)</span><br>
+<span class="new">│   └── weather_init.sql</span>      <span class="badge-new">NEW ✨</span><br>
+│<br>
+<span class="new">└── apply_weather.sh</span>          <span class="badge-new">NEW ✨  ← 한 번만 실행</span>
+  </div>
+
+  <div class="alert warning" style="margin-top:16px">
+    <span class="alert-icon">⚠️</span>
+    <div>
+      <strong>scripts/init-db.sql은 절대 수정하지 마세요.</strong>
+      PostgreSQL 컨테이너 최초 실행 시에만 동작하므로, 이미 실행 중인 환경에서 수정해도 적용되지 않습니다.
+      날씨 스키마는 별도의 <code>weather_init.sql</code>로 직접 실행합니다.
+    </div>
+  </div>
+</section>
+
+<!-- 설치 스텝 -->
+<section id="step1">
+  <div class="sec-title"><div class="icon">🚀</div>설치 단계별 가이드</div>
+  <div class="sec-sub">총 4단계, 약 5분 소요 (컨테이너 재빌드 없음)</div>
+
+  <div class="steps">
+
+    <!-- STEP 1 -->
+    <div class="step" id="step1">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-title">OpenWeatherMap API 키 발급</div>
+      </div>
+      <div class="step-body">
+        <p>
+          <a href="https://openweathermap.org/api" target="_blank" style="color:var(--primary); font-weight:600">openweathermap.org</a>
+          에서 무료 계정을 만들고 API 키를 발급받습니다.
+        </p>
+        <div class="alert info">
+          <span class="alert-icon">ℹ️</span>
+          <div>
+            무료 플랜: <strong>1,000 calls/day, 60 calls/minute</strong><br>
+            4개 도시 × 시간당 1회 = 96 calls/day → 무료 플랜으로 충분합니다.<br>
+            신규 발급 키는 활성화까지 최대 <strong>2시간</strong> 소요될 수 있습니다.
+          </div>
+        </div>
+        <div class="codeblock">
+          <div class="codeblock-header">
+            <span class="lang">API 키 발급 경로</span>
+          </div>
+          <pre><code class="language-bash">1. https://openweathermap.org → Sign Up (무료)
+2. 상단 메뉴 → My Profile → API Keys 탭
+3. API key 열에서 복사
+   예: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+
+# 키 동작 테스트 (브라우저 또는 curl)
+curl "https://api.openweathermap.org/data/2.5/weather?q=Seoul&appid=YOUR_KEY"
+# {"weather":[...], "main":{...}} 형태의 JSON이 나오면 정상</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="step2">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-title">파일 3개를 프로젝트에 배치</div>
+      </div>
+      <div class="step-body">
+        <p>다운로드한 ZIP에서 파일을 꺼내 아래와 같이 배치합니다.</p>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="lang">bash — 파일 복사</span></div>
+          <pre><code class="language-bash"># 다운로드한 weather-addon/ 내용을 기존 프로젝트에 복사
+
+# weather_etl_dag.py → dags 폴더
+cp weather-addon/dags/weather_etl_dag.py  ./dags/
+
+# weather_init.sql → scripts 폴더
+cp weather-addon/scripts/weather_init.sql  ./scripts/
+
+# apply_weather.sh → 프로젝트 루트
+cp weather-addon/apply_weather.sh  ./
+chmod +x apply_weather.sh</code></pre>
+        </div>
+        <div class="alert success">
+          <span class="alert-icon">✅</span>
+          <div>기존 파일과 이름이 겹치지 않아 덮어쓰기 위험이 없습니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" id="step3">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-title">apply_weather.sh 실행 (한 번만)</div>
+      </div>
+      <div class="step-body">
+        <p>스크립트 한 줄로 아래 작업이 자동 수행됩니다.</p>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="lang">bash — 실행</span></div>
+          <pre><code class="language-bash"># 프로젝트 루트에서 실행 (YOUR_API_KEY 자리에 발급받은 키 입력)
+./apply_weather.sh YOUR_OPENWEATHER_API_KEY
+
+# 정상 출력 예시:
+# [STEP] 1/5  컨테이너 상태 확인...
+# [ OK ] 컨테이너 정상 실행 확인
+# [STEP] 2/5  PostgreSQL weather 스키마 초기화...
+# [ OK ] weather 스키마 및 테이블 생성 완료
+# [STEP] 3/5  DAG 파일 배포...
+# [ OK ] DAG 파일 배포: ./dags/weather_etl_dag.py
+# [STEP] 4/5  Airflow Connection 등록 (weathermap_api)...
+# [ OK ] Connection 'weathermap_api' 등록 완료
+# [STEP] 5/5  Airflow Variable 등록...
+# [ OK ] Variable 'openweather_api_key' 등록 완료
+# [ OK ] Variable 'weather_cities' 등록 완료</code></pre>
+        </div>
+        <div style="margin-top:14px; font-size:13.5px; color:var(--gray-700)">
+          <strong>스크립트가 수행하는 5가지 작업:</strong>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px">
+          <div style="padding:10px 14px; border:1px solid var(--border); border-radius:6px; font-size:13px">
+            <div style="font-weight:600; margin-bottom:3px">① 컨테이너 상태 확인</div>
+            <div style="color:var(--gray-500)">mds_postgres, mds_airflow_web 실행 중인지 검사</div>
+          </div>
+          <div style="padding:10px 14px; border:1px solid var(--border); border-radius:6px; font-size:13px">
+            <div style="font-weight:600; margin-bottom:3px">② weather 스키마 생성</div>
+            <div style="color:var(--gray-500)">weather_init.sql을 mds_postgres에서 실행</div>
+          </div>
+          <div style="padding:10px 14px; border:1px solid var(--border); border-radius:6px; font-size:13px">
+            <div style="font-weight:600; margin-bottom:3px">③ DAG 파일 배포</div>
+            <div style="color:var(--gray-500)">./dags/ 폴더에 weather_etl_dag.py 복사</div>
+          </div>
+          <div style="padding:10px 14px; border:1px solid var(--border); border-radius:6px; font-size:13px">
+            <div style="font-weight:600; margin-bottom:3px">④ HTTP Connection 등록</div>
+            <div style="color:var(--gray-500)">weathermap_api → api.openweathermap.org</div>
+          </div>
+          <div style="padding:10px 14px; border:1px solid var(--border); border-radius:6px; font-size:13px; grid-column: 1/-1">
+            <div style="font-weight:600; margin-bottom:3px">⑤ Airflow Variable 등록</div>
+            <div style="color:var(--gray-500)">openweather_api_key, weather_cities → Airflow DB에 암호화 저장</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" id="step4">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-title">Airflow UI에서 DAG 활성화</div>
+      </div>
+      <div class="step-body">
+        <p>
+          <a href="http://localhost:8080" target="_blank" style="color:var(--primary); font-weight:600">localhost:8080</a>
+          → admin / admin 로그인
+        </p>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="lang">UI 조작 순서</span></div>
+          <pre><code class="language-yaml">1. DAGs 목록에서 'weather_etl_pipeline' 검색
+2. 왼쪽 Toggle 클릭 → 파란색 (활성화)
+3. 우측 ▶ "Trigger DAG" 버튼 클릭 → 즉시 실행
+4. Graph View 클릭 → 태스크 진행 상황 실시간 확인
+
+태스크 색상 의미:
+  🟡 queued  →  🔵 running  →  🟢 success
+  🔴 failed  (실패 시 트러블슈팅 섹션 참조)</code></pre>
+        </div>
+        <div class="alert info">
+          <span class="alert-icon">💡</span>
+          <div>
+            DAG 파일을 dags/ 폴더에 넣으면 Airflow Scheduler가 최대 30초 내에 자동으로 인식합니다.
+            목록에 안 보인다면 잠시 기다리거나 페이지를 새로고침하세요.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DAG 코드 분석 -->
+<section id="dag">
+  <div class="sec-title"><div class="icon">✈️</div>DAG 코드 상세 분석</div>
+  <div class="sec-sub">기존 MDS 환경과의 통합 포인트를 중심으로 설명합니다</div>
+
+  <h3 style="font-size:15px; font-weight:700; margin-bottom:10px; color:var(--amber)">
+    🔑 핵심 설계 원칙: Airflow Variable 사용
+  </h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="lang">weather_etl_dag.py — Variable 활용</span></div>
+    <pre><code class="language-python">from airflow.models import Variable
+
+# API 키를 코드에 하드코딩하지 않음 → 컨테이너 재빌드 불필요
+def _get_api_key() -> str:
+    return Variable.get("openweather_api_key")
+
+# 도시 목록도 Variable로 관리 → UI에서 언제든 변경 가능
+def _get_cities() -> list[str]:
+    cities_str = Variable.get("weather_cities",
+                              default_var="Seoul,Busan,Incheon,Daegu")
+    return [c.strip() for c in cities_str.split(",")]
+
+# ✅ 장점: Airflow UI → Admin → Variables 에서 즉시 변경
+#          예) Jeju,Suwon,Daejeon 으로 바꾸면 다음 실행부터 적용</code></pre>
+  </div>
+
+  <h3 style="font-size:15px; font-weight:700; margin:20px 0 10px; color:var(--primary)">
+    🔌 기존 postgres_default Connection 재사용
+  </h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="lang">weather_etl_dag.py — PostgresHook</span></div>
+    <pre><code class="language-python">from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+def transform_and_load(city: str, **context) -> None:
+    ti  = context["task_instance"]
+    raw = ti.xcom_pull(task_ids=f"extract_weather_{city}")
+
+    # Kelvin → Celsius 변환
+    temp_c = round(float(raw["main"]["temp"]) - 273.15, 2)
+
+    # ✅ 기존 환경에서 이미 등록된 postgres_default 재사용
+    #    (airflow-init에서 등록: host=postgres, schema=airflow)
+    hook = PostgresHook(postgres_conn_id="postgres_default")
+    hook.run(
+        """INSERT INTO weather.weather_data
+           (city, temperature_c, humidity_pct, ...) VALUES (%s, %s, %s, ...)""",
+        parameters=(city_name, temp_c, humidity_pct, ...),
+    )</code></pre>
+  </div>
+
+  <h3 style="font-size:15px; font-weight:700; margin:20px 0 10px; color:var(--green)">
+    🔄 도시별 병렬 태스크 동적 생성
+  </h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="lang">weather_etl_dag.py — 동적 태스크 생성</span></div>
+    <pre><code class="language-python">CITIES = _get_cities()   # ["Seoul", "Busan", "Incheon", "Daegu"]
+
+for city in CITIES:
+    # Task 1: API 가용성 확인 (reschedule 모드 → 슬롯 점유 없음)
+    is_api_ready = HttpSensor(
+        task_id=f"is_api_ready_{city}",
+        http_conn_id="weathermap_api",
+        endpoint=f"/data/2.5/weather?q={city}&appid={api_key}",
+        mode="reschedule",   # ← 중요: 대기 중 Worker 슬롯 반납
+    )
+
+    # Task 2: JSON 추출 → XCom에 자동 저장
+    extract_weather = SimpleHttpOperator(
+        task_id=f"extract_weather_{city}",
+        response_filter=lambda r: json.loads(r.text),
+    )
+
+    # Task 3: 변환 + DB 저장
+    transform_load = PythonOperator(
+        task_id=f"transform_load_{city}",
+        python_callable=transform_and_load,
+        op_kwargs={"city": city},
+    )
+
+    is_api_ready >> extract_weather >> transform_load  # 체인</code></pre>
+  </div>
+</section>
+
+<!-- DB 스키마 -->
+<section id="db">
+  <div class="sec-title"><div class="icon">🗄️</div>PostgreSQL 스키마 구조</div>
+  <div class="sec-sub">기존 스키마와 weather 스키마의 관계</div>
+
+  <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:24px">
+    <div style="padding:14px; border:1px solid var(--border); border-radius:6px; text-align:center">
+      <div style="font-size:18px; margin-bottom:6px">📦</div>
+      <div style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--amber)">raw</div>
+      <div style="font-size:11px; color:var(--gray-400); margin-top:4px">기존<br>customers, orders…</div>
+    </div>
+    <div style="padding:14px; border:1px solid var(--border); border-radius:6px; text-align:center">
+      <div style="font-size:18px; margin-bottom:6px">🔧</div>
+      <div style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--purple)">staging</div>
+      <div style="font-size:11px; color:var(--gray-400); margin-top:4px">기존<br>dbt 변환 레이어</div>
+    </div>
+    <div style="padding:14px; border:1px solid var(--border); border-radius:6px; text-align:center">
+      <div style="font-size:18px; margin-bottom:6px">🏪</div>
+      <div style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--green)">marts</div>
+      <div style="font-size:11px; color:var(--gray-400); margin-top:4px">기존<br>비즈니스 뷰</div>
+    </div>
+    <div style="padding:14px; border:1px solid var(--primary-b); border-radius:6px; text-align:center; background:var(--primary-l)">
+      <div style="font-size:18px; margin-bottom:6px">⛅</div>
+      <div style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--primary)">weather</div>
+      <div style="font-size:11px; color:var(--primary); margin-top:4px"><strong>신규 추가</strong><br>날씨 데이터</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px; font-weight:700; margin-bottom:12px">weather.weather_data 컬럼</h3>
+  <table class="schema-tbl">
+    <thead>
+      <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="col">id</td><td class="type">SERIAL PK</td><td class="desc">자동 증가 기본키</td></tr>
+      <tr><td class="col">city</td><td class="type">VARCHAR(100)</td><td class="desc">도시명 (Seoul, Busan 등)</td></tr>
+      <tr><td class="col">country</td><td class="type">VARCHAR(10)</td><td class="desc">국가 코드 (KR)</td></tr>
+      <tr><td class="col">description</td><td class="type">VARCHAR(200)</td><td class="desc">날씨 설명 (clear sky, rain…)</td></tr>
+      <tr><td class="col">temperature_c</td><td class="type">NUMERIC(5,2)</td><td class="desc">현재 기온 °C (Kelvin에서 변환)</td></tr>
+      <tr><td class="col">feels_like_c</td><td class="type">NUMERIC(5,2)</td><td class="desc">체감 온도 °C</td></tr>
+      <tr><td class="col">temp_min_c</td><td class="type">NUMERIC(5,2)</td><td class="desc">최저 기온 °C</td></tr>
+      <tr><td class="col">temp_max_c</td><td class="type">NUMERIC(5,2)</td><td class="desc">최고 기온 °C</td></tr>
+      <tr><td class="col">pressure_hpa</td><td class="type">INTEGER</td><td class="desc">기압 hPa</td></tr>
+      <tr><td class="col">humidity_pct</td><td class="type">INTEGER</td><td class="desc">습도 %</td></tr>
+      <tr><td class="col">wind_speed_ms</td><td class="type">NUMERIC(6,2)</td><td class="desc">풍속 m/s</td></tr>
+      <tr><td class="col">wind_deg</td><td class="type">INTEGER</td><td class="desc">풍향 (도)</td></tr>
+      <tr><td class="col">visibility_m</td><td class="type">INTEGER</td><td class="desc">가시거리 m</td></tr>
+      <tr><td class="col">cloudiness_pct</td><td class="type">INTEGER</td><td class="desc">구름량 %</td></tr>
+      <tr><td class="col">time_of_record</td><td class="type">TIMESTAMP</td><td class="desc">측정 시각 (현지 시간)</td></tr>
+      <tr><td class="col">sunrise_time</td><td class="type">TIMESTAMP</td><td class="desc">일출 시각</td></tr>
+      <tr><td class="col">sunset_time</td><td class="type">TIMESTAMP</td><td class="desc">일몰 시각</td></tr>
+      <tr><td class="col">collected_at</td><td class="type">TIMESTAMP</td><td class="desc">수집 시각 (자동 NOW())</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Superset 설정 -->
+<section id="superset">
+  <div class="sec-title"><div class="icon">📊</div>Superset 대시보드 설정</div>
+  <div class="sec-sub">
+    기존 Superset에 weather 스키마를 연결하고 차트를 만듭니다.
+    <a href="http://localhost:8088" target="_blank" style="color:var(--primary)">localhost:8088</a> (admin / admin)
+  </div>
+
+  <div class="alert info" style="margin-bottom:20px">
+    <span class="alert-icon">ℹ️</span>
+    <div>
+      기존 Superset에 이미 PostgreSQL 연결이 있다면, <strong>Database 연결을 새로 추가할 필요가 없습니다.</strong>
+      기존 연결이 <code>airflow</code> DB를 바라보고 있으므로 <code>weather</code> 스키마도 자동으로 보입니다.
+    </div>
+  </div>
+
+  <div class="ss-steps">
+    <div class="ss-step">
+      <strong>기존 DB Connection에서 weather 스키마 확인</strong><br>
+      <span class="path">Settings → Database Connections → (기존 postgres 연결) → 편집</span><br>
+      Advanced → SCHEMAS ALLOWED FOR CSV UPLOAD 등에서 <code>weather</code>가 보이는지 확인
+    </div>
+    <div class="ss-step">
+      <strong>Dataset 추가</strong><br>
+      <span class="path">Datasets → + Dataset</span><br>
+      Database: 기존 postgres → Schema: <strong>weather</strong> → Table: <strong>weather_data</strong> → Add
+    </div>
+    <div class="ss-step">
+      <strong>뷰도 Dataset으로 추가 (선택)</strong><br>
+      <span class="path">Datasets → + Dataset</span><br>
+      Schema: weather → Table: <strong>v_latest_weather</strong> (최신 데이터 뷰)<br>
+      Schema: weather → Table: <strong>v_hourly_stats</strong> (시간별 통계 뷰)
+    </div>
+    <div class="ss-step">
+      <strong>Line Chart — 도시별 기온 트렌드</strong><br>
+      <span class="path">Charts → + Chart → Line Chart</span><br>
+      Dataset: weather_data | X Axis: <code>collected_at</code> | Metrics: <code>AVG(temperature_c)</code> | Series: <code>city</code>
+    </div>
+    <div class="ss-step">
+      <strong>Bar Chart — 현재 도시별 습도 비교</strong><br>
+      <span class="path">Charts → + Chart → Bar Chart</span><br>
+      Dataset: v_latest_weather | X: <code>city</code> | Metric: <code>humidity_pct</code>
+    </div>
+    <div class="ss-step">
+      <strong>Dashboard 생성</strong><br>
+      <span class="path">Dashboards → + Dashboard → "날씨 모니터링"</span><br>
+      위에서 만든 차트들을 드래그앤드롭으로 배치 → Save
+    </div>
+  </div>
+
+  <h3 style="font-size:15px; font-weight:700; margin:28px 0 12px">Superset SQL Lab 확인 쿼리</h3>
+  <div class="sql-grid">
+    <div class="sql-card">
+      <div class="sql-title">🌡️ 최신 도시별 기온</div>
+      <pre><code class="language-sql">SELECT city, temperature_c,
+       humidity_pct, description,
+       collected_at
+FROM weather.v_latest_weather
+ORDER BY temperature_c DESC;</code></pre>
+    </div>
+    <div class="sql-card">
+      <div class="sql-title">📈 시간별 기온 변화</div>
+      <pre><code class="language-sql">SELECT hour_bucket, city,
+       avg_temp_c, avg_humidity
+FROM weather.v_hourly_stats
+WHERE hour_bucket >= NOW() - INTERVAL '24 hours'
+ORDER BY 1 DESC, 2;</code></pre>
+    </div>
+    <div class="sql-card">
+      <div class="sql-title">🗓️ 일별 기온 요약</div>
+      <pre><code class="language-sql">SELECT DATE(collected_at) AS day,
+  city,
+  ROUND(MIN(temperature_c)::numeric,1) AS low,
+  ROUND(AVG(temperature_c)::numeric,1) AS avg,
+  ROUND(MAX(temperature_c)::numeric,1) AS high
+FROM weather.weather_data
+GROUP BY 1, 2
+ORDER BY 1 DESC, 2;</code></pre>
+    </div>
+    <div class="sql-card">
+      <div class="sql-title">💧 습도 vs 풍속 산점도</div>
+      <pre><code class="language-sql">SELECT city,
+  temperature_c,
+  humidity_pct,
+  wind_speed_ms,
+  description,
+  collected_at
+FROM weather.weather_data
+WHERE collected_at >= NOW() - INTERVAL '6 hours'
+ORDER BY collected_at DESC;</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 동작 검증 -->
+<section id="verify">
+  <div class="sec-title"><div class="icon">✅</div>동작 검증 명령어</div>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="lang">bash — PostgreSQL 데이터 확인</span></div>
+    <pre><code class="language-bash"># 최근 수집 데이터 확인
+docker exec mds_postgres psql -U airflow -d airflow -c "
+  SELECT city, temperature_c, humidity_pct, description, collected_at
+  FROM weather.weather_data
+  ORDER BY collected_at DESC
+  LIMIT 16;
+"
+
+# 도시별 수집 건수
+docker exec mds_postgres psql -U airflow -d airflow -c "
+  SELECT city, COUNT(*) AS cnt, MAX(collected_at) AS last
+  FROM weather.weather_data
+  GROUP BY city ORDER BY city;
+"
+
+# 최신 날씨 뷰 확인
+docker exec mds_postgres psql -U airflow -d airflow -c "
+  SELECT * FROM weather.v_latest_weather;
+"</code></pre>
+  </div>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="lang">bash — Airflow Connection & Variable 확인</span></div>
+    <pre><code class="language-bash"># Connection 목록 확인
+docker exec mds_airflow_web airflow connections list
+
+# 등록된 Variable 확인
+docker exec mds_airflow_web airflow variables list
+
+# DAG 상태 확인
+docker exec mds_airflow_web airflow dags list | grep weather
+
+# CLI로 즉시 실행 트리거
+docker exec mds_airflow_web \
+  airflow dags trigger weather_etl_pipeline</code></pre>
+  </div>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="lang">bash — 도시 목록 변경 예시</span></div>
+    <pre><code class="language-bash"># Airflow Variable로 도시 즉시 변경 (재빌드 불필요)
+docker exec mds_airflow_web \
+  airflow variables set weather_cities "Seoul,Busan,Jeju,Suwon,Daejeon"
+
+# API 키 교체 (키가 만료되었을 때)
+docker exec mds_airflow_web \
+  airflow variables set openweather_api_key "NEW_API_KEY_HERE"</code></pre>
+  </div>
+</section>
+
+<!-- 트러블슈팅 -->
+<section id="trouble">
+  <div class="sec-title"><div class="icon">🛠️</div>트러블슈팅</div>
+
+  <div class="trouble">
+    <div class="trouble-q">❌ apply_weather.sh 실행 시 "컨테이너가 실행 중이지 않습니다"</div>
+    <div class="trouble-a">
+      기존 MDS 스택이 먼저 실행되어야 합니다.<br>
+      → <code>docker compose ps</code> 로 컨테이너 상태 확인<br>
+      → 모든 컨테이너가 없다면: <code>docker compose up -d</code> 실행 후 1~2분 대기<br>
+      → 이후 <code>./apply_weather.sh YOUR_API_KEY</code> 재실행
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-q">❌ DAG 실행 시 "401 Unauthorized" 오류</div>
+    <div class="trouble-a">
+      API 키가 잘못되었거나 아직 활성화되지 않은 경우입니다.<br>
+      → 브라우저에서 직접 테스트: <code>https://api.openweathermap.org/data/2.5/weather?q=Seoul&appid=YOUR_KEY</code><br>
+      → 신규 키는 최대 2시간 소요. 기존에 쓰던 키가 있다면 그걸 사용<br>
+      → Variable 재등록: <code>docker exec mds_airflow_web airflow variables set openweather_api_key "NEW_KEY"</code>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-q">❌ "relation weather.weather_data does not exist"</div>
+    <div class="trouble-a">
+      weather_init.sql이 실행되지 않은 경우입니다.<br>
+      → 수동 실행:
+      <code>docker cp scripts/weather_init.sql mds_postgres:/tmp/ && docker exec mds_postgres psql -U airflow -d airflow -f /tmp/weather_init.sql</code>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-q">❌ "Connection 'weathermap_api' not found"</div>
+    <div class="trouble-a">
+      apply_weather.sh 실행 중 Connection 등록이 실패한 경우입니다.<br>
+      → 수동 등록:
+      <code>docker exec mds_airflow_web airflow connections add weathermap_api --conn-type http --conn-host https://api.openweathermap.org</code><br>
+      → 또는 Airflow UI → Admin → Connections → + 에서 직접 추가
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-q">❌ DAG 파일이 Airflow UI에 안 보임</div>
+    <div class="trouble-a">
+      Scheduler가 파일을 아직 인식하지 못한 경우입니다.<br>
+      → 30초 대기 후 페이지 새로고침<br>
+      → Scheduler 로그 확인: <code>docker compose logs airflow-scheduler | tail -20</code><br>
+      → Python 문법 오류 여부: <code>docker exec mds_airflow_web python /opt/airflow/dags/weather_etl_dag.py</code>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-q">❌ Superset에서 weather 스키마가 안 보임</div>
+    <div class="trouble-a">
+      Superset의 DB Connection 설정에서 스키마를 명시적으로 허용해야 할 수 있습니다.<br>
+      → Settings → Database Connections → postgres 연결 편집<br>
+      → Advanced → ALLOWED SCHEMAS 에 <code>weather</code> 추가<br>
+      → 또는 SQL Lab에서 직접: <code>SELECT * FROM weather.weather_data LIMIT 5;</code>
+    </div>
+  </div>
+
+  <div class="alert success" style="margin-top:20px">
+    <span class="alert-icon">🔁</span>
+    <div>
+      <strong>완전 초기화가 필요할 때 (날씨 데이터만):</strong><br>
+      <code>docker exec mds_postgres psql -U airflow -d airflow -c "DROP SCHEMA weather CASCADE;"</code><br>
+      이후 <code>./apply_weather.sh YOUR_API_KEY</code> 재실행
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+const sections = document.querySelectorAll('section, .hero, [id]');
+const navLinks = document.querySelectorAll('nav a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`nav a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-15% 0px -75% 0px' });
+sections.forEach(s => { if (s.id) observer.observe(s); });
+</script>
+</body>
+</html>

@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Data Stack — 설치 & 운영 가이드</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --s2:       #1c2333;
+  --s3:       #21262d;
+  --border:   #30363d;
+  --b2:       #3d444d;
+
+  --pg:    #336791;
+  --af:    #017cee;
+  --dbt:   #ff694b;
+  --ss:    #20a7c9;
+  --green: #3fb950;
+  --yel:   #d29922;
+  --red:   #f85149;
+  --pur:   #a78bfa;
+
+  --txt:   #c9d1d9;
+  --muted: #656d76;
+  --hi:    #f0f6fc;
+  --dim:   #484f58;
+
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Noto Sans KR', sans-serif;
+  --r: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:15px;line-height:1.7}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── 진행 바 ── */
+#pgbar{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--dbt),var(--af),var(--ss));z-index:200;transition:width .1s}
+
+/* ── 사이드바 nav ── */
+#sidenav{
+  position:fixed;left:0;top:0;bottom:0;width:220px;
+  background:var(--surface);border-right:1px solid var(--border);
+  padding:24px 0;overflow-y:auto;z-index:100;
+  transition:transform .3s;
+}
+#sidenav .logo{
+  padding:0 20px 20px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:12px;
+}
+#sidenav .logo h2{font-size:.75rem;font-weight:700;color:var(--hi);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono)}
+#sidenav .logo p{font-size:.65rem;color:var(--muted);margin-top:2px}
+.nav-section{padding:4px 12px;font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin:16px 0 4px}
+.nav-link{
+  display:block;padding:6px 20px;font-size:.78rem;color:var(--muted);
+  text-decoration:none;border-radius:0;transition:all .15s;
+  border-left:2px solid transparent;
+}
+.nav-link:hover,.nav-link.active{color:var(--hi);background:var(--s2);border-left-color:var(--af)}
+
+/* ── 메인 콘텐츠 ── */
+#main{margin-left:220px;min-height:100vh}
+
+/* ── 섹션 ── */
+.section{
+  max-width:860px;margin:0 auto;padding:56px 40px;
+  border-bottom:1px solid var(--border);
+}
+.section:last-child{border-bottom:none}
+
+/* ── 섹션 제목 ── */
+.section-head{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.s-icon{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.section-head h2{font-size:1.3rem;font-weight:700;color:var(--hi)}
+.section-head .sub{font-size:.8rem;color:var(--muted);margin-top:2px}
+
+/* ── 카드 ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+.card.blue  {border-color:rgba(1,124,238,.3)}
+.card.orange{border-color:rgba(255,105,75,.3)}
+.card.green {border-color:rgba(63,185,80,.3)}
+.card.teal  {border-color:rgba(32,167,201,.3)}
+.card.red   {border-color:rgba(248,81,73,.25);background:rgba(248,81,73,.04)}
+
+/* ── 코드 블록 ── */
+.cb{background:#010409;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:14px 0}
+.cb-head{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--s2);border-bottom:1px solid var(--border)}
+.cb-lang{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cp{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--af);background:rgba(1,124,238,.1);border:1px solid rgba(1,124,238,.25);border-radius:5px;padding:3px 10px;cursor:pointer;transition:all .2s}
+.cp:hover{background:rgba(1,124,238,.2)}
+.cp.ok{color:var(--green);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.1)}
+pre{padding:18px;font-family:var(--mono);font-size:.78rem;line-height:1.85;overflow-x:auto;color:#8b949e}
+.c{color:#3a4a5e}.k{color:#ff7b72}.s{color:#a5d6ff}.v{color:#79c0ff}.cmd{color:#58a6ff}.hl{color:#e6edf3}.ok{color:#3fb950}.err{color:#f85149}
+
+/* ── 포트 테이블 ── */
+.port-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.84rem}
+.port-table th{text-align:left;padding:10px 14px;background:var(--s2);color:var(--muted);font-size:.72rem;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid var(--border)}
+.port-table td{padding:11px 14px;border-bottom:1px solid var(--border)}
+.port-table tr:last-child td{border-bottom:none}
+.port-table tr:hover td{background:var(--s2)}
+.port-num{font-family:var(--mono);font-weight:700;font-size:.88rem}
+.port-link{color:var(--af);text-decoration:none;font-family:var(--mono);font-size:.78rem}
+.port-link:hover{text-decoration:underline}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;font-family:var(--mono);letter-spacing:.05em}
+.badge.pg {background:rgba(51,103,145,.15);color:#79b8d4;border:1px solid rgba(51,103,145,.3)}
+.badge.af {background:rgba(1,124,238,.12);color:var(--af);border:1px solid rgba(1,124,238,.3)}
+.badge.ss {background:rgba(32,167,201,.12);color:var(--ss);border:1px solid rgba(32,167,201,.3)}
+.badge.no {background:rgba(63,185,80,.1);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+
+/* ── 환경 체크 ── */
+#env-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:16px}
+.env-item{
+  background:var(--s2);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;display:flex;align-items:center;gap:12px;
+}
+.env-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.env-dot.pass{background:var(--green)}
+.env-dot.fail{background:var(--red)}
+.env-dot.warn{background:var(--yel)}
+.env-dot.wait{background:var(--dim);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.env-label{font-size:.82rem;color:var(--hi);font-weight:600}
+.env-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+
+/* ── 서비스 상태 ── */
+#svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:16px 0}
+.svc-card{
+  background:var(--s2);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;text-align:center;cursor:pointer;
+  transition:border-color .2s,transform .15s;text-decoration:none;
+}
+.svc-card:hover{transform:translateY(-2px)}
+.svc-icon{font-size:24px;margin-bottom:8px}
+.svc-name{font-weight:700;color:var(--hi);font-size:.88rem}
+.svc-url{font-family:var(--mono);font-size:.72rem;margin:4px 0}
+.svc-cred{font-size:.7rem;color:var(--muted)}
+.svc-status{
+  display:inline-block;margin-top:8px;padding:2px 10px;
+  border-radius:20px;font-size:.65rem;font-family:var(--mono);font-weight:700;
+}
+.svc-status.checking{background:rgba(210,153,34,.15);color:var(--yel)}
+.svc-status.online {background:rgba(63,185,80,.12);color:var(--green)}
+.svc-status.offline{background:rgba(248,81,73,.12);color:var(--red)}
+
+/* ── 파이프라인 ── */
+.pipeline{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;padding:30px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin:20px 0}
+.pipe-node{padding:16px 18px;border-radius:10px;border:1px solid var(--border);background:var(--surface);text-align:center;min-width:110px;transition:transform .2s}
+.pipe-node:hover{transform:translateY(-3px)}
+.pipe-node .pi{font-size:22px;margin-bottom:6px}
+.pipe-node .pn{font-weight:700;font-size:.82rem;color:var(--hi);font-family:var(--mono)}
+.pipe-node .ps{font-size:.68rem;color:var(--muted);margin-top:2px}
+.pipe-node .pp{font-family:var(--mono);font-size:.64rem;padding:2px 7px;border-radius:10px;margin-top:5px;display:inline-block}
+.pipe-node.npg{border-color:rgba(51,103,145,.4)} .pipe-node.npg .pp{background:rgba(51,103,145,.15);color:#79b8d4}
+.pipe-node.naf{border-color:rgba(1,124,238,.4)}  .pipe-node.naf .pp{background:rgba(1,124,238,.12);color:var(--af)}
+.pipe-node.ndb{border-color:rgba(255,105,75,.4)}  .pipe-node.ndb .pp{background:rgba(255,105,75,.1);color:var(--dbt)}
+.pipe-node.nss{border-color:rgba(32,167,201,.4)}  .pipe-node.nss .pp{background:rgba(32,167,201,.12);color:var(--ss)}
+.pipe-arr{color:var(--border);font-size:18px;padding:0 2px}
+
+/* ── 스텝 리스트 ── */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:16px;padding-bottom:22px;position:relative}
+.step:last-child{padding-bottom:0}
+.step::before{content:'';position:absolute;left:15px;top:32px;bottom:0;width:1px;background:var(--border)}
+.step:last-child::before{display:none}
+.step-n{width:32px;height:32px;border-radius:50%;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--muted);flex-shrink:0;z-index:1}
+.step-body{flex:1;padding-top:5px}
+.step-body h3{font-size:.9rem;font-weight:700;color:var(--hi);margin-bottom:5px}
+.step-body p{font-size:.82rem;color:var(--muted)}
+
+/* ── 알림 박스 ── */
+.note{display:flex;gap:10px;padding:13px 16px;border-radius:8px;font-size:.82rem;margin:12px 0;align-items:flex-start}
+.note.info{background:rgba(1,124,238,.07);border:1px solid rgba(1,124,238,.2)}
+.note.warn{background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.2)}
+.note.good{background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.2)}
+.note.err {background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.2)}
+.note strong{display:block;margin-bottom:3px}
+.note.info strong{color:var(--af)}.note.warn strong{color:var(--yel)}.note.good strong{color:var(--green)}.note.err strong{color:var(--red)}
+.note p{color:var(--muted)}
+
+/* ── 트러블슈팅 accordion ── */
+.trouble{border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.t-q{padding:13px 16px;background:rgba(248,81,73,.05);border-bottom:1px solid rgba(248,81,73,.15);cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:600;color:#ffa198;transition:background .2s;user-select:none}
+.t-q:hover{background:rgba(248,81,73,.09)}
+.t-q .arr{transition:transform .2s;font-size:.7rem}
+.t-a{padding:14px 16px;font-size:.82rem;color:var(--muted);display:none;line-height:1.8}
+.t-a.open{display:block}
+.t-a .sol{color:var(--green);font-weight:600;display:block;margin-bottom:6px}
+
+/* ── dbt 레이어 ── */
+.layers{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+@media(max-width:640px){.layers{grid-template-columns:1fr 1fr}}
+.layer{border-radius:var(--r);padding:14px;border:1px solid var(--border);font-size:.78rem}
+.layer .ln{font-family:var(--mono);font-weight:700;margin-bottom:4px}
+.layer .ls{font-family:var(--mono);font-size:.63rem;opacity:.5;margin-bottom:6px}
+.layer .ld{color:var(--muted);line-height:1.6}
+.layer.raw {background:rgba(100,110,120,.07)}.layer.raw .ln{color:#8b949e}
+.layer.stg {background:rgba(1,124,238,.07);border-color:rgba(1,124,238,.2)}.layer.stg .ln{color:var(--af)}
+.layer.mar {background:rgba(255,105,75,.07);border-color:rgba(255,105,75,.2)}.layer.mar .ln{color:var(--dbt)}
+.layer.rep {background:rgba(32,167,201,.07);border-color:rgba(32,167,201,.2)}.layer.rep .ln{color:var(--ss)}
+
+/* ── superset 설정 단계 ── */
+.ss-steps{list-style:none;counter-reset:ss;display:flex;flex-direction:column;gap:8px}
+.ss-steps li{counter-increment:ss;position:relative;padding:10px 14px 10px 42px;background:var(--s2);border-radius:8px;font-size:.82rem;color:var(--muted)}
+.ss-steps li::before{content:counter(ss);position:absolute;left:14px;top:11px;font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--ss);width:16px;text-align:center}
+.ss-steps li strong{color:var(--hi)}
+.ss-steps li code{font-family:var(--mono);font-size:.72rem;color:var(--af);background:rgba(1,124,238,.1);padding:1px 6px;border-radius:4px}
+
+/* ── 버튼 ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:var(--sans);text-decoration:none}
+.btn.primary{background:rgba(1,124,238,.9);color:white}
+.btn.primary:hover{background:var(--af)}
+.btn.ghost{background:var(--s2);color:var(--txt);border:1px solid var(--border)}
+.btn.ghost:hover{border-color:var(--b2);color:var(--hi)}
+
+/* ── footer ── */
+footer{text-align:center;padding:40px 20px;color:var(--dim);font-family:var(--mono);font-size:.7rem;letter-spacing:.08em}
+</style>
+</head>
+<body>
+<div id="pgbar"></div>
+
+<!-- ══ 사이드바 ══ -->
+<nav id="sidenav">
+  <div class="logo">
+    <h2>Modern Data Stack</h2>
+    <p>PostgreSQL · Airflow · dbt · Superset</p>
+  </div>
+  <div class="nav-section">시작하기</div>
+  <a class="nav-link" href="#overview">개요 & 아키텍처</a>
+  <a class="nav-link" href="#ports">포트 할당</a>
+  <a class="nav-link" href="#env-check">환경 체크</a>
+  <div class="nav-section">설치</div>
+  <a class="nav-link" href="#prereq">사전 요구사항</a>
+  <a class="nav-link" href="#install">설치 단계</a>
+  <a class="nav-link" href="#services">서비스 상태</a>
+  <div class="nav-section">사용법</div>
+  <a class="nav-link" href="#pipeline">ELT 파이프라인</a>
+  <a class="nav-link" href="#dbt">dbt 모델</a>
+  <a class="nav-link" href="#superset-setup">Superset 설정</a>
+  <div class="nav-section">운영</div>
+  <a class="nav-link" href="#commands">관리 명령어</a>
+  <a class="nav-link" href="#trouble">트러블슈팅</a>
+</nav>
+
+<!-- ══ 메인 ══ -->
+<main id="main">
+
+<!-- ① 개요 & 아키텍처 -->
+<div class="section" id="overview">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(1,124,238,.1)">🗺️</div>
+    <div><h2>개요 & 아키텍처</h2><div class="sub">100% 오픈소스 · LocalExecutor · RAM 4GB+</div></div>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-node npg">
+      <div class="pi">🐘</div>
+      <div class="pn">PostgreSQL</div>
+      <div class="ps">warehouse / raw<br>staging / marts</div>
+      <div class="pp">:5432</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-node naf">
+      <div class="pi">🌊</div>
+      <div class="pn">Airflow</div>
+      <div class="ps">DAG 스케줄링<br>오케스트레이션</div>
+      <div class="pp">:8080</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-node ndb">
+      <div class="pi">⚙️</div>
+      <div class="pn">dbt</div>
+      <div class="ps">SQL ELT 변환<br>Airflow 내장</div>
+      <div class="pp">Airflow 내부</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-node nss">
+      <div class="pi">📊</div>
+      <div class="pn">Superset</div>
+      <div class="ps">BI 대시보드<br>시각화</div>
+      <div class="pp">:8088</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px">
+    <div class="card blue">
+      <p style="font-size:.82rem;font-weight:700;color:var(--af);margin-bottom:10px">왜 LocalExecutor?</p>
+      <p style="font-size:.79rem;color:var(--muted)">Redis + Celery Worker를 없애 RAM ~1.5GB 절약.<br>DAG 수백 개 이하의 환경에서 충분하며<br>나중에 <code style="font-family:var(--mono);font-size:.73rem;color:var(--af)">EXECUTOR=CeleryExecutor</code> 한 줄로 확장 가능.</p>
+    </div>
+    <div class="card orange">
+      <p style="font-size:.82rem;font-weight:700;color:var(--dbt);margin-bottom:10px">dbt 통합 방식</p>
+      <p style="font-size:.79rem;color:var(--muted)">dbt가 Airflow 이미지에 사전 설치됨 (Dockerfile.airflow).<br>런타임 pip install 없이 즉시 실행.<br>DAG에서 BashOperator → dbt 명령어 호출.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ② 포트 할당 -->
+<div class="section" id="ports">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(63,185,80,.1)">🔌</div>
+    <div><h2>포트 할당 (충돌 없음 확인)</h2><div class="sub">모든 호스트 포트는 고유합니다</div></div>
+  </div>
+
+  <table class="port-table">
+    <thead>
+      <tr>
+        <th>서비스</th><th>호스트 포트</th><th>컨테이너 포트</th><th>URL</th><th>계정</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge pg">PostgreSQL</span></td>
+        <td><span class="port-num" style="color:var(--pg)">5432</span></td>
+        <td><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">5432</span></td>
+        <td><a class="port-link" href="#">localhost:5432</a></td>
+        <td><span style="font-size:.75rem;color:var(--muted)">admin / Admin1234!</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge af">Airflow</span></td>
+        <td><span class="port-num" style="color:var(--af)">8080</span></td>
+        <td><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">8080</span></td>
+        <td><a class="port-link" href="http://localhost:8080" target="_blank">localhost:8080</a></td>
+        <td><span style="font-size:.75rem;color:var(--muted)">admin / admin</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge ss">Superset</span></td>
+        <td><span class="port-num" style="color:var(--ss)">8088</span></td>
+        <td><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">8088</span></td>
+        <td><a class="port-link" href="http://localhost:8088" target="_blank">localhost:8088</a></td>
+        <td><span style="font-size:.75rem;color:var(--muted)">admin / admin</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge no">Adminer</span></td>
+        <td><span class="port-num" style="color:var(--green)">8889</span></td>
+        <td><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">8080 (컨테이너 내부)</span></td>
+        <td><a class="port-link" href="http://localhost:8889" target="_blank">localhost:8889</a></td>
+        <td><span style="font-size:.75rem;color:var(--muted)">서버: postgres</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note warn">
+    <span>💡</span>
+    <div>
+      <strong>Adminer와 Airflow 포트 관계</strong>
+      <p>Adminer 컨테이너 <em>내부</em>는 8080을 씁니다. Airflow도 내부 8080. 하지만 Docker 컨테이너는 네트워크 네임스페이스가 완전히 격리되어 서로 보이지 않습니다. 호스트에서 Adminer는 <strong>8889</strong>, Airflow는 <strong>8080</strong>이므로 충돌이 없습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ③ 환경 체크 -->
+<div class="section" id="env-check">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(167,139,250,.1)">🔍</div>
+    <div><h2>환경 체크</h2><div class="sub">설치 전 사전 점검</div></div>
+  </div>
+
+  <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">아래 버튼을 클릭하면 브라우저가 할 수 있는 환경 체크를 수행합니다.</p>
+  <button class="btn primary" onclick="runEnvCheck()">🔍 환경 체크 실행</button>
+  <div id="env-results" style="margin-top:16px"></div>
+
+  <div class="note info" style="margin-top:20px">
+    <span>📋</span>
+    <div>
+      <strong>PowerShell에서 전체 환경 체크</strong>
+      <p>브라우저 체크 외에 아래 명령어로 완전한 환경 점검이 가능합니다.</p>
+    </div>
+  </div>
+  <div class="cb">
+    <div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+    <pre><span class="c"># Docker 상태</span>
+<span class="cmd">docker</span> --version
+<span class="cmd">docker</span> compose version
+<span class="cmd">docker</span> info | Select-String "Memory"
+
+<span class="c"># 포트 사용 중인지 확인 (사용 중이면 결과 출력)</span>
+<span class="cmd">netstat</span> -an | findstr ":5432 \|:8080 \|:8088 \|:8889 "
+
+<span class="c"># WSL2 버전 확인</span>
+<span class="cmd">wsl</span> --status
+
+<span class="c"># 사용 가능한 RAM (MB)</span>
+<span class="cmd">Get-CimInstance</span> Win32_OperatingSystem | Select-Object -ExpandProperty FreePhysicalMemory</pre>
+  </div>
+</div>
+
+<!-- ④ 사전 요구사항 -->
+<div class="section" id="prereq">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(210,153,34,.1)">📋</div>
+    <div><h2>사전 요구사항</h2><div class="sub">설치 전 확인사항</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;gap:12px;padding:13px 16px;background:var(--s2);border-radius:8px;font-size:.83rem">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--af);flex-shrink:0;margin-top:5px"></span>
+      <div><strong style="color:var(--hi)">Windows 10 21H2+ / Windows 11</strong><br><span style="color:var(--muted)">WSL2 지원 버전. 홈 에디션 가능.</span></div>
+    </div>
+    <div style="display:flex;gap:12px;padding:13px 16px;background:var(--s2);border-radius:8px;font-size:.83rem">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px"></span>
+      <div><strong style="color:var(--hi)">RAM 4GB 여유 (권장 8GB+)</strong><br><span style="color:var(--muted)">PostgreSQL ~300MB · Airflow ×2 ~800MB · Superset ~600MB · Adminer ~50MB ≈ 총 1.8GB</span></div>
+    </div>
+    <div style="display:flex;gap:12px;padding:13px 16px;background:var(--s2);border-radius:8px;font-size:.83rem">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--dbt);flex-shrink:0;margin-top:5px"></span>
+      <div><strong style="color:var(--hi)">디스크 15GB+ 여유</strong><br><span style="color:var(--muted)">Docker 이미지 ~7GB (Airflow 빌드 포함) + 데이터 볼륨</span></div>
+    </div>
+    <div style="display:flex;gap:12px;padding:13px 16px;background:var(--s2);border-radius:8px;font-size:.83rem">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--ss);flex-shrink:0;margin-top:5px"></span>
+      <div><strong style="color:var(--hi)">Docker Desktop + WSL2 백엔드</strong><br><span style="color:var(--muted)">Settings → General → "Use WSL2 based engine" 체크 필수</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ 설치 단계 -->
+<div class="section" id="install">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(63,185,80,.1)">🚀</div>
+    <div><h2>설치 단계</h2><div class="sub">순서대로 진행하세요</div></div>
+  </div>
+
+  <div class="card green" style="margin-bottom:20px">
+    <p style="font-weight:700;color:var(--green);font-size:.92rem;margin-bottom:8px">✨ 원클릭 설치 (권장)</p>
+    <p style="font-size:.83rem;color:var(--muted)">압축 해제 후 <code style="font-family:var(--mono);color:var(--af)">scripts\setup.bat</code> 더블클릭 (또는 PowerShell에서 <code style="font-family:var(--mono);color:var(--af)">.\scripts\setup.ps1</code>)</p>
+  </div>
+
+  <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">수동 설치 단계:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <h3>Docker Desktop 설치 & WSL2 설정</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell (관리자)</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="cmd">winget install</span> Docker.DockerDesktop
+<span class="c"># 설치 후 재부팅 → Docker Desktop 실행</span>
+<span class="c"># Settings → General → Use WSL2 based engine 체크</span></pre></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <h3>프로젝트 폴더 준비</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="c"># 압축 해제 후 폴더로 이동</span>
+<span class="cmd">cd</span> C:\Projects\data-stack
+<span class="c"># 폴더 구조 확인</span>
+<span class="cmd">Get-ChildItem</span> -Name</pre></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <h3>Airflow+dbt 이미지 빌드 (최초 5~8분)</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell — C:\Projects\data-stack\ 에서</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="cmd">docker compose build</span>
+<span class="c"># Dockerfile.airflow 기반으로 dbt가 포함된 이미지 생성</span>
+<span class="c"># 한번 빌드 후 재실행 시에는 즉시 시작</span></pre></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">4</div>
+      <div class="step-body">
+        <h3>PostgreSQL 먼저 시작 (다른 서비스가 의존)</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="cmd">docker compose up -d</span> postgres
+<span class="c"># 30초 대기 — DB가 완전히 준비될 때까지</span>
+<span class="cmd">Start-Sleep</span> 30</pre></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">5</div>
+      <div class="step-body">
+        <h3>Airflow 초기화 (DB 마이그레이션 + 계정 생성)</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="cmd">docker compose up</span> airflow-init
+<span class="c"># "Airflow 초기화 완료" 메시지 후 자동 종료 (정상)</span></pre></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">6</div>
+      <div class="step-body">
+        <h3>Superset 초기화</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="cmd">docker compose up</span> superset-init
+<span class="c"># "Superset 초기화 완료" 메시지 후 자동 종료 (정상)</span></pre></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">7</div>
+      <div class="step-body">
+        <h3>전체 서비스 백그라운드 시작</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="cmd">docker compose up -d</span>
+<span class="cmd">docker compose ps</span>          <span class="c"># 상태 확인</span></pre></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note warn" style="margin-top:20px">
+    <span>⏱️</span>
+    <div><strong>최초 실행 총 소요 시간</strong><p>이미지 다운로드 10~15분 · Airflow 빌드 5~8분 · 초기화 3~5분 = 총 20~30분. 두 번째부터는 30초.</p></div>
+  </div>
+</div>
+
+<!-- ⑥ 서비스 상태 -->
+<div class="section" id="services">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(32,167,201,.1)">🟢</div>
+    <div><h2>서비스 상태 확인</h2><div class="sub">클릭해서 각 서비스로 이동</div></div>
+  </div>
+
+  <button class="btn ghost" onclick="checkServices()" style="margin-bottom:16px">🔄 연결 상태 새로고침</button>
+
+  <div id="svc-grid">
+    <a class="svc-card" href="http://localhost:8080" target="_blank" id="svc-airflow">
+      <div class="svc-icon">🌊</div>
+      <div class="svc-name">Airflow</div>
+      <div class="svc-url" style="color:var(--af)">localhost:8080</div>
+      <div class="svc-cred">admin / admin</div>
+      <div class="svc-status checking" id="st-airflow">확인 중...</div>
+    </a>
+    <a class="svc-card" href="http://localhost:8088" target="_blank" id="svc-superset">
+      <div class="svc-icon">📊</div>
+      <div class="svc-name">Superset</div>
+      <div class="svc-url" style="color:var(--ss)">localhost:8088</div>
+      <div class="svc-cred">admin / admin</div>
+      <div class="svc-status checking" id="st-superset">확인 중...</div>
+    </a>
+    <a class="svc-card" href="http://localhost:8889" target="_blank" id="svc-adminer">
+      <div class="svc-icon">🛠️</div>
+      <div class="svc-name">Adminer</div>
+      <div class="svc-url" style="color:var(--green)">localhost:8889</div>
+      <div class="svc-cred">서버: postgres</div>
+      <div class="svc-status checking" id="st-adminer">확인 중...</div>
+    </a>
+    <div class="svc-card">
+      <div class="svc-icon">🐘</div>
+      <div class="svc-name">PostgreSQL</div>
+      <div class="svc-url" style="color:var(--pg)">localhost:5432</div>
+      <div class="svc-cred">admin / Admin1234!</div>
+      <div class="svc-status checking" id="st-postgres">Adminer로 접속</div>
+    </div>
+  </div>
+
+  <div class="cb" style="margin-top:16px">
+    <div class="cb-head"><span class="cb-lang">PowerShell — 상태 확인</span><button class="cp" onclick="cp(this)">COPY</button></div>
+    <pre><span class="cmd">docker compose ps</span>
+<span class="cmd">docker stats</span> --no-stream --format <span class="s">"table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"</span></pre>
+  </div>
+</div>
+
+<!-- ⑦ ELT 파이프라인 -->
+<div class="section" id="pipeline">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(255,105,75,.1)">⚡</div>
+    <div><h2>ELT 파이프라인 실행</h2><div class="sub">Airflow DAG → dbt run</div></div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <h3>Airflow 접속 → DAG 활성화</h3>
+        <p><a href="http://localhost:8080" target="_blank" style="color:var(--af)">localhost:8080</a> → 로그인(admin/admin) → <strong style="color:var(--hi)">elt_pipeline</strong> 토글 ON</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <h3>수동 실행 트리거</h3>
+        <p>DAG 우측 ▶ 버튼 → "Trigger DAG" → Graph View에서 실시간 진행 확인</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <h3>9단계 완료 확인 (모두 초록색)</h3>
+        <p style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">check_source_db → dbt_debug → dbt_deps → dbt_run_staging → dbt_test_staging → dbt_run_marts → dbt_test_marts → dbt_docs_generate → pipeline_summary</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">4</div>
+      <div class="step-body">
+        <h3>결과 확인 (Adminer 또는 psql)</h3>
+        <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell — dbt 직접 실행</span><button class="cp" onclick="cp(this)">COPY</button></div>
+        <pre><span class="c"># dbt 전체 실행</span>
+<span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt run --profiles-dir /opt/airflow/dbt"</span>
+
+<span class="c"># 결과 확인</span>
+<span class="cmd">docker compose exec</span> postgres psql -U admin -d warehouse -c <span class="s">"SELECT * FROM marts.monthly_sales;"</span></pre></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧ dbt 모델 -->
+<div class="section" id="dbt">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(255,105,75,.1)">⚙️</div>
+    <div><h2>dbt 모델 구조</h2><div class="sub">ELT 레이어 설계</div></div>
+  </div>
+
+  <div class="layers">
+    <div class="layer raw">
+      <div class="ln">Raw</div><div class="ls">raw.*</div>
+      <div class="ld">원본 데이터<br>수정 금지<br>orders<br>customers<br>products</div>
+    </div>
+    <div class="layer stg">
+      <div class="ln">Staging</div><div class="ls">staging.*</div>
+      <div class="ld">타입 변환<br>컬럼 정리<br>stg_orders<br>stg_customers<br>stg_products</div>
+    </div>
+    <div class="layer mar">
+      <div class="ln">Marts</div><div class="ls">marts.*</div>
+      <div class="ld">비즈니스 로직<br>팩트/차원<br>fct_orders<br>dim_customers<br>monthly_sales</div>
+    </div>
+    <div class="layer rep">
+      <div class="ln">Reporting</div><div class="ls">reporting.*</div>
+      <div class="ld">Superset 연결<br>최종 뷰<br>(수동 추가)</div>
+    </div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-head"><span class="cb-lang">PowerShell — dbt 관리 명령어</span><button class="cp" onclick="cp(this)">COPY</button></div>
+    <pre><span class="c"># 연결 테스트</span>
+<span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt debug --profiles-dir /opt/airflow/dbt"</span>
+
+<span class="c"># staging 모델만 실행</span>
+<span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt run --select staging --profiles-dir /opt/airflow/dbt"</span>
+
+<span class="c"># marts 모델만 실행</span>
+<span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt run --select marts --profiles-dir /opt/airflow/dbt"</span>
+
+<span class="c"># 특정 모델만</span>
+<span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt run --select fct_orders --profiles-dir /opt/airflow/dbt"</span>
+
+<span class="c"># 테스트</span>
+<span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt test --profiles-dir /opt/airflow/dbt"</span></pre>
+  </div>
+</div>
+
+<!-- ⑨ Superset 설정 -->
+<div class="section" id="superset-setup">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(32,167,201,.1)">📊</div>
+    <div><h2>Superset 데이터 연결 & 대시보드</h2></div>
+  </div>
+
+  <div class="card teal">
+    <p style="font-weight:700;color:var(--ss);margin-bottom:14px">🔌 PostgreSQL 데이터 소스 연결</p>
+    <ol class="ss-steps">
+      <li><a href="http://localhost:8088" target="_blank" style="color:var(--af)">localhost:8088</a> 접속 → <strong>admin / admin</strong></li>
+      <li>상단 메뉴 <strong>Settings</strong> → <strong>Database Connections</strong> → <strong>+ Database</strong></li>
+      <li>드롭다운에서 <strong>PostgreSQL</strong> 선택</li>
+      <li>연결 문자열 입력:<br><code>postgresql://admin:Admin1234!@postgres:5432/warehouse</code></li>
+      <li><strong>Test Connection</strong> → "Connection looks good!" 확인</li>
+      <li><strong>Connect</strong> 버튼으로 저장</li>
+    </ol>
+  </div>
+
+  <div class="card teal" style="margin-top:12px">
+    <p style="font-weight:700;color:var(--ss);margin-bottom:14px">📈 월별 매출 차트 생성</p>
+    <ol class="ss-steps">
+      <li>메뉴 <strong>Charts</strong> → <strong>+ Chart</strong></li>
+      <li>Dataset: <strong>marts.monthly_sales</strong></li>
+      <li>차트 유형: <strong>Line Chart</strong></li>
+      <li>X축: <code>year_month</code> / Metrics: <code>SUM(total_revenue)</code></li>
+      <li><strong>Run Query</strong> → 결과 확인 → <strong>Save</strong></li>
+      <li><strong>Dashboards</strong> → <strong>+ Dashboard</strong> → 차트 추가</li>
+    </ol>
+  </div>
+
+  <div class="note info" style="margin-top:12px">
+    <span>💡</span>
+    <div><strong>권장 첫 번째 차트 3개</strong><p>① monthly_sales — 월별 매출 추이 (Line)<br>② dim_customers — 등급별 고객 분포 (Pie)<br>③ fct_orders — 카테고리별 매출 (Bar)</p></div>
+  </div>
+</div>
+
+<!-- ⑩ 관리 명령어 -->
+<div class="section" id="commands">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(100,110,120,.1)">🔧</div>
+    <div><h2>관리 명령어</h2></div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-head"><span class="cb-lang">일상 운영 — PowerShell (C:\Projects\data-stack\ 에서)</span><button class="cp" onclick="cp(this)">COPY</button></div>
+    <pre><span class="c"># ── 시작 / 중지 ────────────────────────────────────────────</span>
+<span class="cmd">docker compose up -d</span>                     <span class="c"># 전체 시작</span>
+<span class="cmd">docker compose down</span>                      <span class="c"># 전체 중지 (데이터 보존)</span>
+<span class="cmd">docker compose down -v</span>                   <span class="c"># 초기화 (데이터 삭제!)</span>
+
+<span class="c"># ── 상태 / 모니터링 ────────────────────────────────────────</span>
+<span class="cmd">docker compose ps</span>                        <span class="c"># 컨테이너 상태</span>
+<span class="cmd">docker stats</span> --no-stream                 <span class="c"># RAM/CPU 사용량</span>
+<span class="cmd">docker compose logs -f</span> airflow-scheduler <span class="c"># 실시간 로그</span>
+
+<span class="c"># ── 개별 서비스 제어 ────────────────────────────────────────</span>
+<span class="cmd">docker compose restart</span> airflow-webserver
+<span class="cmd">docker compose stop</span> superset
+<span class="cmd">docker compose start</span> superset
+
+<span class="c"># ── 업데이트 ────────────────────────────────────────────────</span>
+<span class="cmd">docker compose pull</span>                      <span class="c"># 최신 이미지 당기기</span>
+<span class="cmd">docker compose build</span> --no-cache          <span class="c"># 이미지 재빌드</span>
+<span class="cmd">docker compose up -d</span> --force-recreate    <span class="c"># 컨테이너 재생성</span>
+
+<span class="c"># ── DB 직접 접속 ────────────────────────────────────────────</span>
+<span class="cmd">docker compose exec</span> postgres psql -U admin -d warehouse
+<span class="c"># SQL: SELECT * FROM marts.monthly_sales; \q 로 종료</span>
+
+<span class="c"># ── 관리 도구 실행 ──────────────────────────────────────────</span>
+<span class="cmd">.\scripts\manage.ps1</span></pre>
+  </div>
+</div>
+
+<!-- ⑪ 트러블슈팅 -->
+<div class="section" id="trouble">
+  <div class="section-head">
+    <div class="s-icon" style="background:rgba(248,81,73,.1)">🚑</div>
+    <div><h2>트러블슈팅</h2><div class="sub">클릭해서 해결 방법 보기</div></div>
+  </div>
+
+  <div class="trouble">
+    <div class="t-q" onclick="tog(this)">❌ setup.bat 실행 시 한글 깨짐 / 명령어 인식 안 됨 <span class="arr">▼</span></div>
+    <div class="t-a">
+      <span class="sol">✅ 해결: setup.bat 대신 setup.ps1을 직접 실행</span>
+      <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+      <pre><span class="cmd">powershell</span> -ExecutionPolicy Bypass -File <span class="s">".\scripts\setup.ps1"</span></pre></div>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="t-q" onclick="tog(this)">❌ Airflow UI가 8080에서 안 열림 <span class="arr">▼</span></div>
+    <div class="t-a">
+      <span class="sol">✅ airflow-init 완료 전에 webserver가 시작된 경우</span>
+      airflow-init이 완전히 종료(exited 0)된 후 webserver가 시작됩니다. 1~2분 대기 후:
+      <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+      <pre><span class="cmd">docker compose logs</span> airflow-init            <span class="c"># "초기화 완료" 확인</span>
+<span class="cmd">docker compose logs</span> --tail=30 airflow-webserver
+<span class="cmd">docker compose restart</span> airflow-webserver    <span class="c"># 그래도 안되면</span></pre></div>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="t-q" onclick="tog(this)">❌ Adminer 포트 8889 접속 불가 <span class="arr">▼</span></div>
+    <div class="t-a">
+      <span class="sol">✅ 컨테이너 실행 상태 확인 + 방화벽 체크</span>
+      <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+      <pre><span class="cmd">docker compose ps</span> adminer               <span class="c"># State: Up 확인</span>
+<span class="cmd">docker compose logs</span> adminer             <span class="c"># 오류 메시지 확인</span>
+<span class="c"># 포트 8889가 방화벽에 막혀있으면:</span>
+<span class="cmd">netsh</span> advfirewall firewall add rule name=<span class="s">"Adminer"</span> protocol=TCP dir=in localport=8889 action=allow</pre></div>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="t-q" onclick="tog(this)">❌ Superset "Database connection failed" <span class="arr">▼</span></div>
+    <div class="t-a">
+      <span class="sol">✅ 컨테이너 내부 호스트명 사용 필수</span>
+      Superset에서 PostgreSQL 연결 시 <code>localhost</code>가 아닌 컨테이너 서비스명 <code>postgres</code>를 써야 합니다.<br><br>
+      올바른 연결 문자열: <code style="color:var(--af)">postgresql://admin:Admin1234!@postgres:5432/warehouse</code>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="t-q" onclick="tog(this)">❌ dbt run 실패 — "relation does not exist" <span class="arr">▼</span></div>
+    <div class="t-a">
+      <span class="sol">✅ staging → marts 순서로 실행</span>
+      marts 모델은 staging 뷰를 참조합니다. 반드시 staging 먼저:
+      <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+      <pre><span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt run --select staging --profiles-dir /opt/airflow/dbt"</span>
+<span class="cmd">docker compose exec</span> airflow-scheduler bash -c <span class="s">"cd /opt/airflow/dbt && dbt run --select marts --profiles-dir /opt/airflow/dbt"</span></pre></div>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="t-q" onclick="tog(this)">❌ WSL2 메모리 부족 (OOM, 컨테이너 자꾸 죽음) <span class="arr">▼</span></div>
+    <div class="t-a">
+      <span class="sol">✅ .wslconfig 파일로 WSL2 메모리 상한 설정</span>
+      <code>%UserProfile%\.wslconfig</code> 파일 생성/수정:
+      <div class="cb"><div class="cb-head"><span class="cb-lang">.wslconfig</span><button class="cp" onclick="cp(this)">COPY</button></div>
+      <pre><span class="k">[wsl2]</span>
+<span class="v">memory</span>=<span class="s">8GB</span>
+<span class="v">processors</span>=<span class="s">4</span>
+<span class="v">swap</span>=<span class="s">4GB</span></pre></div>
+      저장 후 <code>wsl --shutdown</code> → Docker Desktop 재시작
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="t-q" onclick="tog(this)">❌ docker compose build 실패 (pip 타임아웃) <span class="arr">▼</span></div>
+    <div class="t-a">
+      <span class="sol">✅ 네트워크 타임아웃 — 재시도 또는 Docker 재시작</span>
+      <div class="cb"><div class="cb-head"><span class="cb-lang">PowerShell</span><button class="cp" onclick="cp(this)">COPY</button></div>
+      <pre><span class="c"># Docker 캐시 없이 재빌드</span>
+<span class="cmd">docker compose build</span> --no-cache
+<span class="c"># 또는 Docker Desktop 재시작 후 재시도</span>
+<span class="cmd">docker system prune</span> -f  <span class="c"># 불필요한 캐시 정리</span></pre></div>
+    </div>
+  </div>
+</div>
+
+<footer>MODERN DATA STACK · POSTGRESQL · AIRFLOW · DBT · APACHE SUPERSET · 100% OPEN SOURCE</footer>
+</main>
+
+<script>
+// 스크롤 진행 바
+window.addEventListener('scroll',()=>{
+  const p=window.scrollY/(document.body.scrollHeight-window.innerHeight)*100;
+  document.getElementById('pgbar').style.width=p+'%';
+});
+
+// 사이드바 활성화
+const sections=document.querySelectorAll('.section');
+const navLinks=document.querySelectorAll('.nav-link');
+const observer=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      navLinks.forEach(l=>l.classList.remove('active'));
+      const link=document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+      if(link)link.classList.add('active');
+    }
+  });
+},{rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s=>observer.observe(s));
+
+// 코드 복사
+function cp(btn){
+  const pre=btn.closest('.cb').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='✓ COPIED';btn.classList.add('ok');
+    setTimeout(()=>{btn.textContent='COPY';btn.classList.remove('ok');},2000);
+  });
+}
+
+// 트러블슈팅 accordion
+function tog(el){
+  const ans=el.nextElementSibling;
+  const arr=el.querySelector('.arr');
+  ans.classList.toggle('open');
+  arr.style.transform=ans.classList.contains('open')?'rotate(180deg)':'';
+}
+
+// 환경 체크
+function runEnvCheck(){
+  const r=document.getElementById('env-results');
+  const checks=[
+    {id:'browser',label:'브라우저',desc:'',fn:()=>Promise.resolve({ok:true,msg:navigator.userAgent.split(' ').pop()})},
+    {id:'online',label:'인터넷 연결',desc:'Docker 이미지 다운로드 필요',fn:()=>Promise.resolve({ok:navigator.onLine,msg:navigator.onLine?'연결됨':'오프라인'})},
+    {id:'screen',label:'화면 해상도',desc:'1280×720 이상 권장',fn:()=>Promise.resolve({ok:window.screen.width>=1280,msg:`${window.screen.width}×${window.screen.height}`})},
+    {id:'mem',label:'기기 RAM',desc:'4GB+ 권장 (Docker 포함)',fn:()=>Promise.resolve({ok:(navigator.deviceMemory||4)>=4,msg:`${navigator.deviceMemory||'?'}GB+ 감지`})},
+  ];
+
+  r.innerHTML=checks.map(c=>`
+    <div class="env-item">
+      <div class="env-dot wait" id="dot-${c.id}"></div>
+      <div><div class="env-label">${c.label}</div><div class="env-sub" id="sub-${c.id}">${c.desc||'확인 중...'}</div></div>
+    </div>`).join('');
+
+  checks.forEach(c=>{
+    c.fn().then(res=>{
+      const dot=document.getElementById('dot-'+c.id);
+      const sub=document.getElementById('sub-'+c.id);
+      dot.className='env-dot '+(res.ok?'pass':'warn');
+      sub.textContent=res.msg;
+    });
+  });
+
+  // 서비스 연결 체크 추가
+  const svcChecks=[
+    {id:'af',label:'Airflow :8080',url:'http://localhost:8080'},
+    {id:'ss',label:'Superset :8088',url:'http://localhost:8088'},
+    {id:'ad',label:'Adminer :8889',url:'http://localhost:8889'},
+  ];
+
+  svcChecks.forEach(s=>{
+    const div=document.createElement('div');
+    div.className='env-item';
+    div.innerHTML=`<div class="env-dot wait" id="dot-${s.id}"></div><div><div class="env-label">${s.label}</div><div class="env-sub" id="sub-${s.id}">연결 확인 중...</div></div>`;
+    r.appendChild(div);
+
+    fetch(s.url,{mode:'no-cors',signal:AbortSignal.timeout(4000)})
+      .then(()=>{
+        document.getElementById('dot-'+s.id).className='env-dot pass';
+        document.getElementById('sub-'+s.id).textContent='온라인 ✓';
+      })
+      .catch(()=>{
+        document.getElementById('dot-'+s.id).className='env-dot fail';
+        document.getElementById('sub-'+s.id).textContent='접속 불가 (서비스 시작 필요)';
+      });
+  });
+}
+
+// 서비스 상태 체크
+function checkServices(){
+  const svcs=[
+    {id:'airflow',url:'http://localhost:8080'},
+    {id:'superset',url:'http://localhost:8088'},
+    {id:'adminer',url:'http://localhost:8889'},
+  ];
+  svcs.forEach(s=>{
+    const el=document.getElementById('st-'+s.id);
+    el.className='svc-status checking';el.textContent='확인 중...';
+    fetch(s.url,{mode:'no-cors',signal:AbortSignal.timeout(4000)})
+      .then(()=>{el.className='svc-status online';el.textContent='● 온라인';})
+      .catch(()=>{el.className='svc-status offline';el.textContent='● 오프라인';});
+  });
+  document.getElementById('st-postgres').textContent='Adminer로 접속';
+}
+
+// 페이지 로드 시 자동 서비스 체크
+window.addEventListener('load',()=>{
+  setTimeout(checkServices,1000);
+});
+</script>
+</body>
+</html>

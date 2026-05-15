@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDS 완전 실습 가이드 v2 | Airflow + dbt + Superset</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#fff; --sf:#f6f8fa; --sf2:#eaeef2;
+  --bd:#d0d7de; --bd2:#e8ecf0;
+  --tx:#1f2328; --mu:#636c76;
+  --bl:#0969da; --bl-bg:#ddf4ff; --bl-bd:#54aeff;
+  --gn:#1a7f37; --gn-bg:#dafbe1; --gn-bd:#4ac26b;
+  --or:#9a6700; --or-bg:#fff8c5; --or-bd:#d4a72c;
+  --rd:#d1242f; --rd-bg:#ffebe9; --rd-bd:#ff8182;
+  --pu:#6639ba; --pu-bg:#fbefff; --pu-bd:#c297ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--tx);line-height:1.7}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:100vh}
+.sidebar{
+  width:268px;flex-shrink:0;background:var(--sf);
+  border-right:1px solid var(--bd);
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sb-top{padding:18px 14px;border-bottom:1px solid var(--bd);background:var(--bg)}
+.sb-top h2{font-size:13px;font-weight:800;line-height:1.5;color:var(--tx)}
+.sb-top p{font-size:11px;color:var(--mu);margin-top:3px}
+.sb-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;
+      border:1px solid var(--gn-bd);background:var(--gn-bg);color:var(--gn)}
+.ng{padding:10px 8px 2px}
+.ng-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+        color:var(--mu);padding:0 8px;margin-bottom:2px}
+.nb{display:flex;align-items:center;gap:7px;width:100%;padding:5px 8px;
+    border-radius:6px;font-size:12.5px;color:var(--mu);
+    background:none;border:none;cursor:pointer;text-align:left;transition:.12s}
+.nb:hover{background:var(--sf2);color:var(--tx)}
+.nb.on{background:var(--bl-bg);color:var(--bl);font-weight:600}
+.nb .ic{font-size:13px;width:16px;text-align:center}
+.nb .nm{margin-left:auto;background:var(--sf2);border-radius:8px;
+        padding:1px 5px;font-size:10px;color:var(--mu);
+        font-family:'JetBrains Mono',monospace}
+.main{flex:1;overflow-x:hidden}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(135deg,#f0f6ff,#fafbff 55%,#f0fff4);
+      border-bottom:1px solid var(--bd);padding:44px 52px 36px}
+.hero-crumb{font-size:12px;color:var(--mu);margin-bottom:10px;
+            display:flex;align-items:center;gap:6px}
+.hero h1{font-size:30px;font-weight:900;letter-spacing:-.7px;line-height:1.25;margin-bottom:8px}
+.hero h1 em{font-style:normal;color:var(--bl)}
+.hero p{font-size:14px;color:var(--mu);max-width:560px;line-height:1.8}
+.env-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:24px}
+.ec{background:var(--bg);border:1px solid var(--bd);border-radius:10px;
+    padding:10px;text-align:center}
+.ec .ei{font-size:18px;margin-bottom:4px}
+.ec .en{font-size:11px;font-weight:700}
+.ec .ep{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--bl);margin-top:2px}
+.ec .es{font-size:10px;color:var(--gn);margin-top:3px;
+        display:inline-flex;align-items:center;gap:3px}
+.ec .es::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gn);display:block}
+
+/* ── SECTION ── */
+.section{padding:36px 52px;border-bottom:1px solid var(--bd2)}
+.sec-hdr{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px}
+.sic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;
+     justify-content:center;font-size:17px;flex-shrink:0;border:1px solid}
+.si-bl{background:var(--bl-bg);border-color:var(--bl-bd)}
+.si-gn{background:var(--gn-bg);border-color:var(--gn-bd)}
+.si-or{background:var(--or-bg);border-color:var(--or-bd)}
+.si-pu{background:var(--pu-bg);border-color:var(--pu-bd)}
+.si-rd{background:var(--rd-bg);border-color:var(--rd-bd)}
+.sec-ttl{font-size:19px;font-weight:800;letter-spacing:-.4px}
+.sec-sub{font-size:13px;color:var(--mu);margin-top:2px}
+h3{font-size:14.5px;font-weight:700;margin:24px 0 10px;padding-bottom:5px;
+   border-bottom:2px solid var(--bd2);display:flex;align-items:center;gap:8px}
+p{font-size:13.5px;color:#444c56;margin-bottom:8px;line-height:1.8}
+
+/* ── CODE ── */
+.cw{background:var(--sf);border:1px solid var(--bd);border-radius:8px;
+    overflow:hidden;margin:10px 0}
+.cb{display:flex;align-items:center;justify-content:space-between;
+    padding:7px 13px;background:var(--sf2);border-bottom:1px solid var(--bd)}
+.cb .lg{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+        font-family:'JetBrains Mono',monospace}
+.lg.ps{color:#0171b7}.lg.bash{color:#1a7f37}.lg.py{color:#9a6700}
+.lg.sql{color:#6639ba}.lg.yaml{color:#d1242f}.lg.txt{color:#636c76}
+.cb .fi{font-size:11px;color:var(--mu);font-family:'JetBrains Mono',monospace}
+.cpbtn{font-size:11px;padding:2px 9px;border-radius:4px;border:1px solid var(--bd);
+       background:var(--bg);color:var(--mu);cursor:pointer;
+       font-family:'JetBrains Mono',monospace}
+.cpbtn:hover{background:var(--sf2);color:var(--tx)}
+pre{padding:15px;overflow-x:auto;font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;line-height:1.75;color:var(--tx)}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;
+     background:var(--sf2);padding:1px 5px;border-radius:3px;
+     border:1px solid var(--bd);color:var(--rd)}
+
+/* syntax */
+.kw{color:#cf222e}.fn{color:#8250df}.str{color:#0a3069}
+.num{color:#0550ae}.cm{color:#6e7781;font-style:italic}
+.cls{color:#953800}.dec{color:#0969da}.var{color:#953800}
+.skw{color:#0969da;font-weight:600}.sfn{color:#8250df}
+.sst{color:#0a3069}.scm{color:#6e7781;font-style:italic}
+
+/* ── CALLOUT ── */
+.cal{display:flex;gap:11px;padding:11px 14px;border-radius:8px;
+     margin:10px 0;font-size:13px;line-height:1.75;border:1px solid}
+.cal.inf{background:var(--bl-bg);border-color:var(--bl-bd)}
+.cal.ok {background:var(--gn-bg);border-color:var(--gn-bd)}
+.cal.wrn{background:var(--or-bg);border-color:var(--or-bd)}
+.cal.err{background:var(--rd-bg);border-color:var(--rd-bd)}
+.cal.tip{background:var(--pu-bg);border-color:var(--pu-bd)}
+.ci{font-size:15px;flex-shrink:0;margin-top:1px}
+
+/* ── STEPS ── */
+.steps{counter-reset:s}
+.step{display:flex;gap:13px;margin-bottom:18px}
+.step::before{counter-increment:s;content:counter(s);
+  width:24px;height:24px;border-radius:50%;
+  background:var(--bl);color:#fff;
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:4px;font-family:'JetBrains Mono',monospace}
+.step-b{flex:1}
+.step-b strong{font-size:13.5px;font-weight:700;display:block;margin-bottom:3px}
+.step-b p{margin:0;font-size:12.5px;color:var(--mu)}
+
+/* ── WHERE BOX ── */
+.wb{display:flex;align-items:center;gap:8px;background:var(--bl-bg);
+    border:1px solid var(--bl-bd);border-radius:7px;padding:8px 13px;
+    margin:8px 0;font-size:12.5px}
+.wb .wl{font-weight:700;color:var(--bl);white-space:nowrap;flex-shrink:0}
+.wb .wp{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0;
+     border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.tbl th{background:var(--sf);color:var(--mu);font-weight:700;padding:8px 13px;
+        text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+        border-bottom:1px solid var(--bd)}
+.tbl td{padding:8px 13px;border-bottom:1px solid var(--bd2);color:var(--tx);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--sf)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+
+/* ── BADGE ── */
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;
+     font-size:11px;font-weight:700;border:1px solid}
+.bdg.bl{background:var(--bl-bg);color:var(--bl);border-color:var(--bl-bd)}
+.bdg.gn{background:var(--gn-bg);color:var(--gn);border-color:var(--gn-bd)}
+.bdg.or{background:var(--or-bg);color:var(--or);border-color:var(--or-bd)}
+.bdg.rd{background:var(--rd-bg);color:var(--rd);border-color:var(--rd-bd)}
+.bdg.pu{background:var(--pu-bg);color:var(--pu);border-color:var(--pu-bd)}
+
+/* ── FILE TREE ── */
+.tree{background:var(--sf);border:1px solid var(--bd);border-radius:8px;
+      padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;margin:10px 0}
+.tr{display:flex;align-items:center;gap:7px;padding:2.5px 0;line-height:1.5;position:relative}
+.tr-1{padding-left:18px}.tr-2{padding-left:38px}.tr-3{padding-left:58px}
+.tr-1::before,.tr-2::before,.tr-3::before{
+  content:'';position:absolute;top:50%;height:1px;background:var(--bd)}
+.tr-1::before{left:7px;width:9px}
+.tr-2::before{left:27px;width:9px}
+.tr-3::before{left:47px;width:9px}
+.td{color:#0969da;font-weight:700}
+.tf{color:var(--tx)}
+.tm{color:var(--mu);font-size:11px;margin-left:6px;font-style:italic}
+.tbdg{font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;
+      border:1px solid;margin-left:6px;font-family:'Pretendard',sans-serif}
+
+/* ── DAG FLOW ── */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin:14px 0}
+.fn-node{padding:7px 13px;border-radius:7px;font-size:12px;font-weight:600;
+         font-family:'JetBrains Mono',monospace;border:1.5px solid}
+.fn-s{background:var(--gn-bg);border-color:var(--gn-bd);color:var(--gn)}
+.fn-t{background:var(--bl-bg);border-color:var(--bl-bd);color:var(--bl)}
+.fn-e{background:var(--pu-bg);border-color:var(--pu-bd);color:var(--pu)}
+.fn-arr{color:var(--bd);padding:0 4px;font-size:14px}
+
+/* ── CHART PREVIEW ── */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.cc{border:1px solid var(--bd);border-radius:9px;overflow:hidden;background:var(--bg)}
+.cc-hdr{padding:10px 13px;border-bottom:1px solid var(--bd2);
+        display:flex;align-items:center;gap:7px;background:var(--sf)}
+.cc-hdr h4{font-size:12.5px;font-weight:700;flex:1}
+.cc-type{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;
+         background:var(--sf2);color:var(--mu);text-transform:uppercase;
+         font-family:'JetBrains Mono',monospace}
+.cc-ins{padding:9px 13px;border-top:1px solid var(--bd2);background:var(--sf);
+        font-size:12px;color:var(--mu);line-height:1.6}
+.cc-ins strong{color:var(--tx)}
+
+/* ── UI STEP BOX ── */
+.ui-box{background:var(--sf);border:1px solid var(--bd);border-radius:8px;
+        padding:14px;margin:10px 0;position:relative}
+.ui-lbl{position:absolute;top:0;left:14px;transform:translateY(-50%);
+        background:var(--bl);color:#fff;font-size:10px;font-weight:800;
+        padding:2px 10px;border-radius:10px;letter-spacing:.5px}
+.ui-flds{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.ui-f .k{font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px}
+.ui-f .v{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--bl);margin-top:1px}
+
+/* ── BAR MINI ── */
+.mb{display:flex;align-items:flex-end;gap:6px;height:90px}
+.mbc{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.mbc .b{width:100%;border-radius:3px 3px 0 0;min-height:3px}
+.mbc .l{font-size:9px;color:var(--mu);text-align:center;line-height:1.3}
+
+/* ── CHECKLIST ── */
+.chk{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12.5px}
+.chk-item{display:flex;align-items:center;gap:7px;padding:4px 0}
+.chk-item input{width:14px;height:14px;cursor:pointer;accent-color:var(--bl)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--sf)}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+@media(max-width:960px){
+  .sidebar{display:none}
+  .hero,.section{padding:24px 18px}
+  .env-grid{grid-template-columns:repeat(3,1fr)}
+  .cg{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ══ SIDEBAR ══ -->
+<nav class="sidebar">
+  <div class="sb-top">
+    <h2>MDS 완전 실습 가이드 v2<br>Airflow · dbt · Superset</h2>
+    <p>data_stack · 이커머스 분석</p>
+    <div class="sb-pills">
+      <span class="pill">✓ :8080 Airflow</span>
+      <span class="pill">✓ :8088 Superset</span>
+      <span class="pill">✓ :5050 pgAdmin</span>
+      <span class="pill">✓ /opt/dbt</span>
+    </div>
+  </div>
+  <div class="ng"><div class="ng-lbl">환경 파악</div>
+    <button class="nb" onclick="go('env')"><span class="ic">🗺️</span>도커 환경 전체 구조</button>
+    <button class="nb" onclick="go('dbt-struct')"><span class="ic">📁</span>dbt 프로젝트 구조</button>
+    <button class="nb" onclick="go('lineage')"><span class="ic">🔗</span>모델 의존 관계</button>
+  </div>
+  <div class="ng"><div class="ng-lbl">파일 배포</div>
+    <button class="nb" onclick="go('deploy')"><span class="ic">📤</span>DAG·스크립트 배포<span class="nm">01</span></button>
+  </div>
+  <div class="ng"><div class="ng-lbl">dbt 실습</div>
+    <button class="nb" onclick="go('dbt-run')"><span class="ic">▶️</span>dbt run<span class="nm">02</span></button>
+    <button class="nb" onclick="go('dbt-test')"><span class="ic">🧪</span>dbt test<span class="nm">03</span></button>
+    <button class="nb" onclick="go('pgadmin')"><span class="ic">🔍</span>pgAdmin 결과 확인<span class="nm">04</span></button>
+  </div>
+  <div class="ng"><div class="ng-lbl">Airflow 실습</div>
+    <button class="nb" onclick="go('af-conn')"><span class="ic">🔌</span>Connection 등록<span class="nm">05</span></button>
+    <button class="nb" onclick="go('af-dag')"><span class="ic">⚙️</span>DAG 파일 설명<span class="nm">06</span></button>
+    <button class="nb" onclick="go('af-run')"><span class="ic">▶️</span>DAG 실행·모니터링<span class="nm">07</span></button>
+  </div>
+  <div class="ng"><div class="ng-lbl">Superset 실습</div>
+    <button class="nb" onclick="go('ss-conn')"><span class="ic">🔌</span>DB 연결·Dataset<span class="nm">08</span></button>
+    <button class="nb" onclick="go('chart1')"><span class="ic">📊</span>차트① 월별 매출<span class="nm">09</span></button>
+    <button class="nb" onclick="go('chart2')"><span class="ic">🥧</span>차트② 카테고리<span class="nm">10</span></button>
+    <button class="nb" onclick="go('chart3')"><span class="ic">📈</span>차트③ 마케팅 ROI<span class="nm">11</span></button>
+    <button class="nb" onclick="go('chart4')"><span class="ic">👤</span>차트④ 고객 등급<span class="nm">12</span></button>
+    <button class="nb" onclick="go('dashboard')"><span class="ic">🖥️</span>대시보드 구성<span class="nm">13</span></button>
+  </div>
+  <div class="ng"><div class="ng-lbl">마무리</div>
+    <button class="nb" onclick="go('trouble')"><span class="ic">🛠️</span>트러블슈팅</button>
+    <button class="nb" onclick="go('checklist')"><span class="ic">✅</span>체크리스트</button>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-crumb">MDS 실습 <span style="color:var(--bd)">›</span> Airflow 2.9.1 + dbt 1.7.17 + Superset 3.1.0</div>
+  <h1>Modern Data Stack<br><em>완전 실습 가이드 v2</em></h1>
+  <p>실제 확인된 경로(<code>/opt/dbt</code>) 기반으로 전면 재작성. DAG 2개·스크립트 2개 포함.<br>어디서 무엇을 어떻게 실행하는지 단계마다 명확하게 안내합니다.</p>
+  <div class="env-grid">
+    <div class="ec"><div class="ei">🌀</div><div class="en">Airflow</div><div class="ep">:8080</div><div class="es">Running</div></div>
+    <div class="ec"><div class="ei">⏰</div><div class="en">Scheduler</div><div class="ep">내부</div><div class="es">Running</div></div>
+    <div class="ec"><div class="ei">📊</div><div class="en">Superset</div><div class="ep">:8088</div><div class="es">Running</div></div>
+    <div class="ec"><div class="ei">🗄️</div><div class="en">Postgres</div><div class="ep">:5432</div><div class="es">Running</div></div>
+    <div class="ec"><div class="ei">🔍</div><div class="en">pgAdmin</div><div class="ep">:5050</div><div class="es">Running</div></div>
+    <div class="ec"><div class="ei">🌐</div><div class="en">Portal</div><div class="ep">:80</div><div class="es">Running</div></div>
+  </div>
+</div>
+
+<div id="env" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-bl">🗺️</div>
+    <div><div class="sec-ttl">도커 환경 전체 구조</div>
+    <div class="sec-sub">6개 컨테이너 역할 · 접속 정보 · 실제 확인된 경로</div></div>
+  </div>
+
+  <table class="tbl">
+    <thead><tr><th>컨테이너명</th><th>이미지</th><th>접속</th><th>역할</th><th>로그인</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">mds_airflow_web</td><td class="mono">airflow-with-dbt:2.9.1</td><td class="mono" style="color:var(--bl)">localhost:8080</td><td><strong>dbt 1.7.17 설치됨</strong> — 모든 dbt 명령 실행 위치</td><td class="mono">airflow / airflow</td></tr>
+      <tr><td class="mono">mds_airflow_scheduler</td><td class="mono">airflow-with-dbt:2.9.1</td><td>—</td><td>DAG 스케줄 실행</td><td>—</td></tr>
+      <tr><td class="mono">mds_superset</td><td class="mono">apache/superset:3.1.0</td><td class="mono" style="color:var(--bl)">localhost:8088</td><td>BI 시각화</td><td class="mono">admin / admin</td></tr>
+      <tr><td class="mono">mds_postgres</td><td class="mono">postgres:15</td><td class="mono" style="color:var(--bl)">localhost:5432</td><td>PostgreSQL — raw·staging·marts 스키마</td><td class="mono">airflow / airflow</td></tr>
+      <tr><td class="mono">mds_pgadmin</td><td class="mono">dpage/pgadmin4:8.5</td><td class="mono" style="color:var(--bl)">localhost:5050</td><td>DB GUI 관리</td><td>설정값 참고</td></tr>
+      <tr><td class="mono">mds_portal</td><td class="mono">nginx:alpine</td><td class="mono" style="color:var(--bl)">localhost:80</td><td>서비스 포털</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cal ok">
+    <div class="ci">✅</div>
+    <div><strong>실제 확인된 dbt 프로젝트 경로</strong>: <code>mds_airflow_web</code> 컨테이너 내부 <code>/opt/dbt/</code><br>
+    (find 명령으로 확인: <code>/opt/dbt/dbt_project.yml</code>)</div>
+  </div>
+
+  <h3>데이터 흐름 한눈에</h3>
+  <div class="flow">
+    <div class="fn-node fn-s">raw 스키마</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-t">dbt staging (VIEW)</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-t">dbt marts (TABLE)</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-t">Airflow 자동화</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-e">Superset 차트</div>
+  </div>
+</div>
+
+<!-- ══ dbt 구조 ══ -->
+<div id="dbt-struct" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-or">📁</div>
+    <div><div class="sec-ttl">dbt 프로젝트 구조</div>
+    <div class="sec-sub">실제 경로: mds_airflow_web:/opt/dbt/</div></div>
+  </div>
+
+  <div class="wb"><span class="wl">📂 실제 경로</span><span class="wp">mds_airflow_web 컨테이너 내부 → /opt/dbt/</span></div>
+
+  <div class="tree">
+    <div class="tr"><span class="td">📁 /opt/dbt/</span></div>
+    <div class="tr tr-1"><span class="tf">📄 dbt_project.yml</span><span class="tm">프로젝트 설정 (name: data_stack, staging→VIEW, marts→TABLE)</span></div>
+    <div class="tr tr-1"><span class="tf">📄 profiles.yml</span><span class="tm">DB 연결 (host: mds_postgres, db: airflow)</span></div>
+    <div class="tr tr-1"><span class="td">📁 models/</span></div>
+    <div class="tr tr-2"><span class="tf">📄 sources.yml</span><span class="tm">raw 스키마 테이블 선언 + unique/not_null 테스트</span></div>
+    <div class="tr tr-2"><span class="td">📁 staging/</span><span class="tbdg" style="background:var(--or-bg);color:var(--or);border-color:var(--or-bd)">VIEW · staging 스키마</span></div>
+    <div class="tr tr-3"><span class="tf">📄 stg_orders.sql</span><span class="tm">주문 정제 + total_amount, is_revenue, year_month</span></div>
+    <div class="tr tr-3"><span class="tf">📄 stg_customers.sql</span><span class="tm">고객 정제 + days_since_signup, is_capital_region</span></div>
+    <div class="tr tr-3"><span class="tf">📄 stg_products.sql</span><span class="tm">상품 정제 + margin_rate, price_tier</span></div>
+    <div class="tr tr-3"><span class="tf">📄 stg_marketing_spend.sql</span><span class="tm">광고비 정제 + ctr, cpc</span></div>
+    <div class="tr tr-3"><span class="tf">📄 schema.yml</span><span class="tm">unique / not_null 테스트 정의</span></div>
+    <div class="tr tr-2"><span class="td">📁 marts/</span><span class="tbdg" style="background:var(--gn-bg);color:var(--gn);border-color:var(--gn-bd)">TABLE · marts 스키마</span></div>
+    <div class="tr tr-3"><span class="tf">📄 dim_customers.sql</span><span class="tm">고객 차원 — RFM 점수 + customer_grade (VIP/골드/실버/브론즈/신규)</span></div>
+    <div class="tr tr-3"><span class="tf">📄 fct_orders.sql</span><span class="tm">주문 팩트 — 고객·상품 모든 차원 결합 + revenue_amount, gross_profit</span></div>
+    <div class="tr tr-3"><span class="tf">📄 monthly_sales.sql</span><span class="tm">월별 매출 집계 — MoM 성장률(mom_growth_rate) 포함</span></div>
+    <div class="tr tr-3"><span class="tf">📄 marketing_roi.sql</span><span class="tm">마케팅 ROAS + CAC (첫 구매 기준 채널 귀속)</span></div>
+    <div class="tr tr-3"><span class="tf">📄 schema.yml</span><span class="tm">accepted_values 테스트 (customer_grade, status 등)</span></div>
+    <div class="tr tr-1"><span class="td">📁 macros/</span></div>
+    <div class="tr tr-2"><span class="tf">⚡ generate_schema_name.sql</span><span class="tbdg" style="background:var(--rd-bg);color:var(--rd);border-color:var(--rd-bd)">필수! 스키마 이름 오버라이드</span></div>
+  </div>
+
+  <div class="cal wrn">
+    <div class="ci">⚠️</div>
+    <div><strong>generate_schema_name 매크로가 없으면</strong> staging 모델이 <code>raw_staging</code>으로 생성됩니다. 이 파일이 있어야 정확히 <code>staging</code>, <code>marts</code> 스키마에 생성됩니다.</div>
+  </div>
+
+  <h3>핵심 설정 파일</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg yaml">yaml</span><span class="fi">dbt_project.yml</span></div>
+    <pre>name: <span class="str">'data_stack'</span>
+profile: <span class="str">'data_stack'</span>
+models:
+  data_stack:
+    staging:
+      +materialized: <span class="str">view</span>    <span class="cm"># → staging 스키마에 VIEW 생성</span>
+      +schema: <span class="str">staging</span>
+    marts:
+      +materialized: <span class="str">table</span>   <span class="cm"># → marts 스키마에 TABLE 생성</span>
+      +schema: <span class="str">marts</span></pre>
+  </div>
+  <div class="cw">
+    <div class="cb"><span class="lg yaml">yaml</span><span class="fi">profiles.yml</span></div>
+    <pre>data_stack:
+  target: dev
+  outputs:
+    dev:
+      type: <span class="str">postgres</span>
+      host: <span class="str">mds_postgres</span>    <span class="cm"># ← Docker 컨테이너명 (localhost 아님!)</span>
+      user: <span class="str">airflow</span>
+      password: <span class="str">airflow</span>
+      port: <span class="num">5432</span>
+      dbname: <span class="str">airflow</span>
+      schema: <span class="str">raw</span>
+      threads: <span class="num">4</span></pre>
+  </div>
+</div>
+
+<!-- ══ lineage ══ -->
+<div id="lineage" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-pu">🔗</div>
+    <div><div class="sec-ttl">모델 의존 관계 (Lineage)</div>
+    <div class="sec-sub">dbt가 ref() 선언을 분석해 자동으로 실행 순서를 결정합니다</div></div>
+  </div>
+
+  <table class="tbl">
+    <thead><tr><th>레이어</th><th>모델명</th><th>의존 모델</th><th>결과물</th><th>핵심 컬럼</th></tr></thead>
+    <tbody>
+      <tr><td><span class="bdg rd">SOURCE</span></td><td class="mono">raw.*</td><td>—</td><td>raw 스키마 (init-db.sql)</td><td>원천 데이터</td></tr>
+      <tr><td><span class="bdg or">STAGING</span></td><td class="mono">stg_orders</td><td class="mono">source('raw','orders')</td><td>staging VIEW</td><td class="mono">total_amount, is_revenue, year_month</td></tr>
+      <tr><td><span class="bdg or">STAGING</span></td><td class="mono">stg_customers</td><td class="mono">source('raw','customers')</td><td>staging VIEW</td><td class="mono">days_since_signup, is_capital_region</td></tr>
+      <tr><td><span class="bdg or">STAGING</span></td><td class="mono">stg_products</td><td class="mono">source('raw','products')</td><td>staging VIEW</td><td class="mono">margin_rate, price_tier</td></tr>
+      <tr><td><span class="bdg or">STAGING</span></td><td class="mono">stg_marketing_spend</td><td class="mono">source('raw','marketing_spend')</td><td>staging VIEW</td><td class="mono">ctr, cpc</td></tr>
+      <tr><td><span class="bdg gn">MARTS</span></td><td class="mono">dim_customers</td><td class="mono">stg_customers, stg_orders</td><td>marts TABLE</td><td class="mono">rfm_r/f/m, customer_grade, lifetime_value</td></tr>
+      <tr><td><span class="bdg gn">MARTS</span></td><td class="mono">fct_orders</td><td class="mono">stg_orders, dim_customers, stg_products</td><td>marts TABLE</td><td class="mono">revenue_amount, gross_profit</td></tr>
+      <tr><td><span class="bdg gn">MARTS</span></td><td class="mono">monthly_sales</td><td class="mono">fct_orders</td><td>marts TABLE</td><td class="mono">total_revenue, mom_growth_rate</td></tr>
+      <tr><td><span class="bdg gn">MARTS</span></td><td class="mono">marketing_roi</td><td class="mono">stg_marketing_spend, fct_orders, dim_customers</td><td>marts TABLE</td><td class="mono">roas, cac, avg_ctr</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cal inf">
+    <div class="ci">💡</div>
+    <div><strong>자동 순서 보장</strong>: <code>dbt run</code> 한 번이면 stg_orders → dim_customers → fct_orders → monthly_sales 순서로 자동 실행됩니다. 순서를 신경 쓸 필요가 없습니다.</div>
+  </div>
+</div>
+
+<!-- ══ 파일 배포 ══ -->
+<div id="deploy" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-bl">📤</div>
+    <div><div class="sec-ttl">실습 01 — DAG·스크립트 파일 컨테이너에 배포</div>
+    <div class="sec-sub">PowerShell에서 docker cp 명령으로 파일을 컨테이너 안에 복사합니다</div></div>
+  </div>
+
+  <div class="wb"><span class="wl">🖥️ 실행 위치</span><span class="wp">Windows PowerShell (로컬 PC)</span></div>
+
+  <h3>배포할 파일 목록</h3>
+  <table class="tbl">
+    <thead><tr><th>파일명</th><th>역할</th><th>배포 위치 (컨테이너 내부)</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">dag_dbt_data_stack.py</td><td>매일 02:00 전체 파이프라인 실행</td><td class="mono">/opt/airflow/dags/</td></tr>
+      <tr><td class="mono">dag_dbt_selective_run.py</td><td>수동 트리거 전용 — 특정 모델만 재실행</td><td class="mono">/opt/airflow/dags/</td></tr>
+      <tr><td class="mono">setup_connections.py</td><td>postgres_mds 커넥션 자동 등록</td><td class="mono">/opt/airflow/scripts/</td></tr>
+      <tr><td class="mono">dbt_health_check.py</td><td>dbt 환경 헬스체크 (연결·경로 검증)</td><td class="mono">/opt/airflow/scripts/</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Step 1 — PowerShell에서 파일 복사</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg ps">PowerShell</span><span class="fi">파일이 있는 폴더에서 실행</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="cm"># DAG 파일 2개 복사</span>
+docker cp dag_dbt_data_stack.py     mds_airflow_web:/opt/airflow/dags/
+docker cp dag_dbt_selective_run.py  mds_airflow_web:/opt/airflow/dags/
+
+<span class="cm"># scripts 폴더 생성 후 스크립트 복사</span>
+docker exec mds_airflow_web mkdir -p /opt/airflow/scripts
+docker cp setup_connections.py  mds_airflow_web:/opt/airflow/scripts/
+docker cp dbt_health_check.py   mds_airflow_web:/opt/airflow/scripts/
+
+<span class="cm"># 복사 확인</span>
+docker exec mds_airflow_web ls /opt/airflow/dags/
+docker exec mds_airflow_web ls /opt/airflow/scripts/</pre>
+  </div>
+
+  <h3>Step 2 — 헬스체크 스크립트 실행 (선택)</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg ps">PowerShell</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>docker exec mds_airflow_web python /opt/airflow/scripts/dbt_health_check.py
+
+<span class="cm"># 정상 출력 예시:
+# ==================================================
+#   dbt 환경 헬스체크 결과
+# ==================================================
+#   ✅  dbt 설치 확인: Core:        1.7.17
+#   ✅  dbt 프로젝트 폴더 존재: /opt/dbt
+#   ✅  dbt_project.yml 존재
+#   ✅  profiles.yml host = mds_postgres (정상)
+#   ✅  PostgreSQL 연결 성공: mds_postgres:5432/airflow
+# ==================================================
+#   모든 체크 통과 — dbt run 준비 완료!</span></pre>
+  </div>
+</div>
+
+<!-- ══ dbt run ══ -->
+<div id="dbt-run" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-gn">▶️</div>
+    <div><div class="sec-ttl">실습 02 — dbt run (모델 실행)</div>
+    <div class="sec-sub">PowerShell → docker exec → /opt/dbt 경로에서 실행</div></div>
+  </div>
+
+  <div class="wb"><span class="wl">🖥️ 실행 위치</span><span class="wp">PowerShell → mds_airflow_web 컨테이너 내부 → /opt/dbt 폴더</span></div>
+
+  <h3><span style="background:var(--bl-bg);color:var(--bl);font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--bl-bd)">STEP 1</span> 컨테이너 진입</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg ps">PowerShell</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>docker exec -it mds_airflow_web bash
+<span class="cm"># 프롬프트: airflow@165b4fd98717:/opt/airflow$  ← 이렇게 바뀌면 성공</span></pre>
+  </div>
+
+  <h3><span style="background:var(--bl-bg);color:var(--bl);font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--bl-bd)">STEP 2</span> /opt/dbt 로 이동</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg bash">BASH (컨테이너 내부)</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>cd /opt/dbt
+
+ls
+<span class="cm"># 출력 확인: dbt_project.yml  logs  macros  models  profiles.yml  target</span></pre>
+  </div>
+
+  <h3><span style="background:var(--bl-bg);color:var(--bl);font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--bl-bd)">STEP 3</span> 연결 테스트</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg bash">BASH</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>dbt debug
+
+<span class="cm"># 정상 출력:
+# All checks passed!
+#   Connection:
+#     host: mds_postgres
+#     port: 5432
+#     database: airflow
+#     schema: raw</span></pre>
+  </div>
+
+  <h3><span style="background:var(--bl-bg);color:var(--bl);font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--bl-bd)">STEP 4</span> 전체 모델 실행</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg bash">BASH</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>dbt run
+
+<span class="cm"># 성공 출력:
+# Running with dbt=1.7.17
+# Found 8 models, 31 tests, 1 source
+# Completed successfully
+# Done. PASS=8 WARN=0 ERROR=0 SKIP=0 TOTAL=8</span></pre>
+  </div>
+
+  <div class="cal ok">
+    <div class="ci">✅</div>
+    <div><strong>PASS=8</strong> 이 나오면 완료. staging 4개(VIEW) + marts 4개(TABLE) = 총 8개 모델 생성.</div>
+  </div>
+
+  <h3>선택적 실행 옵션</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg bash">BASH</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="cm"># staging 모델 4개만</span>
+dbt run --select staging
+
+<span class="cm"># marts 모델 4개만</span>
+dbt run --select marts
+
+<span class="cm"># 특정 모델 하나만</span>
+dbt run --select fct_orders
+
+<span class="cm"># fct_orders + 이것에 의존하는 하위 모델 전부</span>
+dbt run --select fct_orders+
+
+<span class="cm"># dim_customers + 이것의 모든 상위 의존 모델 포함</span>
+dbt run --select +dim_customers
+
+<span class="cm"># run + test 한 번에 (권장)</span>
+dbt build</pre>
+  </div>
+</div>
+
+<!-- ══ dbt test ══ -->
+<div id="dbt-test" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-gn">🧪</div>
+    <div><div class="sec-ttl">실습 03 — dbt test (품질 검사)</div>
+    <div class="sec-sub">실제 로그 기준 PASS=31 / WARN=0 / ERROR=0</div></div>
+  </div>
+
+  <div class="wb"><span class="wl">🖥️ 실행 위치</span><span class="wp">mds_airflow_web 컨테이너 내부 · /opt/dbt 폴더</span></div>
+
+  <div class="cw">
+    <div class="cb"><span class="lg bash">BASH</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>dbt test
+
+<span class="cm"># 실제 결과 (dbt.log 기준):
+# Finished running 31 tests in 1.09 seconds
+# Done. PASS=31 WARN=0 ERROR=0 SKIP=0 TOTAL=31</span></pre>
+  </div>
+
+  <h3>어떤 테스트가 실행되는가?</h3>
+  <table class="tbl">
+    <thead><tr><th>테스트</th><th>대상</th><th>검사 내용</th></tr></thead>
+    <tbody>
+      <tr><td><span class="bdg bl">unique</span></td><td class="mono">stg_orders.order_id</td><td>주문 ID 중복 없음</td></tr>
+      <tr><td><span class="bdg bl">not_null</span></td><td class="mono">stg_customers.email</td><td>이메일 누락 없음</td></tr>
+      <tr><td><span class="bdg pu">accepted_values</span></td><td class="mono">stg_orders.status</td><td>completed/cancelled/refunded/pending 만 허용</td></tr>
+      <tr><td><span class="bdg bl">unique</span></td><td class="mono">dim_customers.customer_id</td><td>고객 ID 중복 없음</td></tr>
+      <tr><td><span class="bdg pu">accepted_values</span></td><td class="mono">dim_customers.customer_grade</td><td>VIP/골드/실버/브론즈/신규 만 허용</td></tr>
+      <tr><td><span class="bdg bl">not_null</span></td><td class="mono">monthly_sales.year_month</td><td>연월 누락 없음</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cw">
+    <div class="cb"><span class="lg bash">BASH</span><span class="fi">테스트 실패 행 저장 옵션</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="cm"># 실패한 행을 별도 테이블에 저장 → pgAdmin에서 확인 가능</span>
+dbt test --store-failures
+
+<span class="cm"># 특정 모델만 테스트</span>
+dbt test --select dim_customers</pre>
+  </div>
+</div>
+
+<!-- ══ pgAdmin ══ -->
+<div id="pgadmin" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-or">🔍</div>
+    <div><div class="sec-ttl">실습 04 — pgAdmin으로 결과 확인</div>
+    <div class="sec-sub">dbt run 후 생성된 staging·marts 객체를 GUI로 확인</div></div>
+  </div>
+
+  <div class="wb"><span class="wl">🌐 접속 URL</span><span class="wp">http://localhost:5050</span></div>
+
+  <div class="steps">
+    <div class="step"><div class="step-b">
+      <strong>좌측 Servers 우클릭 → Register → Server…</strong>
+      <p>pgAdmin 초기 화면에서 서버 등록</p>
+    </div></div>
+    <div class="step"><div class="step-b">
+      <strong>General 탭: Name 입력</strong>
+      <p>Name: <code>MDS Postgres</code> 입력</p>
+    </div></div>
+    <div class="step"><div class="step-b">
+      <strong>Connection 탭: 아래 값 입력</strong>
+      <p></p>
+    </div></div>
+  </div>
+
+  <div class="ui-box">
+    <div class="ui-lbl">Connection 탭 입력값</div>
+    <div class="ui-flds">
+      <div class="ui-f"><div class="k">Host name / address</div><div class="v">mds_postgres</div></div>
+      <div class="ui-f"><div class="k">Port</div><div class="v">5432</div></div>
+      <div class="ui-f"><div class="k">Maintenance database</div><div class="v">airflow</div></div>
+      <div class="ui-f"><div class="k">Username</div><div class="v">airflow</div></div>
+      <div class="ui-f"><div class="k">Password</div><div class="v">airflow</div></div>
+    </div>
+  </div>
+
+  <h3>확인 쿼리 목록</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg sql">SQL</span><span class="fi">pgAdmin → Query Tool 에서 실행</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="scm">-- 1. 스키마 목록 확인</span>
+<span class="skw">SELECT</span> schema_name <span class="skw">FROM</span> information_schema.schemata
+<span class="skw">WHERE</span> schema_name <span class="skw">IN</span> (<span class="sst">'raw'</span>, <span class="sst">'staging'</span>, <span class="sst">'marts'</span>);
+
+<span class="scm">-- 2. staging VIEW 확인</span>
+<span class="skw">SELECT</span> table_name, table_type <span class="skw">FROM</span> information_schema.tables
+<span class="skw">WHERE</span> table_schema = <span class="sst">'staging'</span>;
+
+<span class="scm">-- 3. marts TABLE 확인</span>
+<span class="skw">SELECT</span> table_name, table_type <span class="skw">FROM</span> information_schema.tables
+<span class="skw">WHERE</span> table_schema = <span class="sst">'marts'</span>;
+
+<span class="scm">-- 4. 고객 등급 분포</span>
+<span class="skw">SELECT</span> customer_grade, <span class="sfn">COUNT</span>(*) <span class="skw">FROM</span> marts.dim_customers <span class="skw">GROUP BY</span> <span class="num">1</span>;
+
+<span class="scm">-- 5. 마케팅 ROAS 확인</span>
+<span class="skw">SELECT</span> channel, <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(roas),<span class="num">2</span>) <span class="skw">FROM</span> marts.marketing_roi <span class="skw">GROUP BY</span> <span class="num">1</span>;</pre>
+  </div>
+</div>
+
+<!-- ══ Airflow Connection ══ -->
+<div id="af-conn" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-bl">🔌</div>
+    <div><div class="sec-ttl">실습 05 — Airflow Connection 등록</div>
+    <div class="sec-sub">3가지 방법 중 하나 선택 (CLI 추천)</div></div>
+  </div>
+
+  <h3>방법 A — CLI (가장 빠름, 추천)</h3>
+  <div class="wb"><span class="wl">🖥️ 실행 위치</span><span class="wp">PowerShell (로컬 PC)</span></div>
+  <div class="cw">
+    <div class="cb"><span class="lg ps">PowerShell</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>docker exec mds_airflow_web airflow connections add postgres_mds `
+  --conn-type postgres `
+  --conn-host mds_postgres `
+  --conn-schema airflow `
+  --conn-login airflow `
+  --conn-password airflow `
+  --conn-port 5432
+
+<span class="cm"># 등록 확인</span>
+docker exec mds_airflow_web airflow connections get postgres_mds</pre>
+  </div>
+
+  <h3>방법 B — 스크립트 실행</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg ps">PowerShell</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="cm"># setup_connections.py 를 이미 /opt/airflow/scripts/ 에 복사했다면</span>
+docker exec mds_airflow_web python /opt/airflow/scripts/setup_connections.py
+
+<span class="cm"># 출력 예시:
+# [OK] 등록 완료: postgres_mds → mds_postgres:5432/airflow</span></pre>
+  </div>
+
+  <h3>방법 C — WebUI</h3>
+  <div class="wb"><span class="wl">🌐 접속 URL</span><span class="wp">http://localhost:8080 → Admin → Connections → + 버튼</span></div>
+  <div class="ui-box">
+    <div class="ui-lbl">WebUI 입력값</div>
+    <div class="ui-flds">
+      <div class="ui-f"><div class="k">Connection Id</div><div class="v">postgres_mds</div></div>
+      <div class="ui-f"><div class="k">Conn Type</div><div class="v">Postgres</div></div>
+      <div class="ui-f"><div class="k">Host</div><div class="v">mds_postgres</div></div>
+      <div class="ui-f"><div class="k">Schema</div><div class="v">airflow</div></div>
+      <div class="ui-f"><div class="k">Login</div><div class="v">airflow</div></div>
+      <div class="ui-f"><div class="k">Password</div><div class="v">airflow</div></div>
+      <div class="ui-f"><div class="k">Port</div><div class="v">5432</div></div>
+    </div>
+  </div>
+  <div class="cal wrn">
+    <div class="ci">⚠️</div>
+    <div><strong>Host는 반드시 <code>mds_postgres</code></strong>. <code>localhost</code>나 <code>postgres</code>를 쓰면 연결 실패합니다. Docker 내부 통신은 컨테이너명을 씁니다.</div>
+  </div>
+</div>
+
+<!-- ══ DAG 설명 ══ -->
+<div id="af-dag" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-gn">⚙️</div>
+    <div><div class="sec-ttl">실습 06 — DAG 파일 코드 설명</div>
+    <div class="sec-sub">배포한 2개 DAG 파일의 내용과 동작 방식</div></div>
+  </div>
+
+  <h3>DAG 1: dag_dbt_data_stack.py — 매일 자동 실행</h3>
+  <div class="flow" style="margin-bottom:14px">
+    <div class="fn-node fn-s">▶ 02:00</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-t">dbt_debug</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-t">dbt_run_staging</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-t">dbt_run_marts</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-t">dbt_test</div><div class="fn-arr">→</div>
+    <div class="fn-node fn-e">pipeline_done</div>
+  </div>
+  <div class="cw">
+    <div class="cb"><span class="lg py">python</span><span class="fi">dags/dag_dbt_data_stack.py (핵심 부분)</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="cls">DBT_DIR</span> = <span class="str">"/opt/dbt"</span>   <span class="cm"># 실제 확인된 경로</span>
+
+<span class="kw">with</span> <span class="fn">DAG</span>(
+    dag_id            = <span class="str">"dbt_data_stack_daily"</span>,
+    schedule_interval = <span class="str">"0 2 * * *"</span>,   <span class="cm"># 매일 02:00</span>
+    start_date        = <span class="fn">datetime</span>(<span class="num">2024</span>, <span class="num">1</span>, <span class="num">1</span>),
+    catchup           = <span class="kw">False</span>,
+) <span class="kw">as</span> dag:
+
+    t_debug   = <span class="cls">BashOperator</span>(task_id=<span class="str">"dbt_debug"</span>,
+                  bash_command=<span class="str">f"cd {DBT_DIR} && dbt debug"</span>)
+    t_staging = <span class="cls">BashOperator</span>(task_id=<span class="str">"dbt_run_staging"</span>,
+                  bash_command=<span class="str">f"cd {DBT_DIR} && dbt run --select staging"</span>)
+    t_marts   = <span class="cls">BashOperator</span>(task_id=<span class="str">"dbt_run_marts"</span>,
+                  bash_command=<span class="str">f"cd {DBT_DIR} && dbt run --select marts"</span>)
+    t_test    = <span class="cls">BashOperator</span>(task_id=<span class="str">"dbt_test"</span>,
+                  bash_command=<span class="str">f"cd {DBT_DIR} && dbt test"</span>)
+    t_done    = <span class="cls">BashOperator</span>(task_id=<span class="str">"pipeline_done"</span>,
+                  bash_command=<span class="str">'echo "파이프라인 완료: $(date)"'</span>)
+
+    t_debug >> t_staging >> t_marts >> t_test >> t_done</pre>
+  </div>
+
+  <h3>DAG 2: dag_dbt_selective_run.py — 수동 트리거 전용</h3>
+  <div class="cw">
+    <div class="cb"><span class="lg py">python</span><span class="fi">dags/dag_dbt_selective_run.py (핵심 부분)</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="kw">with</span> <span class="fn">DAG</span>(
+    dag_id            = <span class="str">"dbt_selective_run"</span>,
+    schedule_interval = <span class="kw">None</span>,   <span class="cm"># 수동 트리거만</span>
+    params            = {<span class="str">"select"</span>: <span class="str">"marts"</span>, <span class="str">"exclude"</span>: <span class="str">""</span>},
+) <span class="kw">as</span> dag:
+    <span class="cm"># Trigger DAG w/ config → select 파라미터로 모델 지정</span>
+    t_run  = <span class="cls">BashOperator</span>(task_id=<span class="str">"dbt_run_selected"</span>, ...)
+    t_test = <span class="cls">BashOperator</span>(task_id=<span class="str">"dbt_test_selected"</span>, ...)
+    t_run >> t_test</pre>
+  </div>
+  <div class="cal inf">
+    <div class="ci">💡</div>
+    <div><strong>사용법</strong>: Airflow UI에서 <code>dbt_selective_run</code> → Trigger DAG w/ config → <code>{"select":"dim_customers"}</code> 입력 → Trigger. 특정 모델만 재실행할 때 유용합니다.</div>
+  </div>
+</div>
+
+<!-- ══ Airflow 실행 ══ -->
+<div id="af-run" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-gn">▶️</div>
+    <div><div class="sec-ttl">실습 07 — Airflow DAG 실행 & 모니터링</div>
+    <div class="sec-sub">WebUI에서 DAG 활성화·수동 실행·로그 확인</div></div>
+  </div>
+
+  <div class="wb"><span class="wl">🌐 접속 URL</span><span class="wp">http://localhost:8080 (airflow / airflow)</span></div>
+
+  <div class="steps">
+    <div class="step"><div class="step-b">
+      <strong>DAGs 메뉴에서 dbt_data_stack_daily 확인</strong>
+      <p>보이지 않으면 1~2분 대기 후 새로고침. 여전히 없으면 아래 CLI 확인 명령어 실행</p>
+    </div></div>
+    <div class="step"><div class="step-b">
+      <strong>토글 켜기 (회색 → 파란색)</strong>
+      <p>DAG 이름 왼쪽 토글 클릭. 파란색 = Active. 이 상태에서만 스케줄 실행됨</p>
+    </div></div>
+    <div class="step"><div class="step-b">
+      <strong>▶ Trigger DAG 버튼으로 즉시 수동 실행</strong>
+      <p>오른쪽 Actions 컬럼 ▶ 버튼 클릭 → Trigger 팝업 확인</p>
+    </div></div>
+    <div class="step"><div class="step-b">
+      <strong>DAG 이름 클릭 → Grid/Graph View에서 상태 확인</strong>
+      <p>초록 = 성공, 빨강 = 실패, 노랑 = 실행중</p>
+    </div></div>
+    <div class="step"><div class="step-b">
+      <strong>실패 Task 클릭 → Log 탭 → 오류 원인 확인</strong>
+      <p>dbt 오류 메시지가 상세히 출력됨. <code>dbt test</code> 실패 시 어느 컬럼이 실패했는지 표시</p>
+    </div></div>
+  </div>
+
+  <div class="cw">
+    <div class="cb"><span class="lg ps">PowerShell</span><span class="fi">CLI로 확인·실행하는 방법</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="cm"># DAG 파일 구문 오류 확인</span>
+docker exec mds_airflow_web python /opt/airflow/dags/dag_dbt_data_stack.py
+
+<span class="cm"># DAG 목록 확인 (dbt_data_stack_daily 가 보여야 함)</span>
+docker exec mds_airflow_web airflow dags list
+
+<span class="cm"># 즉시 수동 트리거</span>
+docker exec mds_airflow_web airflow dags trigger dbt_data_stack_daily
+
+<span class="cm"># 실행 로그 확인</span>
+docker logs mds_airflow_scheduler --tail 30</pre>
+  </div>
+</div>
+
+<!-- ══ Superset 연결 ══ -->
+<div id="ss-conn" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-bl">🔌</div>
+    <div><div class="sec-ttl">실습 08 — Superset DB 연결 & Dataset 등록</div>
+    <div class="sec-sub">marts 테이블을 차트 데이터 소스로 등록</div></div>
+  </div>
+
+  <div class="wb"><span class="wl">🌐 접속 URL</span><span class="wp">http://localhost:8088 (admin / admin)</span></div>
+
+  <h3>Step A — Database 연결 등록</h3>
+  <div class="steps">
+    <div class="step"><div class="step-b">
+      <strong>Settings(⚙️) → Database Connections → + DATABASE</strong>
+      <p>우측 상단 톱니바퀴 아이콘 → Database Connections</p>
+    </div></div>
+    <div class="step"><div class="step-b">
+      <strong>PostgreSQL 선택 후 SQLALCHEMY URI 입력</strong>
+      <p>아래 URI 복사 → Test Connection 클릭 → Connect</p>
+    </div></div>
+  </div>
+  <div class="cw">
+    <div class="cb"><span class="lg txt">URI</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre>postgresql+psycopg2://airflow:airflow@mds_postgres:5432/airflow</pre>
+  </div>
+  <div class="cal wrn">
+    <div class="ci">⚠️</div>
+    <div><strong>반드시 <code>mds_postgres</code></strong> — Superset 컨테이너도 Docker 내부이므로 <code>localhost:5432</code>가 아닌 컨테이너명을 써야 합니다.</div>
+  </div>
+
+  <h3>Step B — Dataset 등록 (4개)</h3>
+  <p>Datasets → + DATASET → DATABASE: airflow → SCHEMA 선택 → TABLE 선택 → ADD DATASET</p>
+  <table class="tbl">
+    <thead><tr><th>Schema</th><th>Table</th><th>용도</th><th>차트</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">marts</td><td class="mono">monthly_sales</td><td>월별 매출 집계 (MoM 성장률)</td><td>차트①</td></tr>
+      <tr><td class="mono">marts</td><td class="mono">fct_orders</td><td>주문 팩트 전체</td><td>차트②③</td></tr>
+      <tr><td class="mono">marts</td><td class="mono">marketing_roi</td><td>채널별 ROAS·CAC</td><td>차트③</td></tr>
+      <tr><td class="mono">marts</td><td class="mono">dim_customers</td><td>고객 등급·RFM</td><td>차트④</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Step C — Temporal 컬럼 설정</h3>
+  <p>Datasets 목록 → 연필 아이콘(수정) → Columns 탭 → 날짜 컬럼 <strong>is_dttm 체크</strong></p>
+  <table class="tbl">
+    <thead><tr><th>Dataset</th><th>컬럼</th><th>is_dttm</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">monthly_sales</td><td class="mono">year_month</td><td>✅ 체크</td></tr>
+      <tr><td class="mono">fct_orders</td><td class="mono">order_date</td><td>✅ 체크</td></tr>
+      <tr><td class="mono">marketing_roi</td><td class="mono">year_month</td><td>✅ 체크</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ 차트 01 ══ -->
+<div id="chart1" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-bl">📊</div>
+    <div><div class="sec-ttl">실습 09 — 차트① 월별 매출 추이</div>
+    <div class="sec-sub">marts.monthly_sales → Mixed Chart (Bar + Line)</div></div>
+  </div>
+  <div class="wb"><span class="wl">Superset 경로</span><span class="wp">Charts → + CHART → monthly_sales → Mixed Chart 선택</span></div>
+  <div class="cw">
+    <div class="cb"><span class="lg sql">SQL</span><span class="fi">SQL Lab에서 먼저 검증</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="skw">SELECT</span>
+    year_month,
+    <span class="sfn">SUM</span>(total_revenue)                   <span class="skw">AS</span> total_revenue,
+    <span class="sfn">SUM</span>(order_count)                      <span class="skw">AS</span> order_count,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(gross_margin_rate), <span class="num">1</span>)     <span class="skw">AS</span> avg_margin_pct,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(avg_order_revenue), <span class="num">0</span>)    <span class="skw">AS</span> avg_order_value,
+    <span class="sfn">AVG</span>(mom_growth_rate)                  <span class="skw">AS</span> mom_growth_rate
+<span class="skw">FROM</span> marts.monthly_sales
+<span class="skw">GROUP BY</span> year_month
+<span class="skw">ORDER BY</span> year_month;</pre>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>설정 항목</th><th>값</th></tr></thead>
+    <tbody>
+      <tr><td>Chart Type</td><td><span class="bdg bl">Mixed Chart</span></td></tr>
+      <tr><td>X Axis</td><td class="mono">year_month</td></tr>
+      <tr><td>Bar (왼쪽 Y축)</td><td class="mono">SUM(total_revenue)</td></tr>
+      <tr><td>Line (오른쪽 Y축)</td><td class="mono">SUM(order_count)</td></tr>
+    </tbody>
+  </table>
+  <div class="cg">
+    <div class="cc" style="grid-column:span 2">
+      <div class="cc-hdr"><h4>2024년 월별 총매출 추이 (미리보기)</h4><div class="cc-type">Bar+Line</div></div>
+      <div style="padding:14px">
+        <svg viewBox="0 0 680 140" style="width:100%;height:110px" xmlns="http://www.w3.org/2000/svg">
+          <line x1="0" y1="0"   x2="680" y2="0"   stroke="#eaeef2"/><line x1="0" y1="35" x2="680" y2="35" stroke="#eaeef2"/>
+          <line x1="0" y1="70"  x2="680" y2="70"  stroke="#eaeef2"/><line x1="0" y1="105" x2="680" y2="105" stroke="#eaeef2"/>
+          <rect x="4"  y="90" width="38" height="50" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="60" y="84" width="38" height="56" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="116" y="75" width="38" height="65" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="172" y="80" width="38" height="60" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="228" y="73" width="38" height="67" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="284" y="77" width="38" height="63" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="340" y="82" width="38" height="58" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="396" y="85" width="38" height="55" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="452" y="68" width="38" height="72" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="508" y="75" width="38" height="65" fill="#0969da" opacity=".7" rx="2"/>
+          <rect x="564" y="10" width="38" height="130" fill="#0969da" opacity=".9" rx="2"/>
+          <rect x="620" y="28" width="38" height="112" fill="#0969da" opacity=".8" rx="2"/>
+          <polyline points="23,98 79,90 135,82 191,86 247,80 303,83 359,88 415,91 471,74 527,80 583,48 639,62" fill="none" stroke="#d1242f" stroke-width="2.5"/>
+          <circle cx="583" cy="48" r="5" fill="#d1242f" stroke="#fff" stroke-width="2"/>
+          <text x="583" y="8" font-size="9" fill="#9a6700" text-anchor="middle" font-weight="bold">📈 블프 PEAK</text>
+          <text x="23" y="128" font-size="8" fill="#636c76" text-anchor="middle">1월</text><text x="79" y="128" font-size="8" fill="#636c76" text-anchor="middle">2월</text>
+          <text x="135" y="128" font-size="8" fill="#636c76" text-anchor="middle">3월</text><text x="191" y="128" font-size="8" fill="#636c76" text-anchor="middle">4월</text>
+          <text x="247" y="128" font-size="8" fill="#636c76" text-anchor="middle">5월</text><text x="303" y="128" font-size="8" fill="#636c76" text-anchor="middle">6월</text>
+          <text x="359" y="128" font-size="8" fill="#636c76" text-anchor="middle">7월</text><text x="415" y="128" font-size="8" fill="#636c76" text-anchor="middle">8월</text>
+          <text x="471" y="128" font-size="8" fill="#636c76" text-anchor="middle">9월</text><text x="527" y="128" font-size="8" fill="#636c76" text-anchor="middle">10월</text>
+          <text x="583" y="128" font-size="8" fill="#0969da" text-anchor="middle" font-weight="bold">11월</text>
+          <text x="639" y="128" font-size="8" fill="#636c76" text-anchor="middle">12월</text>
+        </svg>
+      </div>
+      <div class="cc-ins"><strong>📌 해석</strong>: 11월 블랙프라이데이(최대 25% 할인)에 연간 최고 매출 기록. 9월 추석 기획전에서도 spike. <strong>시즌 전 광고비·재고 사전 확보가 핵심 과제.</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 차트 02 ══ -->
+<div id="chart2" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-gn">🥧</div>
+    <div><div class="sec-ttl">실습 10 — 차트② 카테고리별 매출 구성비</div>
+    <div class="sec-sub">marts.fct_orders → Pie Chart</div></div>
+  </div>
+  <div class="cw">
+    <div class="cb"><span class="lg sql">SQL</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="skw">SELECT</span>
+    category,
+    <span class="sfn">SUM</span>(revenue_amount)                              <span class="skw">AS</span> total_revenue,
+    <span class="sfn">SUM</span>(gross_profit)                                 <span class="skw">AS</span> total_profit,
+    <span class="sfn">ROUND</span>(<span class="sfn">SUM</span>(gross_profit)::numeric
+          / <span class="sfn">NULLIF</span>(<span class="sfn">SUM</span>(revenue_amount),<span class="num">0</span>) * <span class="num">100</span>, <span class="num">1</span>) <span class="skw">AS</span> margin_pct,
+    <span class="sfn">ROUND</span>(<span class="sfn">SUM</span>(revenue_amount) * <span class="num">100.0</span>
+          / <span class="sfn">SUM</span>(<span class="sfn">SUM</span>(revenue_amount)) <span class="skw">OVER</span> (), <span class="num">1</span>)     <span class="skw">AS</span> share_pct
+<span class="skw">FROM</span> marts.fct_orders
+<span class="skw">WHERE</span> is_revenue = <span class="kw">true</span>
+<span class="skw">GROUP BY</span> category
+<span class="skw">ORDER BY</span> total_revenue <span class="skw">DESC</span>;</pre>
+  </div>
+  <div class="cg">
+    <div class="cc">
+      <div class="cc-hdr"><h4>카테고리별 매출 비중</h4><div class="cc-type">Pie</div></div>
+      <div style="padding:14px;display:flex;align-items:center;gap:16px;justify-content:center">
+        <svg viewBox="0 0 100 100" width="90" height="90">
+          <path d="M50,50 L50,4 A46,46 0 0,1 92,27 Z" fill="#0969da"/>
+          <path d="M50,50 L92,27 A46,46 0 0,1 81,88 Z" fill="#1a7f37"/>
+          <path d="M50,50 L81,88 A46,46 0 0,1 16,84 Z" fill="#9a6700"/>
+          <path d="M50,50 L16,84 A46,46 0 0,1 9,22 Z" fill="#6639ba"/>
+          <path d="M50,50 L9,22  A46,46 0 0,1 50,4  Z" fill="#d1242f"/>
+          <circle cx="50" cy="50" r="24" fill="white"/>
+          <text x="50" y="48" font-size="7" fill="#1f2328" text-anchor="middle">카테고리</text>
+          <text x="50" y="57" font-size="6" fill="#636c76" text-anchor="middle">매출 비중</text>
+        </svg>
+        <div style="font-size:11px;line-height:2">
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;background:#0969da;border-radius:2px"></div>전자제품 38%</div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;background:#1a7f37;border-radius:2px"></div>패션 25%</div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;background:#9a6700;border-radius:2px"></div>스포츠 16%</div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;background:#6639ba;border-radius:2px"></div>건강식품 13%</div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;background:#d1242f;border-radius:2px"></div>생활용품 8%</div>
+        </div>
+      </div>
+      <div class="cc-ins"><strong>전자제품 38%</strong> 1위. 단가가 높아 건수는 적지만 매출 기여가 가장 큽니다.</div>
+    </div>
+    <div class="cc">
+      <div class="cc-hdr"><h4>카테고리별 마진율</h4><div class="cc-type">Bar</div></div>
+      <div style="padding:12px">
+        <div class="mb">
+          <div class="mbc"><div class="b" style="height:72%;background:#0969da;opacity:.8"></div><div class="l">전자제품<br>~64%</div></div>
+          <div class="mbc"><div class="b" style="height:66%;background:#1a7f37;opacity:.8"></div><div class="l">건강식품<br>~61%</div></div>
+          <div class="mbc"><div class="b" style="height:62%;background:#9a6700;opacity:.8"></div><div class="l">스포츠<br>~58%</div></div>
+          <div class="mbc"><div class="b" style="height:60%;background:#6639ba;opacity:.8"></div><div class="l">패션<br>~57%</div></div>
+          <div class="mbc"><div class="b" style="height:55%;background:#d1242f;opacity:.8"></div><div class="l">생활용품<br>~54%</div></div>
+        </div>
+      </div>
+      <div class="cc-ins"><strong>전자제품 마진율 64%</strong>로 최고. 생활용품은 마진율 낮지만 회전율이 빠릅니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 차트 03 ══ -->
+<div id="chart3" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-or">📈</div>
+    <div><div class="sec-ttl">실습 11 — 차트③ 마케팅 채널별 ROAS·CAC</div>
+    <div class="sec-sub">marts.marketing_roi → Bar Chart</div></div>
+  </div>
+  <div class="cw">
+    <div class="cb"><span class="lg sql">SQL</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="skw">SELECT</span>
+    channel,
+    <span class="sfn">SUM</span>(total_spend)           <span class="skw">AS</span> total_spend,
+    <span class="sfn">SUM</span>(attributed_revenue)    <span class="skw">AS</span> total_revenue,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(roas), <span class="num">2</span>)        <span class="skw">AS</span> avg_roas,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(cac), <span class="num">0</span>)         <span class="skw">AS</span> avg_cac,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(avg_ctr), <span class="num">4</span>)    <span class="skw">AS</span> avg_ctr,
+    <span class="sfn">SUM</span>(new_customers)          <span class="skw">AS</span> new_customers
+<span class="skw">FROM</span> marts.marketing_roi
+<span class="skw">GROUP BY</span> channel
+<span class="skw">ORDER BY</span> avg_roas <span class="skw">DESC</span>;</pre>
+  </div>
+  <div class="cg">
+    <div class="cc">
+      <div class="cc-hdr"><h4>채널별 평균 ROAS</h4><div class="cc-type">Bar</div></div>
+      <div style="padding:12px">
+        <div class="mb" style="gap:20px;padding:0 10px 8px">
+          <div class="mbc"><div style="font-size:10px;color:var(--bl);font-weight:700;margin-bottom:3px">2.85</div><div class="b" style="height:85%;background:#0969da;opacity:.8"></div><div class="l">paid_search</div></div>
+          <div class="mbc"><div style="font-size:10px;color:var(--gn);font-weight:700;margin-bottom:3px">2.41</div><div class="b" style="height:72%;background:#1a7f37;opacity:.8"></div><div class="l">sns</div></div>
+          <div class="mbc"><div style="font-size:10px;color:var(--rd);font-weight:700;margin-bottom:3px">0.92</div><div class="b" style="height:28%;background:#d1242f;opacity:.8"></div><div class="l">display</div></div>
+        </div>
+        <div style="border-top:1.5px dashed var(--rd);margin:0 10px 4px;text-align:right">
+          <span style="font-size:9px;color:var(--rd)">ROAS=1.0 손익분기선</span>
+        </div>
+      </div>
+      <div class="cc-ins"><strong>display ROAS 0.92 &lt; 1.0</strong> → 손실 구간. paid_search 예산 증액 권장.</div>
+    </div>
+    <div class="cc">
+      <div class="cc-hdr"><h4>채널별 고객획득비용 (CAC)</h4><div class="cc-type">Bar</div></div>
+      <div style="padding:12px">
+        <div class="mb" style="gap:20px;padding:0 10px 8px">
+          <div class="mbc"><div style="font-size:10px;color:var(--mu);margin-bottom:3px">₩258K</div><div class="b" style="height:45%;background:#0969da;opacity:.7"></div><div class="l">paid_search</div></div>
+          <div class="mbc"><div style="font-size:10px;color:var(--mu);margin-bottom:3px">₩320K</div><div class="b" style="height:55%;background:#1a7f37;opacity:.7"></div><div class="l">sns</div></div>
+          <div class="mbc"><div style="font-size:10px;color:var(--mu);margin-bottom:3px">₩580K</div><div class="b" style="height:100%;background:#d1242f;opacity:.7"></div><div class="l">display</div></div>
+        </div>
+      </div>
+      <div class="cc-ins"><strong>display CAC 가장 높음.</strong> 신규 고객을 가장 비싼 비용으로 획득. paid_search가 효율적.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 차트 04 ══ -->
+<div id="chart4" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-pu">👤</div>
+    <div><div class="sec-ttl">실습 12 — 차트④ 고객 RFM 등급 분포</div>
+    <div class="sec-sub">marts.dim_customers → Pie + Table Chart</div></div>
+  </div>
+  <div class="cw">
+    <div class="cb"><span class="lg sql">SQL</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="skw">SELECT</span>
+    customer_grade,
+    <span class="sfn">COUNT</span>(*)                         <span class="skw">AS</span> cnt,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(lifetime_value), <span class="num">0</span>)    <span class="skw">AS</span> avg_ltv,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(total_orders), <span class="num">1</span>)      <span class="skw">AS</span> avg_orders,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(rfm_total), <span class="num">1</span>)         <span class="skw">AS</span> avg_rfm,
+    <span class="sfn">ROUND</span>(<span class="sfn">AVG</span>(days_since_last_order),<span class="num">0</span>) <span class="skw">AS</span> avg_recency
+<span class="skw">FROM</span> marts.dim_customers
+<span class="skw">GROUP BY</span> customer_grade
+<span class="skw">ORDER BY</span> avg_ltv <span class="skw">DESC</span>;</pre>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>등급</th><th>LTV 기준</th><th>권장 액션</th></tr></thead>
+    <tbody>
+      <tr><td><span class="bdg pu">VIP</span></td><td>≥ ₩600,000</td><td>전용 혜택·1:1 서비스</td></tr>
+      <tr><td><span class="bdg bl">골드</span></td><td>₩300K~₩600K</td><td>VIP 전환 유도 쿠폰</td></tr>
+      <tr><td><span class="bdg or">실버</span></td><td>₩100K~₩300K</td><td>재구매 리텐션 캠페인</td></tr>
+      <tr><td><span class="bdg gn">브론즈</span></td><td>&gt; ₩0</td><td>카테고리 확장 추천</td></tr>
+      <tr><td><span class="bdg rd">신규</span></td><td>₩0 (미구매)</td><td>첫 구매 할인 쿠폰</td></tr>
+    </tbody>
+  </table>
+  <div class="cal tip">
+    <div class="ci">🔍</div>
+    <div><strong>RFM Scatter Plot</strong>: Superset에서 X=<code>rfm_f</code>, Y=<code>rfm_m</code>, Size=<code>lifetime_value</code>, Color=<code>customer_grade</code> 로 설정하면 고객을 2D 공간에서 시각화할 수 있습니다.</div>
+  </div>
+</div>
+
+<!-- ══ 대시보드 ══ -->
+<div id="dashboard" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-bl">🖥️</div>
+    <div><div class="sec-ttl">실습 13 — Superset 대시보드 구성</div>
+    <div class="sec-sub">Dashboards → + DASHBOARD → 차트 드래그앤드롭</div></div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-b"><strong>Dashboards → + DASHBOARD 클릭</strong><p>이름: <code>이커머스 분석 대시보드</code></p></div></div>
+    <div class="step"><div class="step-b"><strong>✏️ Edit dashboard 버튼 클릭</strong><p>우측 상단 편집 모드 진입</p></div></div>
+    <div class="step"><div class="step-b"><strong>오른쪽 Charts 패널에서 차트 드래그</strong><p>만들어둔 차트 4개를 캔버스로 드래그앤드롭</p></div></div>
+    <div class="step"><div class="step-b"><strong>Filters → + Add/Edit Filters</strong><p>Time Range, Category, Region 필터 추가 후 차트에 연결</p></div></div>
+    <div class="step"><div class="step-b"><strong>Save Dashboard 저장</strong><p>Share 버튼으로 URL 공유 가능. Airflow DAG가 매일 자동 갱신</p></div></div>
+  </div>
+  <h3>레이아웃 설계</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border:1px solid var(--bd);border-radius:10px;padding:14px;background:var(--sf)">
+    <div style="grid-column:span 3;background:var(--bl-bg);border:1px dashed var(--bl-bd);border-radius:8px;padding:12px;text-align:center;font-size:12px;color:var(--bl)">📊 차트① 월별 매출 추이 — 전체 너비</div>
+    <div style="background:var(--gn-bg);border:1px dashed var(--gn-bd);border-radius:8px;padding:10px;text-align:center;font-size:12px;color:var(--gn)">🥧 차트② 카테고리</div>
+    <div style="background:var(--or-bg);border:1px dashed var(--or-bd);border-radius:8px;padding:10px;text-align:center;font-size:12px;color:var(--or)">📈 차트③ ROAS</div>
+    <div style="background:var(--pu-bg);border:1px dashed var(--pu-bd);border-radius:8px;padding:10px;text-align:center;font-size:12px;color:var(--pu)">👤 차트④ 고객 등급</div>
+  </div>
+</div>
+
+<!-- ══ 트러블슈팅 ══ -->
+<div id="trouble" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-rd">🛠️</div>
+    <div><div class="sec-ttl">트러블슈팅 가이드</div>
+    <div class="sec-sub">자주 발생하는 오류와 해결 방법</div></div>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>증상</th><th>원인</th><th>해결책</th></tr></thead>
+    <tbody>
+      <tr><td><code>cd /opt/airflow/dbt_project: No such file</code></td><td>경로 잘못됨</td><td><code>cd /opt/dbt</code> 로 변경</td></tr>
+      <tr><td>dbt debug 연결 실패</td><td>profiles.yml host 잘못됨</td><td>host를 <code>mds_postgres</code>로 수정</td></tr>
+      <tr><td>staging 모델이 <code>raw_staging</code>으로 생성됨</td><td>generate_schema_name 매크로 없음</td><td><code>/opt/dbt/macros/generate_schema_name.sql</code> 파일 존재 여부 확인</td></tr>
+      <tr><td>Airflow DAG 목록에 없음</td><td>Python 구문 오류</td><td><code>docker exec mds_airflow_web python /opt/airflow/dags/dag_dbt_data_stack.py</code></td></tr>
+      <tr><td>Superset Test Connection 실패</td><td>URI에 localhost 사용</td><td>host를 <code>mds_postgres</code>로 변경</td></tr>
+      <tr><td>Superset 차트 데이터 없음</td><td>dbt run 미실행 또는 is_dttm 미설정</td><td>dbt run PASS=8 확인 → Dataset Temporal 컬럼 설정</td></tr>
+      <tr><td>dbt test ERROR 발생</td><td>데이터 품질 문제</td><td><code>dbt test --store-failures</code> → pgAdmin에서 실패 행 확인</td></tr>
+    </tbody>
+  </table>
+  <div class="cw">
+    <div class="cb"><span class="lg ps">PowerShell</span><span class="fi">긴급 진단 명령어 모음</span><button class="cpbtn" onclick="cp(this)">copy</button></div>
+    <pre><span class="cm"># 1. 컨테이너 상태 전체 확인</span>
+docker ps
+
+<span class="cm"># 2. dbt 경로 재확인</span>
+docker exec mds_airflow_web find / -name "dbt_project.yml" 2>$null
+
+<span class="cm"># 3. dbt 버전 확인</span>
+docker exec mds_airflow_web dbt --version
+
+<span class="cm"># 4. DAG 구문 오류 확인</span>
+docker exec mds_airflow_web python /opt/airflow/dags/dag_dbt_data_stack.py
+
+<span class="cm"># 5. 컨테이너 재시작</span>
+docker restart mds_airflow_web
+docker restart mds_superset
+
+<span class="cm"># 6. 로그 확인</span>
+docker logs mds_airflow_web --tail 30
+docker logs mds_airflow_scheduler --tail 30</pre>
+  </div>
+</div>
+
+<!-- ══ 체크리스트 ══ -->
+<div id="checklist" class="section">
+  <div class="sec-hdr">
+    <div class="sic si-gn">✅</div>
+    <div><div class="sec-ttl">전체 실습 체크리스트</div>
+    <div class="sec-sub">모든 항목을 완료하면 MDS 파이프라인이 완전히 작동합니다</div></div>
+  </div>
+  <div class="chk">
+    <label class="chk-item"><input type="checkbox"> docker ps — 6개 컨테이너 Running 확인</label>
+    <label class="chk-item"><input type="checkbox"> DAG·스크립트 파일 컨테이너 복사</label>
+    <label class="chk-item"><input type="checkbox"> docker exec mds_airflow_web bash</label>
+    <label class="chk-item"><input type="checkbox"> dbt 헬스체크 스크립트 실행 (모두 ✅)</label>
+    <label class="chk-item"><input type="checkbox"> cd /opt/dbt 이동</label>
+    <label class="chk-item"><input type="checkbox"> dbt debug — All checks passed!</label>
+    <label class="chk-item"><input type="checkbox"> dbt run — PASS=8</label>
+    <label class="chk-item"><input type="checkbox"> dbt test — PASS=31</label>
+    <label class="chk-item"><input type="checkbox"> pgAdmin: staging VIEW 4개 확인</label>
+    <label class="chk-item"><input type="checkbox"> pgAdmin: marts TABLE 4개 확인</label>
+    <label class="chk-item"><input type="checkbox"> Airflow Connection postgres_mds 등록</label>
+    <label class="chk-item"><input type="checkbox"> DAG dbt_data_stack_daily 목록 확인</label>
+    <label class="chk-item"><input type="checkbox"> DAG 토글 켜기 + 수동 실행 성공</label>
+    <label class="chk-item"><input type="checkbox"> Superset DB 연결 (mds_postgres)</label>
+    <label class="chk-item"><input type="checkbox"> Dataset 4개 등록 + Temporal 설정</label>
+    <label class="chk-item"><input type="checkbox"> 차트 4개 생성</label>
+    <label class="chk-item"><input type="checkbox"> 대시보드 구성 + 필터 설정</label>
+    <label class="chk-item"><input type="checkbox"> 각 차트 해석 메모 작성</label>
+  </div>
+
+  <div style="margin-top:24px;background:linear-gradient(135deg,var(--bl-bg),var(--gn-bg));border:1px solid var(--bd);border-radius:10px;padding:20px">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px">🚀 파이프라인 자동화 완성 구조</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--mu);line-height:2.2">
+      <span style="color:var(--rd)">raw.*</span> (init-db.sql)<br>
+      &nbsp;&nbsp;→ <span style="color:var(--or)">Airflow DAG 02:00</span> → dbt run --select staging<br>
+      &nbsp;&nbsp;→ <span style="color:var(--or)">Airflow DAG 02:00</span> → dbt run --select marts<br>
+      &nbsp;&nbsp;→ <span style="color:var(--or)">Airflow DAG 02:00</span> → dbt test (PASS=31)<br>
+      &nbsp;&nbsp;→ <span style="color:var(--gn)">marts.*</span> (dim_customers, fct_orders, monthly_sales, marketing_roi)<br>
+      &nbsp;&nbsp;→ <span style="color:var(--bl)">Superset</span> (차트 4개 + 대시보드 + 글로벌 필터)
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+function go(id){
+  document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  event.currentTarget.classList.add('on');
+}
+function cp(btn){
+  const txt = btn.closest('.cw').querySelector('pre').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const o=btn.textContent; btn.textContent='✓ copied';
+    setTimeout(()=>btn.textContent=o,2000);
+  });
+}
+</script>
+</body>
+</html>
