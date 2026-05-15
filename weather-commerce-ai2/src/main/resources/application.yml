@@ -1,0 +1,150 @@
+# ============================================================
+# application.yml  —  Spring Boot 3.5.14
+# 기본 프로파일: local (localhost 에서 Docker 서비스에 연결)
+# ============================================================
+
+# ── Mock 날씨 설정 ────────────────────────────────────────
+app:
+  mock-weather:
+    enabled: true                   # false 로 끄면 스케줄 정지
+    auto-seed-on-startup: true      # 앱 시작 시 데이터 없으면 자동 시딩
+    seed-days: 7                    # 히스토리 데이터 일수
+    #schedule: "0 0 * * * *"        # 매시간 정각 자동 생성
+    schedule: "0 */5 * * * *"       # 5분마다 (빠른 테스트 시 사용)
+
+spring:
+  profiles:
+    active: local
+
+  application:
+    name: weather-commerce-ai
+
+  # ── JPA ──────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: public
+
+  # ── Spring Batch ─────────────────────────────────────────
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false              # 시작 시 자동 실행 방지
+
+  # ── Spring AI — Ollama ───────────────────────────────────
+  ai:
+    ollama:
+      chat:
+        model: llama3.2
+        options:
+          temperature: 0.7
+          num-predict: 1024
+      embedding:
+        model: nomic-embed-text
+    vectorstore:
+      pgvector:
+        index-type: hnsw
+        distance-type: cosine_distance
+        dimensions: 768
+        initialize-schema: true
+
+# ── 앱 서버 포트 ──────────────────────────────────────────
+server:
+  port: 8090
+
+# ── Actuator ─────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+# ── 로깅 ─────────────────────────────────────────────────
+logging:
+  level:
+    com.mds.weather: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.batch: DEBUG
+
+# ── OpenWeatherMap API ────────────────────────────────────
+weather:
+  api:
+    key: 7118920bc8381873d0ac2440487ad9b9
+    base-url: https://api.openweathermap.org/data/2.5
+    cities:
+      - Seoul
+      - Busan
+      - Incheon
+      - Daegu
+
+# ══════════════════════════════════════════════════════════
+#  SpringDoc OpenAPI — 루트 섹션 (local·docker 모두 적용)
+# ══════════════════════════════════════════════════════════
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    try-it-out-enabled: true
+    doc-expansion: none
+    display-request-duration: true
+    filter: true
+    default-models-expand-depth: 1
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  packages-to-scan: com.mds.weather.controller
+  show-actuator: false
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+
+---
+# ══════════════════════════════════════════════════════════
+# 로컬 개발 프로파일
+# ══════════════════════════════════════════════════════════
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/airflow
+    username: airflow
+    password: airflow
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+
+---
+# ══════════════════════════════════════════════════════════
+# Docker 내부 프로파일
+# ══════════════════════════════════════════════════════════
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: jdbc:postgresql://mds_postgres:5432/airflow
+    username: airflow
+    password: airflow
+    driver-class-name: org.postgresql.Driver
+
+  ai:
+    ollama:
+      base-url: http://mds_ollama:11434
+
+  batch:
+    job:
+      enabled: false

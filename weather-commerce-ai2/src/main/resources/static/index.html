@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌤 Weather Commerce AI</title>
+<style>
+/* ── CSS Variables ── */
+:root {
+  --bg:      #ffffff;
+  --sf:      #f6f8fa;
+  --sf2:     #eaeef2;
+  --bd:      #d0d7de;
+  --bd2:     #e8ecf0;
+  --tx:      #1f2328;
+  --mu:      #636c76;
+  --bl:      #0969da;
+  --bl-bg:   #ddf4ff;
+  --bl-bd:   #54aeff;
+  --gn:      #1a7f37;
+  --gn-bg:   #dafbe1;
+  --gn-bd:   #4ac26b;
+  --or:      #9a6700;
+  --or-bg:   #fff8c5;
+  --or-bd:   #d4a72c;
+  --rd:      #d1242f;
+  --rd-bg:   #ffebe9;
+  --rd-bd:   #ff8182;
+  --pu:      #6639ba;
+  --pu-bg:   #fbefff;
+  --pu-bd:   #c297ff;
+  --shadow:  0 1px 3px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Pretendard',sans-serif;background:var(--sf);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Header ── */
+.header{background:var(--bg);border-bottom:1px solid var(--bd);padding:0 20px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:10}
+.logo{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
+.logo span{font-size:20px}
+.status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;border:1px solid;cursor:pointer;transition:.15s}
+.status-badge.ready {background:var(--gn-bg);color:var(--gn);border-color:var(--gn-bd)}
+.status-badge.nodata{background:var(--or-bg);color:var(--or);border-color:var(--or-bd)}
+.status-badge.loading{background:var(--sf2);color:var(--mu);border-color:var(--bd)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.api-link{font-size:12px;color:var(--bl);text-decoration:none;padding:4px 10px;border:1px solid var(--bl-bd);border-radius:6px;background:var(--bl-bg)}
+.api-link:hover{background:var(--bl);color:#fff}
+
+/* ── Layout ── */
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:200px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--bd);overflow-y:auto;padding:12px 8px}
+.nav-group{margin-bottom:16px}
+.nav-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mu);padding:0 8px;margin-bottom:4px}
+.nav-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--mu);background:none;border:none;cursor:pointer;text-align:left;transition:.12s}
+.nav-btn:hover{background:var(--sf2);color:var(--tx)}
+.nav-btn.active{background:var(--bl-bg);color:var(--bl);font-weight:700}
+.nav-btn .ico{font-size:15px;width:18px;text-align:center}
+.main{flex:1;overflow-y:auto;padding:24px}
+
+/* ── Panel ── */
+.panel{display:none}
+.panel.active{display:block}
+
+/* ── Cards ── */
+.card{background:var(--bg);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--bd2);display:flex;align-items:center;gap:10px;background:var(--bg)}
+.card-header h3{font-size:14px;font-weight:700;flex:1}
+.card-body{padding:18px}
+.card-sub{font-size:12px;color:var(--mu)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── Stat Cards ── */
+.stat-card{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:16px;text-align:center;box-shadow:var(--shadow)}
+.stat-val{font-size:28px;font-weight:800;font-family:monospace;line-height:1}
+.stat-lbl{font-size:11px;color:var(--mu);margin-top:5px}
+
+/* ── Weather cards ── */
+.weather-card{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:14px;box-shadow:var(--shadow)}
+.weather-city{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.weather-temp{font-size:26px;font-weight:800;font-family:monospace;color:var(--bl)}
+.weather-info{font-size:11px;color:var(--mu);margin-top:4px;line-height:1.7}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;border:1px solid;cursor:pointer;transition:.15s;font-family:inherit}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--bl);color:#fff;border-color:var(--bl)}
+.btn-primary:hover:not(:disabled){background:#0757b8}
+.btn-success{background:var(--gn);color:#fff;border-color:var(--gn)}
+.btn-success:hover:not(:disabled){background:#156c2e}
+.btn-warning{background:var(--or);color:#fff;border-color:var(--or)}
+.btn-warning:hover:not(:disabled){background:#7d5400}
+.btn-danger{background:var(--rd);color:#fff;border-color:var(--rd)}
+.btn-danger:hover:not(:disabled){background:#a81f29}
+.btn-outline{background:var(--bg);color:var(--tx);border-color:var(--bd)}
+.btn-outline:hover:not(:disabled){background:var(--sf2)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-lg{padding:11px 22px;font-size:14px}
+.btn-block{width:100%;justify-content:center}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── Form ── */
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:700;color:var(--tx);display:block;margin-bottom:5px}
+.form-control{width:100%;padding:8px 12px;border:1px solid var(--bd);border-radius:7px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--tx);outline:none;transition:.15s}
+.form-control:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(9,105,218,.12)}
+select.form-control{cursor:pointer}
+.form-hint{font-size:11px;color:var(--mu);margin-top:4px}
+.form-row{display:flex;gap:10px;align-items:flex-end}
+.form-row .form-group{flex:1;margin-bottom:0}
+
+/* ── Callout ── */
+.callout{display:flex;gap:10px;padding:12px 14px;border-radius:8px;margin:12px 0;font-size:13px;line-height:1.7;border:1px solid}
+.callout.info {background:var(--bl-bg);border-color:var(--bl-bd)}
+.callout.ok   {background:var(--gn-bg);border-color:var(--gn-bd)}
+.callout.warn {background:var(--or-bg);border-color:var(--or-bd)}
+.callout.err  {background:var(--rd-bg);border-color:var(--rd-bd)}
+.callout .ci  {font-size:16px;flex-shrink:0}
+
+/* ── Badge ── */
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid}
+.bdg.bl{background:var(--bl-bg);color:var(--bl);border-color:var(--bl-bd)}
+.bdg.gn{background:var(--gn-bg);color:var(--gn);border-color:var(--gn-bd)}
+.bdg.or{background:var(--or-bg);color:var(--or);border-color:var(--or-bd)}
+.bdg.rd{background:var(--rd-bg);color:var(--rd);border-color:var(--rd-bd)}
+.bdg.pu{background:var(--pu-bg);color:var(--pu);border-color:var(--pu-bd)}
+
+/* ── Steps guide ── */
+.steps{counter-reset:stp}
+.step-item{display:flex;gap:14px;margin-bottom:16px;padding:14px;background:var(--sf);border-radius:9px;border:1px solid var(--bd2)}
+.step-item::before{counter-increment:stp;content:counter(stp);width:26px;height:26px;border-radius:50%;background:var(--bl);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-family:monospace}
+.step-body strong{font-size:13.5px;display:block;margin-bottom:3px}
+.step-body p{font-size:12.5px;color:var(--mu);margin:0}
+.step-item.done{border-color:var(--gn-bd);background:var(--gn-bg)}
+.step-item.done::before{background:var(--gn)}
+
+/* ── Result box ── */
+.result-box{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto;margin-top:12px;color:var(--tx)}
+.result-box.ai{background:#f8f9ff;border-color:var(--bl-bd)}
+.result-box code{font-family:monospace;font-size:12px;background:var(--sf2);padding:1px 5px;border-radius:3px}
+
+/* ── Job status ── */
+.job-card{border:1px solid var(--bd);border-radius:10px;padding:16px;background:var(--bg);box-shadow:var(--shadow)}
+.job-card h4{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.job-card p{font-size:12px;color:var(--mu);margin-bottom:12px}
+.job-status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;display:inline-block;margin-top:8px;font-family:monospace}
+.job-status.COMPLETED{background:var(--gn-bg);color:var(--gn)}
+.job-status.STARTED  {background:var(--bl-bg);color:var(--bl)}
+.job-status.FAILED   {background:var(--rd-bg);color:var(--rd)}
+.job-status.idle     {background:var(--sf2);color:var(--mu)}
+
+/* ── Chat ── */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:400px}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--sf);border:1px solid var(--bd);border-radius:10px 10px 0 0}
+.chat-input-area{background:var(--bg);border:1px solid var(--bd);border-top:none;border-radius:0 0 10px 10px;padding:12px}
+.chat-row{display:flex;gap:8px}
+.chat-input{flex:1;padding:10px 14px;border:1px solid var(--bd);border-radius:8px;font-size:13.5px;font-family:inherit;resize:none;outline:none;transition:.15s;line-height:1.5}
+.chat-input:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(9,105,218,.12)}
+.chat-opts{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.chat-opts label{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:5px;cursor:pointer}
+
+/* Chat bubble */
+.bubble{max-width:80%;padding:10px 14px;border-radius:12px;font-size:13.5px;line-height:1.7;word-break:break-all}
+.bubble.user{background:var(--bl);color:#fff;margin-left:auto;border-bottom-right-radius:3px}
+.bubble.ai  {background:var(--bg);border:1px solid var(--bd);margin-right:auto;border-bottom-left-radius:3px;white-space:pre-wrap}
+.bubble.sys {background:var(--or-bg);border:1px solid var(--or-bd);margin:0 auto;text-align:center;font-size:12px;color:var(--or);border-radius:8px;padding:6px 14px;max-width:100%}
+.bubble.err2{background:var(--rd-bg);border:1px solid var(--rd-bd);color:var(--rd);font-size:12px;border-radius:8px;padding:8px 14px;max-width:100%}
+.bubble-meta{font-size:10px;color:var(--mu);margin-top:3px}
+.bubble-wrap{display:flex;flex-direction:column}
+.bubble-wrap.right{align-items:flex-end}
+.bubble-wrap.left {align-items:flex-start}
+.bubble-wrap.center{align-items:center}
+
+/* typing */
+.typing{display:inline-flex;gap:4px;padding:10px 14px;background:var(--sf2);border-radius:12px;border-bottom-left-radius:3px}
+.typing span{width:6px;height:6px;background:var(--mu);border-radius:50%;animation:bounce .9s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* Quick chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{padding:4px 11px;border:1px solid var(--bd);border-radius:12px;font-size:11.5px;cursor:pointer;background:var(--bg);transition:.12s;color:var(--tx)}
+.chip:hover{background:var(--bl-bg);border-color:var(--bl-bd);color:var(--bl)}
+
+/* ── AI Recommend result ── */
+.recommend-result{background:linear-gradient(135deg,var(--bl-bg),#f0fff4);border:1px solid var(--bl-bd);border-radius:10px;padding:18px;margin-top:14px;font-size:13.5px;line-height:1.8;white-space:pre-wrap;word-break:break-all}
+
+/* ── Report ── */
+.report-content{font-size:13.5px;line-height:1.9;white-space:pre-wrap;word-break:break-all;padding:18px;background:var(--sf);border:1px solid var(--bd);border-radius:8px;max-height:500px;overflow-y:auto}
+.report-content h1,.report-content h2,.report-content h3{color:var(--bl);margin:12px 0 6px;font-size:14px;border-bottom:1px solid var(--bd2);padding-bottom:4px}
+
+/* ── Progress ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.progress-bar-wrap{background:var(--sf2);border-radius:6px;height:6px;overflow:hidden;margin:8px 0}
+.progress-bar{height:100%;background:var(--bl);border-radius:6px;transition:width .4s ease;width:0%}
+
+/* ── Toast ── */
+.toast-wrap{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none}
+.toast{background:var(--tx);color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .2s ease;pointer-events:auto;max-width:320px}
+.toast.ok {background:#1a7f37}
+.toast.err{background:#d1242f}
+.toast.warn{background:#9a6700}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.tbl th{background:var(--sf);padding:8px 13px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--mu);letter-spacing:.5px;border-bottom:1px solid var(--bd)}
+.tbl td{padding:8px 13px;border-bottom:1px solid var(--bd2)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--sf)}
+
+/* ── Misc ── */
+.sep{border:none;border-top:1px solid var(--bd2);margin:16px 0}
+.text-mu{color:var(--mu)}
+.text-sm{font-size:12px}
+.mono{font-family:monospace}
+.mt8{margin-top:8px}
+.mt12{margin-top:12px}
+.mt16{margin-top:16px}
+.page-title{font-size:18px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.page-sub{font-size:13px;color:var(--mu);margin-bottom:18px}
+.empty{text-align:center;padding:32px;color:var(--mu);font-size:13px}
+
+@media(max-width:768px){.sidebar{display:none}.grid2,.grid3,.grid4{grid-template-columns:1fr}.main{padding:14px}}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="logo"><span>🌤</span>Weather Commerce AI</div>
+  <div id="statusBadge" class="status-badge loading" onclick="loadStatus()" title="클릭하여 새로고침">
+    <span class="status-dot"></span><span id="statusText">확인 중...</span>
+  </div>
+  <div id="recordCount" class="text-sm text-mu"></div>
+  <div class="header-right">
+    <a href="/swagger-ui.html" target="_blank" class="api-link">📄 Swagger UI</a>
+    <a href="/v3/api-docs" target="_blank" class="api-link">📋 API Docs</a>
+  </div>
+</header>
+
+<!-- ── App ── -->
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="nav-group">
+      <div class="nav-label">시작</div>
+      <button class="nav-btn active" onclick="showPanel('dashboard',this)"><span class="ico">🏠</span>대시보드</button>
+      <button class="nav-btn" onclick="showPanel('guide',this)"><span class="ico">🚀</span>시작 가이드</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">데이터 준비</div>
+      <button class="nav-btn" onclick="showPanel('data',this)"><span class="ico">🌧️</span>날씨 데이터</button>
+      <button class="nav-btn" onclick="showPanel('batch',this)"><span class="ico">⚙️</span>배치 실행</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">AI 서비스</div>
+      <button class="nav-btn" onclick="showPanel('recommend',this)"><span class="ico">🛍️</span>AI 추천</button>
+      <button class="nav-btn" onclick="showPanel('chat',this)"><span class="ico">💬</span>AI 채팅</button>
+      <button class="nav-btn" onclick="showPanel('report',this)"><span class="ico">📊</span>리포트</button>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- ════════ DASHBOARD ════════ -->
+    <div id="panel-dashboard" class="panel active">
+      <div class="page-title">🏠 대시보드</div>
+      <div class="page-sub">시스템 현황과 날씨 데이터를 확인합니다.</div>
+
+      <!-- Stats -->
+      <div class="grid4" id="statsGrid">
+        <div class="stat-card"><div class="stat-val" id="statRecords">-</div><div class="stat-lbl">총 레코드</div></div>
+        <div class="stat-card"><div class="stat-val">4</div><div class="stat-lbl">수집 도시</div></div>
+        <div class="stat-card"><div class="stat-val" id="statReady">-</div><div class="stat-lbl">AI API 상태</div></div>
+        <div class="stat-card"><div class="stat-val" id="statPort">8090</div><div class="stat-lbl">서버 포트</div></div>
+      </div>
+
+      <!-- AI API 상태 -->
+      <div class="card mt16">
+        <div class="card-header"><h3>🤖 AI API 준비 상태</h3><button class="btn btn-outline btn-sm" onclick="loadStatus()">🔄 새로고침</button></div>
+        <div class="card-body">
+          <div id="aiStatus">
+            <div class="empty">상태를 불러오는 중...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 최신 날씨 -->
+      <div class="card">
+        <div class="card-header"><h3>🌡️ 최신 날씨 현황</h3><button class="btn btn-outline btn-sm" onclick="loadLatest()">🔄 새로고침</button></div>
+        <div class="card-body">
+          <div id="latestWeather" class="grid4">
+            <div class="empty" style="grid-column:span 4">날씨 데이터를 불러오는 중...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 힌트 -->
+      <div id="dashHint"></div>
+    </div>
+
+    <!-- ════════ GUIDE ════════ -->
+    <div id="panel-guide" class="panel">
+      <div class="page-title">🚀 시작 가이드</div>
+      <div class="page-sub">이 순서대로 실행하면 모든 AI 기능을 사용할 수 있습니다.</div>
+
+      <div class="steps">
+        <div class="step-item" id="step1">
+          <div class="step-body">
+            <strong>날씨 히스토리 데이터 시딩</strong>
+            <p>Mock 날씨 데이터를 N일치 생성합니다. AI 서비스의 기반 데이터입니다.</p>
+            <div class="btn-group mt8">
+              <button class="btn btn-primary btn-sm" onclick="quickSeed(7)">7일 시딩</button>
+              <button class="btn btn-outline btn-sm" onclick="quickSeed(14)">14일 시딩</button>
+              <button class="btn btn-outline btn-sm" onclick="showPanel('data', document.querySelector('[onclick*=data]'))">직접 설정 →</button>
+            </div>
+            <div id="guideStep1Result" class="mt8"></div>
+          </div>
+        </div>
+
+        <div class="step-item" id="step2">
+          <div class="step-body">
+            <strong>날씨-매출 분석 배치 실행</strong>
+            <p>날씨와 매출 데이터의 상관관계를 분석합니다. 리포트 기능의 필수 조건입니다.</p>
+            <div class="btn-group mt8">
+              <button class="btn btn-warning btn-sm" onclick="quickBatch('weather-analysis','guideStep2Result')">▶ 분석 배치 실행</button>
+            </div>
+            <div id="guideStep2Result" class="mt8"></div>
+          </div>
+        </div>
+
+        <div class="step-item" id="step3">
+          <div class="step-body">
+            <strong>RAG 임베딩 인덱스 생성</strong>
+            <p>벡터 DB에 인덱스를 생성합니다. AI 채팅 기능의 필수 조건입니다.</p>
+            <div class="btn-group mt8">
+              <button class="btn btn-warning btn-sm" onclick="quickBatch('embedding-index','guideStep3Result')">▶ 임베딩 배치 실행</button>
+            </div>
+            <div id="guideStep3Result" class="mt8"></div>
+          </div>
+        </div>
+
+        <div class="step-item" id="step4">
+          <div class="step-body">
+            <strong>AI 추천 사용</strong>
+            <p>날씨 기반 상품 추천을 받습니다. 로그인 없이도 사용 가능합니다.</p>
+            <div class="btn-group mt8">
+              <button class="btn btn-success btn-sm" onclick="showPanel('recommend', document.querySelector('[onclick*=recommend]'))">AI 추천 바로가기 →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item" id="step5">
+          <div class="step-body">
+            <strong>AI 채팅 (RAG)</strong>
+            <p>날씨·매출 데이터를 기반으로 자연어로 질문합니다.</p>
+            <div class="btn-group mt8">
+              <button class="btn btn-success btn-sm" onclick="showPanel('chat', document.querySelector('[onclick*=chat]'))">AI 채팅 바로가기 →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item" id="step6">
+          <div class="step-body">
+            <strong>AI 인사이트 리포트</strong>
+            <p>날씨와 매출 상관관계를 AI가 분석한 리포트를 확인합니다.</p>
+            <div class="btn-group mt8">
+              <button class="btn btn-success btn-sm" onclick="showPanel('report', document.querySelector('[onclick*=report]'))">리포트 바로가기 →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ DATA ════════ -->
+    <div id="panel-data" class="panel">
+      <div class="page-title">🌧️ 날씨 데이터 관리</div>
+      <div class="page-sub">Mock 날씨 데이터를 생성하고 조회합니다.</div>
+
+      <div class="grid2">
+        <!-- 히스토리 시딩 -->
+        <div class="card">
+          <div class="card-header"><h3>📦 히스토리 시딩</h3><span class="bdg or">POST /api/mock/seed</span></div>
+          <div class="card-body">
+            <p class="text-sm text-mu" style="margin-bottom:12px">과거 N일치 날씨 데이터를 6시간 간격으로 일괄 생성합니다.<br>생성 수 = 일수 × 4시간대 × 4도시</p>
+            <div class="form-group">
+              <label class="form-label">생성 일수</label>
+              <input type="range" id="seedDays" min="1" max="30" value="7" class="form-control" oninput="document.getElementById('seedDaysVal').textContent=this.value" style="padding:4px">
+              <div class="form-hint">선택: <strong id="seedDaysVal">7</strong>일 → 예상 <strong id="seedEstimate">112</strong>건</div>
+            </div>
+            <button class="btn btn-primary btn-block btn-lg" id="btnSeed" onclick="doSeed()">
+              📦 데이터 시딩 시작
+            </button>
+            <div id="seedResult" class="mt12"></div>
+          </div>
+        </div>
+
+        <!-- 즉시 생성 -->
+        <div class="card">
+          <div class="card-header"><h3>⚡ 즉시 생성</h3><span class="bdg bl">POST /api/mock/generate</span></div>
+          <div class="card-body">
+            <p class="text-sm text-mu" style="margin-bottom:12px">현재 시각 기준 4개 도시 날씨를 즉시 1건씩 생성합니다.</p>
+            <div class="callout info">
+              <div class="ci">💡</div>
+              <div>히스토리가 충분하지 않을 때 현재 날씨만 빠르게 생성합니다. AI 품질 향상을 위해 <strong>시딩</strong>을 권장합니다.</div>
+            </div>
+            <button class="btn btn-success btn-block btn-lg mt8" id="btnGenerate" onclick="doGenerate()">
+              ⚡ 현재 날씨 즉시 생성
+            </button>
+            <div id="generateResult" class="mt12"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 최신 날씨 -->
+      <div class="card">
+        <div class="card-header"><h3>📡 도시별 최신 날씨</h3><span class="bdg gn">GET /api/mock/latest</span><button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="loadLatestData()">🔄 조회</button></div>
+        <div class="card-body">
+          <div id="latestData" class="grid4">
+            <div class="empty" style="grid-column:span 4">조회 버튼을 클릭하세요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ BATCH ════════ -->
+    <div id="panel-batch" class="panel">
+      <div class="page-title">⚙️ 배치 실행</div>
+      <div class="page-sub">날씨-매출 분석 및 RAG 임베딩 인덱스 생성 배치를 실행합니다.</div>
+
+      <div class="callout warn">
+        <div class="ci">⚠️</div>
+        <div><strong>실행 순서 중요</strong>: weather-analysis → embedding-index 순서로 실행해야 합니다. 날씨 시딩이 완료된 후 실행하세요.</div>
+      </div>
+
+      <div class="grid2 mt12">
+        <!-- weather-analysis -->
+        <div class="job-card">
+          <h4>📈 weather-analysis<span class="bdg or">Step 1</span></h4>
+          <p>날씨와 매출 데이터의 상관관계를 분석합니다.<br>리포트 기능 사용의 필수 선행 조건입니다.</p>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="prog1"></div></div>
+          <button class="btn btn-warning btn-block" id="btnBatch1" onclick="doBatch('weather-analysis','batchResult1','prog1')">
+            ▶ weather-analysis 실행
+          </button>
+          <div id="batchResult1"></div>
+        </div>
+
+        <!-- embedding-index -->
+        <div class="job-card">
+          <h4>🧠 embedding-index<span class="bdg pu">Step 2</span></h4>
+          <p>날씨·매출 데이터를 벡터 DB에 임베딩합니다.<br>AI 채팅(RAG) 기능 사용의 필수 선행 조건입니다.</p>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="prog2"></div></div>
+          <button class="btn btn-danger btn-block" id="btnBatch2" onclick="doBatch('embedding-index','batchResult2','prog2')">
+            ▶ embedding-index 실행
+          </button>
+          <div id="batchResult2"></div>
+        </div>
+      </div>
+
+      <!-- Batch 이력 -->
+      <div class="card mt16">
+        <div class="card-header"><h3>📋 실행 이력</h3></div>
+        <div class="card-body">
+          <div id="batchHistory">
+            <div class="empty">아직 실행된 배치가 없습니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ RECOMMEND ════════ -->
+    <div id="panel-recommend" class="panel">
+      <div class="page-title">🛍️ AI 상품 추천</div>
+      <div class="page-sub">현재 날씨를 기반으로 AI가 상품을 추천합니다.</div>
+
+      <div class="grid2">
+        <!-- 고객 맞춤 추천 -->
+        <div class="card">
+          <div class="card-header"><h3>👤 고객 맞춤 추천</h3><span class="bdg bl">GET /api/recommend</span></div>
+          <div class="card-body">
+            <p class="text-sm text-mu" style="margin-bottom:12px">고객 구매 이력 + 날씨를 결합한 개인화 추천</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">도시</label>
+                <select class="form-control" id="recCity">
+                  <option value="Seoul">🏙️ Seoul</option>
+                  <option value="Busan">🌊 Busan</option>
+                  <option value="Daegu">🌆 Daegu</option>
+                  <option value="Incheon">✈️ Incheon</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">고객 ID</label>
+                <input type="number" class="form-control" id="recCustomerId" value="1" min="1" max="30" placeholder="1~30">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block mt8" id="btnRec" onclick="doRecommend()">
+              🤖 AI 추천 받기
+            </button>
+            <div id="recResult"></div>
+          </div>
+        </div>
+
+        <!-- 익명 추천 -->
+        <div class="card">
+          <div class="card-header"><h3>🌐 익명 추천</h3><span class="bdg gn">GET /api/recommend/anonymous</span></div>
+          <div class="card-body">
+            <p class="text-sm text-mu" style="margin-bottom:12px">로그인 없이 날씨만으로 추천 (구매 이력 미반영)</p>
+            <div class="form-group">
+              <label class="form-label">도시</label>
+              <select class="form-control" id="anonCity">
+                <option value="Seoul">🏙️ Seoul</option>
+                <option value="Busan">🌊 Busan</option>
+                <option value="Daegu">🌆 Daegu</option>
+                <option value="Incheon">✈️ Incheon</option>
+              </select>
+            </div>
+            <div class="callout info mt8">
+              <div class="ci">💡</div>
+              <div>개인화 추천을 원하면 고객 맞춤 추천을 사용하세요.</div>
+            </div>
+            <button class="btn btn-success btn-block mt8" id="btnAnon" onclick="doAnonymous()">
+              🌐 익명 추천 받기
+            </button>
+            <div id="anonResult"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 빠른 추천 -->
+      <div class="card">
+        <div class="card-header"><h3>⚡ 빠른 도시별 추천 비교</h3></div>
+        <div class="card-body">
+          <div class="btn-group">
+            <button class="btn btn-outline btn-sm" onclick="doAnonymousFast('Seoul')">서울 추천</button>
+            <button class="btn btn-outline btn-sm" onclick="doAnonymousFast('Busan')">부산 추천</button>
+            <button class="btn btn-outline btn-sm" onclick="doAnonymousFast('Daegu')">대구 추천</button>
+            <button class="btn btn-outline btn-sm" onclick="doAnonymousFast('Incheon')">인천 추천</button>
+          </div>
+          <div id="fastRecResult" class="mt12"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ CHAT ════════ -->
+    <div id="panel-chat" class="panel">
+      <div class="page-title">💬 AI 채팅 (RAG)</div>
+      <div class="page-sub">날씨·매출 벡터 DB를 기반으로 자연어로 질문합니다.</div>
+
+      <!-- 옵션 -->
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-body" style="padding:12px 16px">
+          <div class="chat-opts">
+            <label>
+              <input type="checkbox" id="chkCityFilter" onchange="toggleCityFilter()"> 도시 필터 사용
+            </label>
+            <select class="form-control" id="chatCity" style="width:140px;padding:5px 10px;display:none">
+              <option value="Seoul">🏙️ Seoul</option>
+              <option value="Busan">🌊 Busan</option>
+              <option value="Daegu">🌆 Daegu</option>
+              <option value="Incheon">✈️ Incheon</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="clearChat()" style="margin-left:auto">🗑️ 대화 지우기</button>
+          </div>
+
+          <!-- Quick questions -->
+          <div class="chips" id="quickChips">
+            <div class="chip" onclick="sendQuick('비 올 때 어떤 상품이 잘 팔렸어?')">☔ 비 올 때 잘 팔리는 상품</div>
+            <div class="chip" onclick="sendQuick('기온 35도 이상일 때 매출 트렌드는?')">🔥 폭염 매출 트렌드</div>
+            <div class="chip" onclick="sendQuick('날씨가 매출에 미치는 영향을 분석해줘')">📈 날씨-매출 상관관계</div>
+            <div class="chip" onclick="sendQuick('강설 시 가장 많이 팔리는 카테고리는?')">❄️ 강설 시 인기 카테고리</div>
+            <div class="chip" onclick="sendQuick('습도 80% 이상인 날 고객 구매 패턴')">💧 고습도 구매 패턴</div>
+            <div class="chip" onclick="sendQuick('맑은 날과 흐린 날의 매출 차이')">⛅ 맑은날 vs 흐린날</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chatMessages">
+          <div class="bubble sys">💬 AI 채팅에 오신 것을 환영합니다!<br>날씨·매출 관련 질문을 자유롭게 해보세요.</div>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-row">
+            <textarea class="chat-input" id="chatInput" rows="2" placeholder="질문을 입력하세요... (Shift+Enter: 줄바꿈, Enter: 전송)"
+              onkeydown="handleChatKey(event)"></textarea>
+            <button class="btn btn-primary" id="btnSend" onclick="sendChat()" style="align-self:flex-end">전송 ↗</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ REPORT ════════ -->
+    <div id="panel-report" class="panel">
+      <div class="page-title">📊 AI 인사이트 리포트</div>
+      <div class="page-sub">날씨·매출 분석 기반 AI 리포트를 생성합니다. 배치 실행 후 사용 가능합니다.</div>
+
+      <div class="grid2">
+        <!-- 기간별 리포트 -->
+        <div class="card">
+          <div class="card-header"><h3>📅 기간별 리포트</h3><span class="bdg bl">GET /api/report</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">분석 기간</label>
+              <div class="btn-group">
+                <button class="btn btn-outline btn-sm" onclick="setPeriod(7)" id="p7">7일</button>
+                <button class="btn btn-primary btn-sm" onclick="setPeriod(14)" id="p14">14일</button>
+                <button class="btn btn-outline btn-sm" onclick="setPeriod(30)" id="p30">30일</button>
+                <button class="btn btn-outline btn-sm" onclick="setPeriod(90)" id="p90">90일</button>
+              </div>
+              <input type="number" class="form-control mt8" id="reportDays" value="14" min="1" max="90" placeholder="직접 입력 (1~90)">
+            </div>
+            <button class="btn btn-primary btn-block mt8" id="btnReport" onclick="doReport()">
+              📊 리포트 생성
+            </button>
+          </div>
+        </div>
+
+        <!-- 도시별 리포트 -->
+        <div class="card">
+          <div class="card-header"><h3>🏙️ 도시별 리포트</h3><span class="bdg gn">GET /api/report/city</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">분석 도시</label>
+              <select class="form-control" id="reportCity">
+                <option value="Seoul">🏙️ Seoul</option>
+                <option value="Busan">🌊 Busan</option>
+                <option value="Daegu">🌆 Daegu</option>
+                <option value="Incheon">✈️ Incheon</option>
+              </select>
+            </div>
+            <div class="callout info">
+              <div class="ci">💡</div>
+              <div>도시의 기후 특성과 소비 패턴 차이를 분석합니다.</div>
+            </div>
+            <button class="btn btn-success btn-block mt8" id="btnCityReport" onclick="doCityReport()">
+              🏙️ 도시별 리포트 생성
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 리포트 결과 -->
+      <div class="card" id="reportResultCard" style="display:none">
+        <div class="card-header">
+          <h3 id="reportResultTitle">📋 리포트 결과</h3>
+          <span id="reportResultBadge" class="bdg bl"></span>
+          <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="copyReport()">📋 복사</button>
+        </div>
+        <div class="card-body">
+          <div id="reportResult" class="report-content"></div>
+        </div>
+      </div>
+    </div>
+
+  </main><!-- /main -->
+</div><!-- /app -->
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+//  Config
+// ─────────────────────────────────────────────────────────
+const API = '';   // 동일 origin — 상대 경로 사용
+const CITIES = ['Seoul','Busan','Daegu','Incheon'];
+const CITY_EMOJI = {Seoul:'🏙️',Busan:'🌊',Daegu:'🌆',Incheon:'✈️'};
+let chatHistory = [];      // 채팅 히스토리
+let batchHistory = [];     // 배치 실행 이력
+let currentPeriod = 14;
+
+// ─────────────────────────────────────────────────────────
+//  Utility
+// ─────────────────────────────────────────────────────────
+function toast(msg, type='ok', dur=3000) {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(40px)'; t.style.transition='.3s'; setTimeout(()=>t.remove(), 300); }, dur);
+}
+
+function setLoading(btnId, loading, text='') {
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  btn.disabled = loading;
+  if(loading) btn.innerHTML = `<span class="spinner"></span> ${text||'처리 중...'}`;
+  else btn.innerHTML = btn.getAttribute('data-orig') || btn.innerHTML;
+}
+
+function saveBtnText(btnId) {
+  const btn = document.getElementById(btnId);
+  if(btn && !btn.getAttribute('data-orig')) btn.setAttribute('data-orig', btn.innerHTML);
+}
+
+function showResult(elId, html) {
+  const el = document.getElementById(elId);
+  if(el) el.innerHTML = html;
+}
+
+function formatTs(ts) {
+  if(!ts) return '';
+  try { return new Date(ts).toLocaleString('ko-KR'); } catch(e){ return ts; }
+}
+
+async function fetchAPI(url, opts={}) {
+  const res = await fetch(API + url, {
+    headers: {'Content-Type':'application/json', ...opts.headers},
+    ...opts
+  });
+  const data = await res.json();
+  if(!res.ok) throw Object.assign(new Error(data.message || `HTTP ${res.status}`), {data, status: res.status});
+  return data;
+}
+
+function weatherIcon(condition) {
+  if(!condition) return '🌡️';
+  const c = condition.toLowerCase();
+  if(c.includes('맑') || c.includes('clear')) return '☀️';
+  if(c.includes('구름') || c.includes('cloud')) return '⛅';
+  if(c.includes('비') || c.includes('rain')) return '🌧️';
+  if(c.includes('눈') || c.includes('snow')) return '❄️';
+  if(c.includes('안개') || c.includes('fog')  || c.includes('mist')) return '🌫️';
+  if(c.includes('뇌우') || c.includes('thunder')) return '⛈️';
+  return '🌡️';
+}
+
+function renderWeatherCard(w) {
+  const city = w.city || w.cityName || '?';
+  const temp = w.temperature ?? w.temp ?? '?';
+  const cond = w.weatherCondition || w.condition || w.description || '';
+  const hum  = w.humidity ?? '?';
+  const wind = w.windSpeed ?? '?';
+  const rain = w.rainfall ?? w.precipitation ?? 0;
+  const ts   = w.recordedAt || w.observedAt || '';
+  return `
+    <div class="weather-card">
+      <div class="weather-city">${CITY_EMOJI[city]||'🏙️'} ${city}</div>
+      <div style="font-size:28px">${weatherIcon(cond)}</div>
+      <div class="weather-temp">${temp}°C</div>
+      <div class="weather-info">
+        ${cond ? `<div>${cond}</div>` : ''}
+        <div>💧 습도 ${hum}%</div>
+        <div>💨 풍속 ${wind} m/s</div>
+        ${rain>0 ? `<div>🌧️ 강수 ${rain}mm</div>` : ''}
+        ${ts ? `<div class="text-sm" style="margin-top:3px;opacity:.6">${formatTs(ts)}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Navigation
+// ─────────────────────────────────────────────────────────
+function showPanel(id, btnEl) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(btnEl) btnEl.classList.add('active');
+  // 패널별 초기 로드
+  if(id==='dashboard') { loadStatus(); loadLatest(); }
+  if(id==='data') loadLatestData();
+}
+
+// ─────────────────────────────────────────────────────────
+//  Status & Dashboard
+// ─────────────────────────────────────────────────────────
+async function loadStatus() {
+  const badge = document.getElementById('statusBadge');
+  badge.className='status-badge loading';
+  document.getElementById('statusText').textContent='확인 중...';
+  try {
+    const d = await fetchAPI('/api/mock/status');
+    const ready = (d.status||'').includes('READY');
+    badge.className = 'status-badge ' + (ready?'ready':'nodata');
+    document.getElementById('statusText').textContent = ready ? '✅ READY' : '⚠️ NO DATA';
+    document.getElementById('statRecords').textContent = d.totalRecords ?? 0;
+    document.getElementById('statReady').textContent = ready ? '✅' : '⚠️';
+
+    // AI API 상태
+    const apis = d.aiApis || {};
+    const hint = d.hint || '';
+    const rows = Object.entries(apis).map(([k,v])=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd2)">
+        <strong style="width:80px;font-size:12px">${k}</strong>
+        <span class="bdg ${v.includes('✅')?'gn':v.includes('❌')?'rd':'or'}">${v}</span>
+      </div>`).join('');
+    showResult('aiStatus', `<div>${rows}</div>${hint?`<div class="callout warn mt8"><div class="ci">💡</div><div>${hint}</div></div>`:''}`);
+
+    // record count
+    document.getElementById('recordCount').textContent = `총 ${d.totalRecords||0}건`;
+
+    // dash hint
+    if(!ready) {
+      showResult('dashHint',`<div class="callout warn"><div class="ci">⚠️</div><div><strong>데이터가 없습니다.</strong> <a href="#" onclick="showPanel('data',document.querySelector('[onclick*=data]'));return false">날씨 데이터 관리</a>에서 시딩을 먼저 실행하세요.</div></div>`);
+    } else {
+      showResult('dashHint','');
+    }
+  } catch(e) {
+    badge.className='status-badge nodata';
+    document.getElementById('statusText').textContent='❌ 서버 오류';
+    showResult('aiStatus',`<div class="callout err"><div class="ci">❌</div><div>서버에 연결할 수 없습니다. Spring Boot 앱이 실행 중인지 확인하세요. (port 8090)<br><small>${e.message}</small></div></div>`);
+  }
+}
+
+async function loadLatest() {
+  try {
+    const d = await fetchAPI('/api/mock/latest');
+    const weathers = d.weather || [];
+    if(weathers.length===0){
+      showResult('latestWeather','<div class="empty" style="grid-column:span 4">날씨 데이터가 없습니다. 먼저 시딩을 실행하세요.</div>');
+      return;
+    }
+    document.getElementById('latestWeather').innerHTML = weathers.map(renderWeatherCard).join('');
+  } catch(e) {
+    showResult('latestWeather',`<div class="empty" style="grid-column:span 4">날씨 데이터 조회 실패: ${e.message}</div>`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Data Panel
+// ─────────────────────────────────────────────────────────
+document.getElementById('seedDays').addEventListener('input', function(){
+  const d = parseInt(this.value);
+  document.getElementById('seedDaysVal').textContent = d;
+  document.getElementById('seedEstimate').textContent = (d*4*4);
+});
+
+async function doSeed() {
+  const days = parseInt(document.getElementById('seedDays').value);
+  saveBtnText('btnSeed');
+  setLoading('btnSeed',true,`${days}일 시딩 중...`);
+  showResult('seedResult',`<div class="callout info"><div class="ci"><span class="spinner"></span></div><div>날씨 데이터 ${days}일치를 생성하고 있습니다...</div></div>`);
+  try {
+    const d = await fetchAPI(`/api/mock/seed?days=${days}`, {method:'POST'});
+    setLoading('btnSeed',false);
+    document.getElementById('btnSeed').innerHTML = `📦 데이터 시딩 시작`;
+    showResult('seedResult',`
+      <div class="callout ok">
+        <div class="ci">✅</div>
+        <div>
+          <strong>${d.message || '시딩 완료'}</strong><br>
+          생성 레코드: <strong>${d.recordsInserted}</strong>건 / 소요: ${d.elapsedMs}ms
+          ${Array.isArray(d.nextSteps)?'<br><small style="color:var(--gn)">'+d.nextSteps.join(' → ')+'</small>':''}
+        </div>
+      </div>`);
+    toast(`✅ ${days}일 시딩 완료! (${d.recordsInserted}건)`, 'ok');
+    loadStatus();
+    loadLatestData();
+  } catch(e) {
+    setLoading('btnSeed',false);
+    document.getElementById('btnSeed').innerHTML = `📦 데이터 시딩 시작`;
+    showResult('seedResult',`<div class="callout err"><div class="ci">❌</div><div>시딩 실패: ${e.message}</div></div>`);
+    toast('시딩 실패: '+e.message,'err');
+  }
+}
+
+async function doGenerate() {
+  saveBtnText('btnGenerate');
+  setLoading('btnGenerate',true,'생성 중...');
+  showResult('generateResult','<div class="callout info"><div class="ci"><span class="spinner"></span></div><div>현재 날씨를 생성하고 있습니다...</div></div>');
+  try {
+    const d = await fetchAPI('/api/mock/generate', {method:'POST'});
+    setLoading('btnGenerate',false);
+    document.getElementById('btnGenerate').innerHTML = `⚡ 현재 날씨 즉시 생성`;
+    showResult('generateResult',`<div class="callout ok"><div class="ci">✅</div><div><strong>${d.message||'생성 완료'}</strong><br>도시: ${(d.cities||[]).join(', ')}</div></div>`);
+    toast('✅ 현재 날씨 생성 완료', 'ok');
+    loadLatestData();
+    loadStatus();
+  } catch(e) {
+    setLoading('btnGenerate',false);
+    document.getElementById('btnGenerate').innerHTML = `⚡ 현재 날씨 즉시 생성`;
+    showResult('generateResult',`<div class="callout err"><div class="ci">❌</div><div>생성 실패: ${e.message}</div></div>`);
+    toast('생성 실패: '+e.message,'err');
+  }
+}
+
+async function loadLatestData() {
+  document.getElementById('latestData').innerHTML = '<div class="empty" style="grid-column:span 4"><span class="spinner"></span> 조회 중...</div>';
+  try {
+    const d = await fetchAPI('/api/mock/latest');
+    const weathers = d.weather || [];
+    if(weathers.length===0){
+      document.getElementById('latestData').innerHTML='<div class="empty" style="grid-column:span 4">날씨 데이터가 없습니다.</div>';
+      return;
+    }
+    document.getElementById('latestData').innerHTML = weathers.map(renderWeatherCard).join('');
+  } catch(e) {
+    document.getElementById('latestData').innerHTML=`<div class="empty" style="grid-column:span 4">조회 실패: ${e.message}</div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Batch
+// ─────────────────────────────────────────────────────────
+async function doBatch(jobName, resultId, progId) {
+  const btnId = jobName==='weather-analysis'?'btnBatch1':'btnBatch2';
+  saveBtnText(btnId);
+  setLoading(btnId,true,`${jobName} 실행 중...`);
+
+  // 프로그레스 애니메이션
+  const prog = document.getElementById(progId);
+  let pct = 0;
+  const timer = setInterval(()=>{ pct=Math.min(pct+3,85); prog.style.width=pct+'%'; }, 400);
+
+  showResult(resultId,`<div class="callout info" style="margin-top:8px"><div class="ci"><span class="spinner"></span></div><div><strong>${jobName}</strong> 실행 중... (시간이 걸릴 수 있습니다)</div></div>`);
+  try {
+    const d = await fetchAPI(`/api/batch/run/${jobName}`, {method:'POST'});
+    clearInterval(timer);
+    prog.style.width='100%';
+    setTimeout(()=>{ prog.style.width='0%'; },1500);
+
+    const ok = d.status==='COMPLETED';
+    setLoading(btnId,false);
+    document.getElementById(btnId).innerHTML = `▶ ${jobName} 실행`;
+    showResult(resultId,`
+      <div style="margin-top:8px">
+        <span class="job-status ${d.status||'idle'}">${d.status||'unknown'}</span>
+        <span class="text-sm text-mu" style="margin-left:8px">${formatTs(d.startTime)}</span>
+      </div>`);
+    toast((ok?'✅ ':'⚠️ ')+jobName+' '+d.status, ok?'ok':'warn');
+
+    // 이력 추가
+    batchHistory.unshift({jobName, status:d.status, time:new Date().toLocaleString('ko-KR')});
+    renderBatchHistory();
+  } catch(e) {
+    clearInterval(timer);
+    prog.style.width='0%';
+    setLoading(btnId,false);
+    document.getElementById(btnId).innerHTML = `▶ ${jobName} 실행`;
+    showResult(resultId,`<div class="callout err" style="margin-top:8px"><div class="ci">❌</div><div>실행 실패: ${e.message}</div></div>`);
+    toast('배치 실패: '+e.message,'err');
+    batchHistory.unshift({jobName, status:'FAILED', time:new Date().toLocaleString('ko-KR')});
+    renderBatchHistory();
+  }
+}
+
+function renderBatchHistory() {
+  if(batchHistory.length===0){ showResult('batchHistory','<div class="empty">아직 실행된 배치가 없습니다.</div>'); return; }
+  const rows = batchHistory.slice(0,10).map(h=>`
+    <tr>
+      <td class="mono">${h.jobName}</td>
+      <td><span class="job-status ${h.status}">${h.status}</span></td>
+      <td class="text-sm text-mu">${h.time}</td>
+    </tr>`).join('');
+  showResult('batchHistory',`<table class="tbl"><thead><tr><th>Job</th><th>상태</th><th>실행시간</th></tr></thead><tbody>${rows}</tbody></table>`);
+}
+
+// 가이드용 빠른 실행
+async function quickSeed(days) {
+  showResult('guideStep1Result',`<div class="callout info"><div class="ci"><span class="spinner"></span></div><div>${days}일 시딩 중...</div></div>`);
+  try {
+    const d = await fetchAPI(`/api/mock/seed?days=${days}`, {method:'POST'});
+    showResult('guideStep1Result',`<div class="callout ok"><div class="ci">✅</div><div><strong>완료!</strong> ${d.recordsInserted}건 생성</div></div>`);
+    document.getElementById('step1').classList.add('done');
+    toast(`✅ ${days}일 시딩 완료`, 'ok');
+    loadStatus();
+  } catch(e) {
+    showResult('guideStep1Result',`<div class="callout err"><div class="ci">❌</div><div>실패: ${e.message}</div></div>`);
+    toast('시딩 실패: '+e.message,'err');
+  }
+}
+
+async function quickBatch(jobName, resultId) {
+  showResult(resultId,`<div class="callout info"><div class="ci"><span class="spinner"></span></div><div>${jobName} 실행 중...</div></div>`);
+  try {
+    const d = await fetchAPI(`/api/batch/run/${jobName}`, {method:'POST'});
+    const ok = d.status==='COMPLETED';
+    showResult(resultId,`<div class="callout ${ok?'ok':'warn'}"><div class="ci">${ok?'✅':'⚠️'}</div><div><strong>${d.status}</strong> ${formatTs(d.startTime)}</div></div>`);
+    if(jobName==='weather-analysis') document.getElementById('step2').classList.add('done');
+    if(jobName==='embedding-index')  document.getElementById('step3').classList.add('done');
+    toast((ok?'✅':'⚠️')+' '+jobName+' '+d.status, ok?'ok':'warn');
+  } catch(e) {
+    showResult(resultId,`<div class="callout err"><div class="ci">❌</div><div>실패: ${e.message}</div></div>`);
+    toast('배치 실패: '+e.message,'err');
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Recommend
+// ─────────────────────────────────────────────────────────
+async function doRecommend() {
+  const city = document.getElementById('recCity').value;
+  const customerId = document.getElementById('recCustomerId').value;
+  if(!customerId || customerId<1 || customerId>30){ toast('고객 ID는 1~30 사이로 입력하세요.','warn'); return; }
+  saveBtnText('btnRec');
+  setLoading('btnRec',true,'AI 추천 중...');
+  showResult('recResult','<div class="callout info" style="margin-top:12px"><div class="ci"><span class="spinner"></span></div><div>AI가 날씨와 구매 이력을 분석하고 있습니다...</div></div>');
+  try {
+    const d = await fetchAPI(`/api/recommend?city=${city}&customerId=${customerId}`);
+    setLoading('btnRec',false);
+    document.getElementById('btnRec').innerHTML='🤖 AI 추천 받기';
+    showResult('recResult',`
+      <div class="recommend-result">
+        <div style="font-size:11px;color:var(--mu);margin-bottom:8px">
+          ${CITY_EMOJI[city]||''} ${city} · 고객 #${customerId} · ${formatTs(d.generatedAt)}
+        </div>
+        <div>${(d.recommendation||'추천 내용 없음').replace(/\n/g,'<br>')}</div>
+      </div>`);
+    toast('✅ AI 추천 완료','ok');
+  } catch(e) {
+    setLoading('btnRec',false);
+    document.getElementById('btnRec').innerHTML='🤖 AI 추천 받기';
+    showResult('recResult',`<div class="callout err" style="margin-top:12px"><div class="ci">❌</div><div>추천 실패: ${e.message}</div></div>`);
+    toast('추천 실패: '+e.message,'err');
+  }
+}
+
+async function doAnonymous() {
+  const city = document.getElementById('anonCity').value;
+  saveBtnText('btnAnon');
+  setLoading('btnAnon',true,'AI 추천 중...');
+  showResult('anonResult','<div class="callout info" style="margin-top:12px"><div class="ci"><span class="spinner"></span></div><div>날씨 기반 추천 중...</div></div>');
+  try {
+    const d = await fetchAPI(`/api/recommend/anonymous?city=${city}`);
+    setLoading('btnAnon',false);
+    document.getElementById('btnAnon').innerHTML='🌐 익명 추천 받기';
+    showResult('anonResult',`
+      <div class="recommend-result">
+        <div style="font-size:11px;color:var(--mu);margin-bottom:8px">
+          ${CITY_EMOJI[city]||''} ${city} · 익명 · ${formatTs(d.generatedAt)}
+        </div>
+        <div>${(d.recommendation||'추천 내용 없음').replace(/\n/g,'<br>')}</div>
+      </div>`);
+    toast('✅ 익명 추천 완료','ok');
+  } catch(e) {
+    setLoading('btnAnon',false);
+    document.getElementById('btnAnon').innerHTML='🌐 익명 추천 받기';
+    showResult('anonResult',`<div class="callout err" style="margin-top:12px"><div class="ci">❌</div><div>추천 실패: ${e.message}</div></div>`);
+    toast('추천 실패: '+e.message,'err');
+  }
+}
+
+async function doAnonymousFast(city) {
+  showResult('fastRecResult',`<div class="callout info"><div class="ci"><span class="spinner"></span></div><div>${CITY_EMOJI[city]||''} ${city} 추천 중...</div></div>`);
+  try {
+    const d = await fetchAPI(`/api/recommend/anonymous?city=${city}`);
+    showResult('fastRecResult',`
+      <div class="recommend-result">
+        <div style="font-size:11px;color:var(--mu);margin-bottom:8px">${CITY_EMOJI[city]||''} ${city} · ${formatTs(d.generatedAt)}</div>
+        <div>${(d.recommendation||'추천 내용 없음').replace(/\n/g,'<br>')}</div>
+      </div>`);
+  } catch(e) {
+    showResult('fastRecResult',`<div class="callout err"><div class="ci">❌</div><div>${city} 추천 실패: ${e.message}</div></div>`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Chat
+// ─────────────────────────────────────────────────────────
+function toggleCityFilter() {
+  const on = document.getElementById('chkCityFilter').checked;
+  document.getElementById('chatCity').style.display = on ? 'block' : 'none';
+}
+
+function handleChatKey(e) {
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); }
+}
+
+function sendQuick(question) {
+  document.getElementById('chatInput').value = question;
+  sendChat();
+}
+
+function clearChat() {
+  chatHistory = [];
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML = '<div class="bubble sys">💬 대화가 초기화되었습니다.</div>';
+}
+
+function appendBubble(role, text, city) {
+  const msgs = document.getElementById('chatMessages');
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ' + (role==='user'?'right':'left');
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + role;
+
+  if(role==='user') {
+    bubble.textContent = text;
+  } else {
+    // AI 응답 — 기본 마크다운 렌더링
+    bubble.innerHTML = renderMarkdown(text);
+  }
+  wrap.appendChild(bubble);
+
+  if(role==='user') {
+    const meta = document.createElement('div');
+    meta.className='bubble-meta';
+    meta.textContent = (city?`[${city}] `:'') + new Date().toLocaleTimeString('ko-KR');
+    wrap.appendChild(meta);
+  }
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+  return wrap;
+}
+
+function appendTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const wrap = document.createElement('div');
+  wrap.className='bubble-wrap left';
+  wrap.id='typing-indicator';
+  wrap.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
+  msgs.appendChild(wrap);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if(t) t.remove();
+}
+
+function renderMarkdown(text) {
+  // 기본 마크다운 렌더링
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<strong style="color:var(--bl)">$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if(!question) return;
+
+  const useCityFilter = document.getElementById('chkCityFilter').checked;
+  const city = document.getElementById('chatCity').value;
+
+  // 사용자 메시지
+  appendBubble('user', question, useCityFilter?city:'');
+  chatHistory.push({role:'user', content:question});
+  input.value='';
+  input.style.height='auto';
+
+  // 전송 버튼 비활성화
+  document.getElementById('btnSend').disabled=true;
+  appendTyping();
+
+  try {
+    let d;
+    if(useCityFilter) {
+      d = await fetchAPI('/api/chat/city', {
+        method: 'POST',
+        body: JSON.stringify({question, city})
+      });
+    } else {
+      d = await fetchAPI('/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({question})
+      });
+    }
+    removeTyping();
+    const answer = d.answer || '응답이 없습니다.';
+    appendBubble('ai', answer);
+    chatHistory.push({role:'ai', content:answer});
+  } catch(e) {
+    removeTyping();
+    const msgs = document.getElementById('chatMessages');
+    const err = document.createElement('div');
+    err.className='bubble err2';
+    err.textContent = '❌ 오류: '+e.message+(e.status===503?' — 배치(embedding-index)를 먼저 실행하세요.':'');
+    msgs.appendChild(err);
+    msgs.scrollTop=msgs.scrollHeight;
+    toast('채팅 오류: '+e.message,'err');
+  } finally {
+    document.getElementById('btnSend').disabled=false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Report
+// ─────────────────────────────────────────────────────────
+function setPeriod(n) {
+  currentPeriod = n;
+  document.getElementById('reportDays').value = n;
+  document.querySelectorAll('[id^=p]').forEach(b=>b.classList.replace('btn-primary','btn-outline'));
+  const btn = document.getElementById('p'+n);
+  if(btn) btn.classList.replace('btn-outline','btn-primary');
+}
+
+async function doReport() {
+  const days = parseInt(document.getElementById('reportDays').value) || 14;
+  saveBtnText('btnReport');
+  setLoading('btnReport',true,'리포트 생성 중...');
+  document.getElementById('reportResultCard').style.display='none';
+  try {
+    const d = await fetchAPI(`/api/report?days=${days}`);
+    setLoading('btnReport',false);
+    document.getElementById('btnReport').innerHTML='📊 리포트 생성';
+    showReportResult(d.report||'내용 없음', `📅 최근 ${days}일 리포트`, days+'일');
+    toast('✅ 리포트 생성 완료','ok');
+  } catch(e) {
+    setLoading('btnReport',false);
+    document.getElementById('btnReport').innerHTML='📊 리포트 생성';
+    showReportError(e.message, '배치(weather-analysis)를 먼저 실행해야 합니다.');
+    toast('리포트 생성 실패: '+e.message,'err');
+  }
+}
+
+async function doCityReport() {
+  const city = document.getElementById('reportCity').value;
+  saveBtnText('btnCityReport');
+  setLoading('btnCityReport',true,'리포트 생성 중...');
+  document.getElementById('reportResultCard').style.display='none';
+  try {
+    const d = await fetchAPI(`/api/report/city?city=${city}`);
+    setLoading('btnCityReport',false);
+    document.getElementById('btnCityReport').innerHTML='🏙️ 도시별 리포트 생성';
+    showReportResult(d.report||'내용 없음', `🏙️ ${city} 도시별 리포트`, city);
+    toast('✅ '+city+' 리포트 생성 완료','ok');
+  } catch(e) {
+    setLoading('btnCityReport',false);
+    document.getElementById('btnCityReport').innerHTML='🏙️ 도시별 리포트 생성';
+    showReportError(e.message, '배치(weather-analysis)를 먼저 실행해야 합니다.');
+    toast('리포트 생성 실패: '+e.message,'err');
+  }
+}
+
+function showReportResult(text, title, badge) {
+  document.getElementById('reportResultCard').style.display='block';
+  document.getElementById('reportResultTitle').textContent = title;
+  document.getElementById('reportResultBadge').textContent = badge;
+  // 마크다운 기본 처리
+  const html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^##\s+(.+)$/gm,'<h2>$1</h2>')
+    .replace(/^###\s+(.+)$/gm,'<h3>$1</h3>')
+    .replace(/^#\s+(.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/\n/g,'<br>');
+  document.getElementById('reportResult').innerHTML = html;
+  document.getElementById('reportResultCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function showReportError(msg, hint) {
+  document.getElementById('reportResultCard').style.display='block';
+  document.getElementById('reportResultTitle').textContent='❌ 리포트 생성 실패';
+  document.getElementById('reportResultBadge').textContent='';
+  document.getElementById('reportResult').innerHTML=`
+    <div class="callout err"><div class="ci">❌</div><div>${msg}<br><small>${hint}</small></div></div>`;
+}
+
+function copyReport() {
+  const text = document.getElementById('reportResult').innerText;
+  navigator.clipboard.writeText(text).then(()=>toast('📋 클립보드에 복사됨','ok'));
+}
+
+// ─────────────────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadStatus();
+  loadLatest();
+});
+</script>
+</body>
+</html>
