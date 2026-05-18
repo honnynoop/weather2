@@ -75,7 +75,7 @@ logging:
 # ── OpenWeatherMap API ────────────────────────────────────
 weather:
   api:
-    key: 7118920bc8381873d0ac2440487ad9b9
+    key: 자신의것을 입력해서 사용하세요
     base-url: https://api.openweathermap.org/data/2.5
     cities:
       - Seoul
