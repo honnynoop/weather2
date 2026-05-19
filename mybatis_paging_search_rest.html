@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MyBatis 페이징 + 검색 RESTful Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #ffffff;
+  --bg2:       #f6f8fa;
+  --bg3:       #eef1f5;
+  --border:    #d0d7de;
+  --accent:    #0969da;
+  --accent2:   #1a7f37;
+  --accent3:   #cf222e;
+  --accent4:   #8250df;
+  --accent5:   #bc4c00;
+  --text:      #1f2328;
+  --text2:     #57606a;
+  --text3:     #24292f;
+  --tag-bg:    #eef1f5;
+  --hl:        #eaf2ff;
+
+  /* syntax */
+  --s-kw:   #cf222e;
+  --s-str:  #0a3069;
+  --s-ann:  #8250df;
+  --s-num:  #0550ae;
+  --s-cmt:  #6e7781;
+  --s-cls:  #953800;
+  --s-met:  #8250df;
+  --s-xml:  #116329;
+  --s-attr: #0550ae;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  line-height: 1.7;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ===== SIDEBAR ===== */
+#sidebar {
+  width: 270px;
+  min-width: 270px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 0 0 2rem 0;
+  flex-shrink: 0;
+}
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.sidebar-header {
+  padding: 1.5rem 1.2rem 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: .5rem;
+}
+.sidebar-header h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: .85rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.sidebar-header p {
+  font-size: .72rem;
+  color: var(--text2);
+  margin-top: .3rem;
+}
+
+.nav-group { margin: .5rem 0; }
+.nav-group-title {
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: .5rem 1.2rem .2rem;
+  font-weight: 600;
+}
+.nav-item {
+  display: block;
+  padding: .38rem 1.2rem .38rem 1.5rem;
+  font-size: .8rem;
+  color: var(--text2);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all .15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-item:hover { color: var(--text); background: var(--hl); border-left-color: var(--border); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: #dbeafe; }
+.nav-item .badge {
+  display: inline-block;
+  font-size: .6rem;
+  padding: .1rem .4rem;
+  border-radius: 3px;
+  margin-left: .4rem;
+  vertical-align: middle;
+  font-family: 'JetBrains Mono', monospace;
+}
+.badge-sql   { background: #dbeafe; color: var(--accent); }
+.badge-java  { background: #fff3e0; color: var(--accent5); }
+.badge-yml   { background: #dcfce7; color: var(--accent2); }
+.badge-http  { background: #f3e8ff; color: var(--accent4); }
+
+/* ===== MAIN ===== */
+main {
+  flex: 1;
+  max-width: 960px;
+  padding: 3rem 3.5rem 6rem;
+  overflow-x: hidden;
+}
+
+/* ===== HERO ===== */
+.hero {
+  margin-bottom: 3.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .75rem;
+  color: var(--accent2);
+  letter-spacing: .1em;
+  margin-bottom: .8rem;
+}
+.hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+.hero h1 span { color: var(--accent); }
+.hero-desc { font-size: .95rem; color: var(--text2); max-width: 680px; line-height: 1.8; }
+
+.arch-row {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+.arch-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .45rem .9rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem;
+  color: var(--text3);
+}
+.arch-arrow { color: var(--text2); font-size: .9rem; }
+
+/* ===== SECTION ===== */
+section { margin-bottom: 3.5rem; }
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .68rem;
+  color: var(--accent2);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+}
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 1rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text3);
+  margin: 1.6rem 0 .6rem;
+}
+h4 {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text2);
+  margin: 1.2rem 0 .4rem;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .04em;
+}
+p { color: var(--text2); font-size: .9rem; margin-bottom: .8rem; line-height: 1.75; }
+
+/* ===== FILE TABS ===== */
+.file-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+.file-tab {
+  padding: .5rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .75rem;
+  color: var(--text2);
+  cursor: pointer;
+  border-top: 2px solid transparent;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  user-select: none;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.file-tab:hover { color: var(--text3); background: var(--bg3); }
+.file-tab.active { color: var(--text); background: var(--bg3); border-top-color: var(--accent); }
+
+/* ===== CODE BLOCK ===== */
+.code-wrap {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  position: relative;
+  overflow: hidden;
+}
+.code-wrap.standalone {
+  border-top: 1px solid var(--border);
+  border-radius: 8px;
+}
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .55rem 1rem;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  color: var(--text2);
+}
+.code-header .lang-badge {
+  padding: .15rem .5rem;
+  border-radius: 4px;
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+.lang-sql   { background: #dbeafe; color: var(--accent); }
+.lang-java  { background: #fff3e0; color: var(--accent5); }
+.lang-xml   { background: #dcfce7; color: var(--accent2); }
+.lang-yml   { background: #dcfce7; color: var(--accent2); }
+.lang-json  { background: #f3e8ff; color: var(--accent4); }
+.lang-http  { background: #fee2e2; color: var(--accent3); }
+.copy-btn {
+  background: none; border: 1px solid var(--border);
+  color: var(--text2); font-family: 'JetBrains Mono', monospace;
+  font-size: .65rem; padding: .2rem .6rem; border-radius: 4px;
+  cursor: pointer; transition: all .15s;
+}
+.copy-btn:hover { background: var(--hl); color: var(--text); }
+pre {
+  padding: 1.2rem 1.4rem;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem;
+  line-height: 1.75;
+  color: var(--text3);
+  tab-size: 4;
+}
+pre::-webkit-scrollbar { height: 4px; }
+pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* syntax highlight */
+.kw  { color: var(--s-kw);  font-weight: 600; }
+.str { color: var(--s-str); }
+.ann { color: var(--s-ann); }
+.num { color: var(--s-num); }
+.cmt { color: var(--s-cmt); font-style: italic; }
+.cls { color: var(--s-cls); }
+.met { color: var(--s-met); }
+.xt  { color: var(--s-xml); }  /* xml tag */
+.xa  { color: var(--s-attr);}  /* xml attr */
+.xv  { color: var(--s-str); }  /* xml value */
+.sql-kw { color: var(--s-kw); font-weight:600; }
+.sql-fn { color: var(--s-ann); }
+.http-method { color: var(--accent3); font-weight: 700; }
+.http-url    { color: var(--accent); }
+.http-param  { color: var(--accent4); }
+
+/* ===== INFO BOX ===== */
+.info-box {
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+  font-size: .85rem;
+  border-left: 3px solid;
+}
+.info-box.tip    { background: #f0fdf4; border-color: var(--accent2); color: #166534; }
+.info-box.warn   { background: #fffbeb; border-color: var(--accent5); color: #92400e; }
+.info-box.info   { background: #eff6ff; border-color: var(--accent);  color: #1e40af; }
+.info-box strong { display: block; margin-bottom: .3rem; font-weight: 700; }
+
+/* ===== TABLE ===== */
+.tbl-wrap { overflow-x: auto; margin: 1rem 0; }
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+thead tr { background: var(--bg2); }
+th {
+  padding: .6rem .9rem; text-align: left;
+  color: var(--text2); font-weight: 600;
+  border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem; letter-spacing: .05em; text-transform: uppercase;
+}
+td { padding: .55rem .9rem; border: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+td code, th code {
+  background: var(--bg2); padding: .1rem .4rem;
+  border-radius: 3px; font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem; color: var(--accent4);
+  border: 1px solid var(--border);
+}
+tr:nth-child(even) td { background: #f6f8fa; }
+
+/* ===== FLOW DIAGRAM ===== */
+.flow {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin: 1.2rem 0;
+}
+.flow-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .5rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem;
+  text-align: center;
+  min-width: 100px;
+}
+.flow-box.client  { border-color: var(--accent3);  color: var(--accent3); }
+.flow-box.ctrl    { border-color: var(--accent5);  color: var(--accent5); }
+.flow-box.svc     { border-color: var(--accent4);  color: var(--accent4); }
+.flow-box.mapper  { border-color: var(--accent2);  color: var(--accent2); }
+.flow-box.db      { border-color: var(--accent);   color: var(--accent); }
+.flow-arrow { color: var(--text2); font-size: 1.1rem; }
+
+/* ===== TAG CHIP ===== */
+.chip {
+  display: inline-block;
+  padding: .1rem .55rem;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .7rem;
+  margin: .1rem;
+}
+.chip-get    { background: #dcfce7; color: var(--accent2); border: 1px solid #86efac; }
+.chip-post   { background: #fff3e0; color: var(--accent5); border: 1px solid #fdba74; }
+.chip-put    { background: #dbeafe; color: var(--accent);  border: 1px solid #93c5fd; }
+.chip-delete { background: #fee2e2; color: var(--accent3); border: 1px solid #fca5a5; }
+
+/* ===== ENDPOINT CARD ===== */
+.endpoint-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin: .8rem 0;
+}
+.endpoint-line {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: .5rem;
+}
+.ep-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .85rem;
+  color: var(--text3);
+}
+.ep-desc { font-size: .82rem; color: var(--text2); }
+
+/* ===== PAGINATION VIZ ===== */
+.paging-viz {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+.paging-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .85rem;
+  color: var(--accent4);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .8rem 1.2rem;
+  margin: .5rem 0;
+  display: inline-block;
+}
+
+/* ===== SCROLLBAR ===== */
+body::-webkit-scrollbar { width: 6px; }
+body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <h2>MyBatis REST Guide</h2>
+    <p>페이징 + 검색 완전 예제</p>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">아키텍처</div>
+    <a class="nav-item active" href="#overview">전체 구조 개요</a>
+    <a class="nav-item" href="#flow">요청 흐름도</a>
+    <a class="nav-item" href="#paging-logic">페이징 로직 공식</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">DB / 설정</div>
+    <a class="nav-item" href="#db-schema">DB 스키마 <span class="badge badge-sql">SQL</span></a>
+    <a class="nav-item" href="#dependencies">pom.xml / application.yml <span class="badge badge-yml">YML</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Java 소스</div>
+    <a class="nav-item" href="#vo">VO / DTO 클래스 <span class="badge badge-java">Java</span></a>
+    <a class="nav-item" href="#mapper-xml">Mapper XML <span class="badge badge-sql">XML</span></a>
+    <a class="nav-item" href="#mapper-interface">Mapper 인터페이스 <span class="badge badge-java">Java</span></a>
+    <a class="nav-item" href="#service">Service 레이어 <span class="badge badge-java">Java</span></a>
+    <a class="nav-item" href="#controller">REST Controller <span class="badge badge-java">Java</span></a>
+    <a class="nav-item" href="#response">공통 응답 래퍼 <span class="badge badge-java">Java</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">API 테스트</div>
+    <a class="nav-item" href="#endpoints">엔드포인트 목록 <span class="badge badge-http">HTTP</span></a>
+    <a class="nav-item" href="#test-examples">HTTP 요청 예제 <span class="badge badge-http">HTTP</span></a>
+    <a class="nav-item" href="#response-examples">응답 JSON 예제 <span class="badge badge-http">JSON</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">심화</div>
+    <a class="nav-item" href="#global-handler">GlobalExceptionHandler</a>
+    <a class="nav-item" href="#mybatis-config">MyBatis Config</a>
+    <a class="nav-item" href="#tips">실전 팁</a>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">// MySQL + MyBatis + Spring Boot</div>
+  <h1>페이징 <span>+</span> 검색<br>RESTful Service</h1>
+  <p class="hero-desc">
+    게시판 목록 API를 기준으로 <strong>이름·제목·내용 검색</strong>과 <strong>오프셋 페이징</strong>을
+    MyBatis 동적 SQL로 구현하고, Spring Boot RESTful API로 서비스하는 완전 예제입니다.
+  </p>
+  <div class="arch-row">
+    <div class="arch-box">Client</div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box">Controller</div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box">Service</div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box">Mapper</div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box">MySQL</div>
+  </div>
+</div>
+
+<!-- ===== 1. OVERVIEW ===== -->
+<section id="overview">
+  <div class="section-label">01 / Architecture</div>
+  <h2>전체 구조 개요</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>레이어</th><th>클래스 / 파일</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td>DB</td><td><code>board</code> table</td><td>게시글 저장 (id, writer, title, content, created_at)</td></tr>
+        <tr><td>VO/DTO</td><td><code>BoardVO</code>, <code>SearchVO</code>, <code>PageResult&lt;T&gt;</code></td><td>데이터 전달 객체</td></tr>
+        <tr><td>Mapper XML</td><td><code>BoardMapper.xml</code></td><td>동적 SQL (페이징 + 검색)</td></tr>
+        <tr><td>Mapper Interface</td><td><code>BoardMapper.java</code></td><td>MyBatis 매퍼 인터페이스</td></tr>
+        <tr><td>Service</td><td><code>BoardService</code>, <code>BoardServiceImpl</code></td><td>페이징 계산, 비즈니스 로직</td></tr>
+        <tr><td>Controller</td><td><code>BoardController</code></td><td>REST API (GET /boards)</td></tr>
+        <tr><td>공통</td><td><code>ApiResponse&lt;T&gt;</code>, <code>GlobalExceptionHandler</code></td><td>응답 표준화, 예외 처리</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===== 2. FLOW ===== -->
+<section id="flow">
+  <div class="section-label">02 / Request Flow</div>
+  <h2>요청 흐름도</h2>
+  <div class="flow">
+    <div class="flow-box client">Client<br><span style="font-size:.65rem;opacity:.7">GET /boards?page=2<br>&amp;keyword=spring&amp;type=title</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box ctrl">BoardController<br><span style="font-size:.65rem;opacity:.7">@RestController<br>파라미터 검증</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box svc">BoardServiceImpl<br><span style="font-size:.65rem;opacity:.7">offset 계산<br>총건수 조회</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box mapper">BoardMapper<br><span style="font-size:.65rem;opacity:.7">동적 SQL<br>LIMIT/OFFSET</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box db">MySQL<br><span style="font-size:.65rem;opacity:.7">board table<br>FULLTEXT INDEX</span></div>
+  </div>
+  <div class="flow" style="flex-direction:row-reverse;">
+    <div class="flow-box client">JSON 응답<br><span style="font-size:.65rem;opacity:.7">ApiResponse&lt;PageResult&gt;</span></div>
+    <div class="flow-arrow">←</div>
+    <div class="flow-box ctrl">ApiResponse<br><span style="font-size:.65rem;opacity:.7">표준 래핑</span></div>
+    <div class="flow-arrow">←</div>
+    <div class="flow-box svc">PageResult<br><span style="font-size:.65rem;opacity:.7">목록 + 페이지 정보</span></div>
+    <div class="flow-arrow">←</div>
+    <div class="flow-box mapper">List&lt;BoardVO&gt;<br><span style="font-size:.65rem;opacity:.7">totalCount</span></div>
+    <div class="flow-arrow">←</div>
+    <div class="flow-box db">ResultSet</div>
+  </div>
+</section>
+
+<!-- ===== 3. PAGING LOGIC ===== -->
+<section id="paging-logic">
+  <div class="section-label">03 / Paging Formula</div>
+  <h2>페이징 로직 공식</h2>
+  <div class="paging-viz">
+    <div class="paging-formula">offset  = (page - 1) × pageSize</div><br>
+    <div class="paging-formula">totalPages = CEIL(totalCount / pageSize)</div><br>
+    <div class="paging-formula">hasPrev = page > 1</div><br>
+    <div class="paging-formula">hasNext = page &lt; totalPages</div>
+  </div>
+  <div class="info-box tip">
+    <strong>💡 예시</strong>
+    전체 53건, pageSize=10 일 때 → totalPages=6<br>
+    page=3 → LIMIT 10 OFFSET 20 → 21~30번째 행 조회
+  </div>
+</section>
+
+<!-- ===== 4. DB SCHEMA ===== -->
+<section id="db-schema">
+  <div class="section-label">04 / Database</div>
+  <h2>DB 스키마</h2>
+
+  <div class="code-wrap standalone">
+    <div class="code-header">
+      <span>schema.sql — MySQL 8.0+</span>
+      <span class="lang-badge lang-sql">SQL</span>
+    </div>
+    <pre><span class="sql-kw">CREATE DATABASE IF NOT EXISTS</span> board_db
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+<span class="sql-kw">USE</span> board_db;
+
+<span class="sql-kw">DROP TABLE IF EXISTS</span> board;
+
+<span class="sql-kw">CREATE TABLE</span> board (
+  id          <span class="sql-fn">BIGINT</span>        <span class="sql-kw">AUTO_INCREMENT PRIMARY KEY</span>,
+  writer      <span class="sql-fn">VARCHAR</span>(50)   <span class="sql-kw">NOT NULL</span>,
+  title       <span class="sql-fn">VARCHAR</span>(200)  <span class="sql-kw">NOT NULL</span>,
+  content     <span class="sql-fn">TEXT</span>          <span class="sql-kw">NOT NULL</span>,
+  view_count  <span class="sql-fn">INT</span>           <span class="sql-kw">DEFAULT</span> 0,
+  created_at  <span class="sql-fn">DATETIME</span>      <span class="sql-kw">DEFAULT</span> <span class="sql-fn">NOW</span>(),
+  updated_at  <span class="sql-fn">DATETIME</span>      <span class="sql-kw">DEFAULT</span> <span class="sql-fn">NOW</span>() <span class="sql-kw">ON UPDATE</span> <span class="sql-fn">NOW</span>()
+) ENGINE=InnoDB <span class="sql-kw">DEFAULT</span> CHARSET=utf8mb4;
+
+<span class="cmt">-- 검색 성능을 위한 FULLTEXT 인덱스 (선택)</span>
+<span class="sql-kw">ALTER TABLE</span> board
+  <span class="sql-kw">ADD FULLTEXT INDEX</span> ft_title_content (title, content)
+  WITH PARSER ngram;
+
+<span class="cmt">-- 테스트 데이터 30건</span>
+<span class="sql-kw">INSERT INTO</span> board (writer, title, content) <span class="sql-kw">VALUES</span>
+  (<span class="str">'홍길동'</span>, <span class="str">'Spring Boot 입문'</span>,        <span class="str">'Spring Boot 기초 내용입니다'</span>),
+  (<span class="str">'김철수'</span>, <span class="str">'MyBatis 페이징 처리'</span>,      <span class="str">'LIMIT OFFSET으로 페이징 구현'</span>),
+  (<span class="str">'이영희'</span>, <span class="str">'MySQL 인덱스 최적화'</span>,      <span class="str">'EXPLAIN으로 쿼리 분석하기'</span>),
+  (<span class="str">'박민준'</span>, <span class="str">'RESTful API 설계 원칙'</span>,    <span class="str">'REST 아키텍처 스타일 가이드'</span>),
+  (<span class="str">'최수진'</span>, <span class="str">'Java Stream API 활용'</span>,     <span class="str">'함수형 프로그래밍 패턴'</span>),
+  (<span class="str">'홍길동'</span>, <span class="str">'JPA vs MyBatis 비교'</span>,      <span class="str">'ORM 선택 가이드'</span>),
+  (<span class="str">'김철수'</span>, <span class="str">'Docker 컨테이너 기초'</span>,     <span class="str">'컨테이너 가상화 개념'</span>),
+  (<span class="str">'이영희'</span>, <span class="str">'Spring Security 인증'</span>,     <span class="str">'JWT 토큰 기반 인증 구현'</span>),
+  (<span class="str">'정다현'</span>, <span class="str">'Redis 캐시 전략'</span>,          <span class="str">'Cache Aside 패턴 적용'</span>),
+  (<span class="str">'강호준'</span>, <span class="str">'Kubernetes 오케스트레이션'</span>, <span class="str">'Pod와 Service 개념 정리'</span>);</pre>
+  </div>
+</section>
+
+<!-- ===== 5. DEPENDENCIES ===== -->
+<section id="dependencies">
+  <div class="section-label">05 / Project Setup</div>
+  <h2>pom.xml / application.yml</h2>
+
+  <div class="file-tabs">
+    <div class="file-tab active" onclick="showTab(this,'dep')">pom.xml</div>
+    <div class="file-tab" onclick="showTab(this,'yml')">application.yml</div>
+  </div>
+
+  <div class="code-wrap" id="dep">
+    <div class="code-header">
+      <span>pom.xml — 핵심 의존성</span>
+      <span class="lang-badge lang-xml">XML</span>
+    </div>
+    <pre><span class="xt">&lt;dependencies&gt;</span>
+  <span class="cmt">&lt;!-- Spring Boot Web --&gt;</span>
+  <span class="xt">&lt;dependency&gt;</span>
+    <span class="xt">&lt;groupId&gt;</span>org.springframework.boot<span class="xt">&lt;/groupId&gt;</span>
+    <span class="xt">&lt;artifactId&gt;</span>spring-boot-starter-web<span class="xt">&lt;/artifactId&gt;</span>
+  <span class="xt">&lt;/dependency&gt;</span>
+
+  <span class="cmt">&lt;!-- MyBatis Spring Boot Starter --&gt;</span>
+  <span class="xt">&lt;dependency&gt;</span>
+    <span class="xt">&lt;groupId&gt;</span>org.mybatis.spring.boot<span class="xt">&lt;/groupId&gt;</span>
+    <span class="xt">&lt;artifactId&gt;</span>mybatis-spring-boot-starter<span class="xt">&lt;/artifactId&gt;</span>
+    <span class="xt">&lt;version&gt;</span>3.0.3<span class="xt">&lt;/version&gt;</span>
+  <span class="xt">&lt;/dependency&gt;</span>
+
+  <span class="cmt">&lt;!-- MySQL Connector --&gt;</span>
+  <span class="xt">&lt;dependency&gt;</span>
+    <span class="xt">&lt;groupId&gt;</span>com.mysql<span class="xt">&lt;/groupId&gt;</span>
+    <span class="xt">&lt;artifactId&gt;</span>mysql-connector-j<span class="xt">&lt;/artifactId&gt;</span>
+    <span class="xt">&lt;scope&gt;</span>runtime<span class="xt">&lt;/scope&gt;</span>
+  <span class="xt">&lt;/dependency&gt;</span>
+
+  <span class="cmt">&lt;!-- Lombok --&gt;</span>
+  <span class="xt">&lt;dependency&gt;</span>
+    <span class="xt">&lt;groupId&gt;</span>org.projectlombok<span class="xt">&lt;/groupId&gt;</span>
+    <span class="xt">&lt;artifactId&gt;</span>lombok<span class="xt">&lt;/artifactId&gt;</span>
+    <span class="xt">&lt;optional&gt;</span>true<span class="xt">&lt;/optional&gt;</span>
+  <span class="xt">&lt;/dependency&gt;</span>
+
+  <span class="cmt">&lt;!-- Validation --&gt;</span>
+  <span class="xt">&lt;dependency&gt;</span>
+    <span class="xt">&lt;groupId&gt;</span>org.springframework.boot<span class="xt">&lt;/groupId&gt;</span>
+    <span class="xt">&lt;artifactId&gt;</span>spring-boot-starter-validation<span class="xt">&lt;/artifactId&gt;</span>
+  <span class="xt">&lt;/dependency&gt;</span>
+<span class="xt">&lt;/dependencies&gt;</span></pre>
+  </div>
+
+  <div class="code-wrap" id="yml" style="display:none">
+    <div class="code-header">
+      <span>src/main/resources/application.yml</span>
+      <span class="lang-badge lang-yml">YML</span>
+    </div>
+    <pre>spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/board_db?characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml   <span class="cmt"># XML 파일 경로</span>
+  type-aliases-package: com.example.board.vo   <span class="cmt"># VO alias 자동 등록</span>
+  configuration:
+    map-underscore-to-camel-case: true          <span class="cmt"># view_count → viewCount</span>
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.example.board.mapper: DEBUG             <span class="cmt"># SQL 로그 확인</span></pre>
+  </div>
+</section>
+
+<!-- ===== 6. VO / DTO ===== -->
+<section id="vo">
+  <div class="section-label">06 / VO &amp; DTO</div>
+  <h2>VO / DTO 클래스</h2>
+
+  <div class="file-tabs">
+    <div class="file-tab active" onclick="showTab(this,'vo-board')">BoardVO.java</div>
+    <div class="file-tab" onclick="showTab(this,'vo-search')">SearchVO.java</div>
+    <div class="file-tab" onclick="showTab(this,'vo-page')">PageResult.java</div>
+    <div class="file-tab" onclick="showTab(this,'vo-api')">ApiResponse.java</div>
+  </div>
+
+  <div class="code-wrap" id="vo-board">
+    <div class="code-header"><span>BoardVO.java</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.vo;
+
+<span class="kw">import</span> lombok.*;
+<span class="kw">import</span> java.time.LocalDateTime;
+
+<span class="ann">@Data</span>
+<span class="ann">@NoArgsConstructor</span>
+<span class="ann">@AllArgsConstructor</span>
+<span class="ann">@Builder</span>
+<span class="kw">public class</span> <span class="cls">BoardVO</span> {
+    <span class="kw">private</span> <span class="cls">Long</span>          id;
+    <span class="kw">private</span> <span class="cls">String</span>        writer;
+    <span class="kw">private</span> <span class="cls">String</span>        title;
+    <span class="kw">private</span> <span class="cls">String</span>        content;
+    <span class="kw">private</span> <span class="cls">Integer</span>       viewCount;
+    <span class="kw">private</span> <span class="cls">LocalDateTime</span> createdAt;
+    <span class="kw">private</span> <span class="cls">LocalDateTime</span> updatedAt;
+}</pre>
+  </div>
+
+  <div class="code-wrap" id="vo-search" style="display:none">
+    <div class="code-header"><span>SearchVO.java — 검색 + 페이징 파라미터</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.vo;
+
+<span class="kw">import</span> lombok.*;
+<span class="kw">import</span> jakarta.validation.constraints.*;
+
+<span class="ann">@Data</span>
+<span class="ann">@Builder</span>
+<span class="ann">@NoArgsConstructor</span>
+<span class="ann">@AllArgsConstructor</span>
+<span class="kw">public class</span> <span class="cls">SearchVO</span> {
+
+    <span class="cmt">/** 검색 유형: all | name | title | content */</span>
+    <span class="ann">@Builder.Default</span>
+    <span class="kw">private</span> <span class="cls">String</span> searchType = <span class="str">"all"</span>;
+
+    <span class="cmt">/** 검색 키워드 */</span>
+    <span class="kw">private</span> <span class="cls">String</span> keyword;
+
+    <span class="cmt">/** 현재 페이지 (1-based) */</span>
+    <span class="ann">@Builder.Default</span>
+    <span class="ann">@Min</span>(<span class="num">1</span>)
+    <span class="kw">private</span> <span class="kw">int</span> page = <span class="num">1</span>;
+
+    <span class="cmt">/** 페이지당 건수 */</span>
+    <span class="ann">@Builder.Default</span>
+    <span class="ann">@Min</span>(<span class="num">1</span>) <span class="ann">@Max</span>(<span class="num">100</span>)
+    <span class="kw">private</span> <span class="kw">int</span> pageSize = <span class="num">10</span>;
+
+    <span class="cmt">/** 정렬 컬럼 (화이트리스트 검증 후 ${}로 사용) */</span>
+    <span class="ann">@Builder.Default</span>
+    <span class="kw">private</span> <span class="cls">String</span> sortColumn = <span class="str">"id"</span>;
+
+    <span class="ann">@Builder.Default</span>
+    <span class="kw">private</span> <span class="cls">String</span> sortDir = <span class="str">"DESC"</span>;
+
+    <span class="cmt">/** MyBatis LIMIT/OFFSET 계산값 (Service에서 set) */</span>
+    <span class="kw">public int</span> <span class="met">getOffset</span>() {
+        <span class="kw">return</span> (page - <span class="num">1</span>) * pageSize;
+    }
+
+    <span class="cmt">/** 허용된 정렬 컬럼 화이트리스트 */</span>
+    <span class="kw">public</span> <span class="cls">String</span> <span class="met">getSafeSortColumn</span>() {
+        <span class="kw">return switch</span> (sortColumn) {
+            <span class="kw">case</span> <span class="str">"title"</span>, <span class="str">"writer"</span>, <span class="str">"viewCount"</span>, <span class="str">"createdAt"</span> -> sortColumn;
+            <span class="kw">default</span> -> <span class="str">"id"</span>;
+        };
+    }
+
+    <span class="kw">public</span> <span class="cls">String</span> <span class="met">getSafeSortDir</span>() {
+        <span class="kw">return</span> <span class="str">"ASC"</span>.equalsIgnoreCase(sortDir) ? <span class="str">"ASC"</span> : <span class="str">"DESC"</span>;
+    }
+}</pre>
+  </div>
+
+  <div class="code-wrap" id="vo-page" style="display:none">
+    <div class="code-header"><span>PageResult.java — 페이지 응답 객체</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.vo;
+
+<span class="kw">import</span> lombok.*;
+<span class="kw">import</span> java.util.List;
+
+<span class="ann">@Data</span>
+<span class="ann">@Builder</span>
+<span class="kw">public class</span> <span class="cls">PageResult</span>&lt;T&gt; {
+    <span class="kw">private</span> <span class="cls">List</span>&lt;T&gt; list;         <span class="cmt">// 현재 페이지 데이터</span>
+
+    <span class="kw">private</span> <span class="kw">int</span>     page;          <span class="cmt">// 현재 페이지</span>
+    <span class="kw">private</span> <span class="kw">int</span>     pageSize;      <span class="cmt">// 페이지당 건수</span>
+    <span class="kw">private</span> <span class="kw">long</span>    totalCount;    <span class="cmt">// 전체 건수</span>
+    <span class="kw">private</span> <span class="kw">int</span>     totalPages;    <span class="cmt">// 전체 페이지 수</span>
+    <span class="kw">private</span> <span class="kw">boolean</span> hasNext;       <span class="cmt">// 다음 페이지 존재 여부</span>
+    <span class="kw">private</span> <span class="kw">boolean</span> hasPrev;       <span class="cmt">// 이전 페이지 존재 여부</span>
+
+    <span class="kw">private</span> <span class="cls">String</span>  searchType;    <span class="cmt">// 검색 타입 echo</span>
+    <span class="kw">private</span> <span class="cls">String</span>  keyword;       <span class="cmt">// 검색 키워드 echo</span>
+
+    <span class="kw">public static</span> &lt;T&gt; <span class="cls">PageResult</span>&lt;T&gt; <span class="met">of</span>(
+            <span class="cls">List</span>&lt;T&gt; list, <span class="kw">long</span> totalCount, <span class="cls">SearchVO</span> search) {
+        <span class="kw">int</span> totalPages = (<span class="kw">int</span>) <span class="cls">Math</span>.<span class="met">ceil</span>((<span class="kw">double</span>) totalCount / search.<span class="met">getPageSize</span>());
+        <span class="kw">return</span> <span class="cls">PageResult</span>.&lt;T&gt;<span class="met">builder</span>()
+                .list(list)
+                .page(search.<span class="met">getPage</span>())
+                .pageSize(search.<span class="met">getPageSize</span>())
+                .totalCount(totalCount)
+                .totalPages(totalPages)
+                .hasNext(search.<span class="met">getPage</span>() &lt; totalPages)
+                .hasPrev(search.<span class="met">getPage</span>() &gt; <span class="num">1</span>)
+                .searchType(search.<span class="met">getSearchType</span>())
+                .keyword(search.<span class="met">getKeyword</span>())
+                .<span class="met">build</span>();
+    }
+}</pre>
+  </div>
+
+  <div class="code-wrap" id="vo-api" style="display:none">
+    <div class="code-header"><span>ApiResponse.java — 공통 응답 래퍼</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.common;
+
+<span class="kw">import</span> lombok.*;
+
+<span class="ann">@Data</span>
+<span class="ann">@Builder</span>
+<span class="ann">@NoArgsConstructor</span>
+<span class="ann">@AllArgsConstructor</span>
+<span class="kw">public class</span> <span class="cls">ApiResponse</span>&lt;T&gt; {
+    <span class="kw">private boolean</span> success;
+    <span class="kw">private</span> <span class="cls">String</span>  message;
+    <span class="kw">private</span> T       data;
+    <span class="kw">private</span> <span class="cls">Integer</span> status;
+
+    <span class="kw">public static</span> &lt;T&gt; <span class="cls">ApiResponse</span>&lt;T&gt; <span class="met">ok</span>(T data) {
+        <span class="kw">return</span> <span class="cls">ApiResponse</span>.&lt;T&gt;<span class="met">builder</span>()
+                .success(<span class="kw">true</span>)
+                .message(<span class="str">"OK"</span>)
+                .data(data)
+                .status(<span class="num">200</span>)
+                .<span class="met">build</span>();
+    }
+
+    <span class="kw">public static</span> &lt;T&gt; <span class="cls">ApiResponse</span>&lt;T&gt; <span class="met">created</span>(T data) {
+        <span class="kw">return</span> <span class="cls">ApiResponse</span>.&lt;T&gt;<span class="met">builder</span>()
+                .success(<span class="kw">true</span>)
+                .message(<span class="str">"Created"</span>)
+                .data(data)
+                .status(<span class="num">201</span>)
+                .<span class="met">build</span>();
+    }
+
+    <span class="kw">public static</span> &lt;T&gt; <span class="cls">ApiResponse</span>&lt;T&gt; <span class="met">error</span>(<span class="cls">String</span> message, <span class="kw">int</span> status) {
+        <span class="kw">return</span> <span class="cls">ApiResponse</span>.&lt;T&gt;<span class="met">builder</span>()
+                .success(<span class="kw">false</span>)
+                .message(message)
+                .status(status)
+                .<span class="met">build</span>();
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- ===== 7. MAPPER XML ===== -->
+<section id="mapper-xml">
+  <div class="section-label">07 / MyBatis XML</div>
+  <h2>BoardMapper.xml</h2>
+  <p>검색 타입(all·name·title·content)과 페이징을 완전 동적 SQL로 처리합니다.</p>
+
+  <div class="code-wrap standalone">
+    <div class="code-header">
+      <span>src/main/resources/mapper/BoardMapper.xml</span>
+      <span class="lang-badge lang-xml">XML</span>
+    </div>
+    <pre><span class="cmt">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="xt">&lt;!DOCTYPE mapper</span>
+  <span class="xa">PUBLIC</span> <span class="xv">"-//mybatis.org//DTD Mapper 3.0//EN"</span>
+  <span class="xv">"http://mybatis.org/dtd/mybatis-3-mapper.dtd"</span><span class="xt">&gt;</span>
+
+<span class="xt">&lt;mapper</span> <span class="xa">namespace</span>=<span class="xv">"com.example.board.mapper.BoardMapper"</span><span class="xt">&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= ResultMap ============= --&gt;</span>
+  <span class="xt">&lt;resultMap</span> <span class="xa">id</span>=<span class="xv">"boardMap"</span> <span class="xa">type</span>=<span class="xv">"BoardVO"</span><span class="xt">&gt;</span>
+    <span class="xt">&lt;id</span>     <span class="xa">column</span>=<span class="xv">"id"</span>         <span class="xa">property</span>=<span class="xv">"id"</span>        <span class="xt">/&gt;</span>
+    <span class="xt">&lt;result</span> <span class="xa">column</span>=<span class="xv">"writer"</span>     <span class="xa">property</span>=<span class="xv">"writer"</span>    <span class="xt">/&gt;</span>
+    <span class="xt">&lt;result</span> <span class="xa">column</span>=<span class="xv">"title"</span>      <span class="xa">property</span>=<span class="xv">"title"</span>     <span class="xt">/&gt;</span>
+    <span class="xt">&lt;result</span> <span class="xa">column</span>=<span class="xv">"content"</span>    <span class="xa">property</span>=<span class="xv">"content"</span>   <span class="xt">/&gt;</span>
+    <span class="xt">&lt;result</span> <span class="xa">column</span>=<span class="xv">"view_count"</span> <span class="xa">property</span>=<span class="xv">"viewCount"</span> <span class="xt">/&gt;</span>
+    <span class="xt">&lt;result</span> <span class="xa">column</span>=<span class="xv">"created_at"</span> <span class="xa">property</span>=<span class="xv">"createdAt"</span> <span class="xt">/&gt;</span>
+    <span class="xt">&lt;result</span> <span class="xa">column</span>=<span class="xv">"updated_at"</span> <span class="xa">property</span>=<span class="xv">"updatedAt"</span> <span class="xt">/&gt;</span>
+  <span class="xt">&lt;/resultMap&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 공통 WHERE 조각 ============= --&gt;</span>
+  <span class="xt">&lt;sql</span> <span class="xa">id</span>=<span class="xv">"searchCondition"</span><span class="xt">&gt;</span>
+    <span class="xt">&lt;where&gt;</span>
+      <span class="xt">&lt;if</span> <span class="xa">test</span>=<span class="xv">"keyword != null and keyword != ''"</span><span class="xt">&gt;</span>
+        <span class="xt">&lt;choose&gt;</span>
+          <span class="xt">&lt;when</span> <span class="xa">test</span>=<span class="xv">"searchType == 'name'"</span><span class="xt">&gt;</span>
+            <span class="xt">&lt;bind</span> <span class="xa">name</span>=<span class="xv">"pat"</span> <span class="xa">value</span>=<span class="xv">"'%' + keyword + '%'"</span><span class="xt">/&gt;</span>
+            writer LIKE #{pat}
+          <span class="xt">&lt;/when&gt;</span>
+          <span class="xt">&lt;when</span> <span class="xa">test</span>=<span class="xv">"searchType == 'title'"</span><span class="xt">&gt;</span>
+            <span class="xt">&lt;bind</span> <span class="xa">name</span>=<span class="xv">"pat"</span> <span class="xa">value</span>=<span class="xv">"'%' + keyword + '%'"</span><span class="xt">/&gt;</span>
+            title LIKE #{pat}
+          <span class="xt">&lt;/when&gt;</span>
+          <span class="xt">&lt;when</span> <span class="xa">test</span>=<span class="xv">"searchType == 'content'"</span><span class="xt">&gt;</span>
+            <span class="xt">&lt;bind</span> <span class="xa">name</span>=<span class="xv">"pat"</span> <span class="xa">value</span>=<span class="xv">"'%' + keyword + '%'"</span><span class="xt">/&gt;</span>
+            content LIKE #{pat}
+          <span class="xt">&lt;/when&gt;</span>
+          <span class="xt">&lt;otherwise&gt;</span>      <span class="cmt">&lt;!-- all : 이름 OR 제목 OR 내용 --&gt;</span>
+            <span class="xt">&lt;bind</span> <span class="xa">name</span>=<span class="xv">"pat"</span> <span class="xa">value</span>=<span class="xv">"'%' + keyword + '%'"</span><span class="xt">/&gt;</span>
+            (writer LIKE #{pat}
+              OR title   LIKE #{pat}
+              OR content LIKE #{pat})
+          <span class="xt">&lt;/otherwise&gt;</span>
+        <span class="xt">&lt;/choose&gt;</span>
+      <span class="xt">&lt;/if&gt;</span>
+    <span class="xt">&lt;/where&gt;</span>
+  <span class="xt">&lt;/sql&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 목록 조회 (페이징 + 검색) ============= --&gt;</span>
+  <span class="xt">&lt;select</span> <span class="xa">id</span>=<span class="xv">"findList"</span>
+          <span class="xa">parameterType</span>=<span class="xv">"SearchVO"</span>
+          <span class="xa">resultMap</span>=<span class="xv">"boardMap"</span><span class="xt">&gt;</span>
+    SELECT id, writer, title, content, view_count, created_at, updated_at
+    FROM   board
+    <span class="xt">&lt;include</span> <span class="xa">refid</span>=<span class="xv">"searchCondition"</span><span class="xt">/&gt;</span>
+    ORDER BY ${safeSortColumn} ${safeSortDir}
+    LIMIT  #{pageSize}
+    OFFSET #{offset}
+  <span class="xt">&lt;/select&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 전체 건수 (같은 WHERE 재사용) ============= --&gt;</span>
+  <span class="xt">&lt;select</span> <span class="xa">id</span>=<span class="xv">"countTotal"</span>
+          <span class="xa">parameterType</span>=<span class="xv">"SearchVO"</span>
+          <span class="xa">resultType</span>=<span class="xv">"long"</span><span class="xt">&gt;</span>
+    SELECT COUNT(*)
+    FROM   board
+    <span class="xt">&lt;include</span> <span class="xa">refid</span>=<span class="xv">"searchCondition"</span><span class="xt">/&gt;</span>
+  <span class="xt">&lt;/select&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 단건 조회 ============= --&gt;</span>
+  <span class="xt">&lt;select</span> <span class="xa">id</span>=<span class="xv">"findById"</span>
+          <span class="xa">parameterType</span>=<span class="xv">"long"</span>
+          <span class="xa">resultMap</span>=<span class="xv">"boardMap"</span><span class="xt">&gt;</span>
+    SELECT id, writer, title, content, view_count, created_at, updated_at
+    FROM   board
+    WHERE  id = #{id}
+  <span class="xt">&lt;/select&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 조회수 증가 ============= --&gt;</span>
+  <span class="xt">&lt;update</span> <span class="xa">id</span>=<span class="xv">"increaseViewCount"</span> <span class="xa">parameterType</span>=<span class="xv">"long"</span><span class="xt">&gt;</span>
+    UPDATE board SET view_count = view_count + 1 WHERE id = #{id}
+  <span class="xt">&lt;/update&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 등록 ============= --&gt;</span>
+  <span class="xt">&lt;insert</span> <span class="xa">id</span>=<span class="xv">"insert"</span>
+          <span class="xa">parameterType</span>=<span class="xv">"BoardVO"</span>
+          <span class="xa">useGeneratedKeys</span>=<span class="xv">"true"</span>
+          <span class="xa">keyProperty</span>=<span class="xv">"id"</span><span class="xt">&gt;</span>
+    INSERT INTO board (writer, title, content)
+    VALUES (#{writer}, #{title}, #{content})
+  <span class="xt">&lt;/insert&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 수정 ============= --&gt;</span>
+  <span class="xt">&lt;update</span> <span class="xa">id</span>=<span class="xv">"update"</span> <span class="xa">parameterType</span>=<span class="xv">"BoardVO"</span><span class="xt">&gt;</span>
+    UPDATE board
+    <span class="xt">&lt;set&gt;</span>
+      <span class="xt">&lt;if</span> <span class="xa">test</span>=<span class="xv">"title != null and title != ''"</span><span class="xt">&gt;</span>   title   = #{title},   <span class="xt">&lt;/if&gt;</span>
+      <span class="xt">&lt;if</span> <span class="xa">test</span>=<span class="xv">"content != null and content != ''"</span><span class="xt">&gt;</span> content = #{content}, <span class="xt">&lt;/if&gt;</span>
+    <span class="xt">&lt;/set&gt;</span>
+    WHERE id = #{id}
+  <span class="xt">&lt;/update&gt;</span>
+
+  <span class="cmt">&lt;!-- ============= 삭제 ============= --&gt;</span>
+  <span class="xt">&lt;delete</span> <span class="xa">id</span>=<span class="xv">"delete"</span> <span class="xa">parameterType</span>=<span class="xv">"long"</span><span class="xt">&gt;</span>
+    DELETE FROM board WHERE id = #{id}
+  <span class="xt">&lt;/delete&gt;</span>
+
+<span class="xt">&lt;/mapper&gt;</span></pre>
+  </div>
+</section>
+
+<!-- ===== 8. MAPPER INTERFACE ===== -->
+<section id="mapper-interface">
+  <div class="section-label">08 / Mapper Interface</div>
+  <h2>BoardMapper.java</h2>
+
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>BoardMapper.java</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.mapper;
+
+<span class="kw">import</span> com.example.board.vo.*;
+<span class="kw">import</span> org.apache.ibatis.annotations.Mapper;
+<span class="kw">import</span> java.util.*;
+
+<span class="ann">@Mapper</span>
+<span class="kw">public interface</span> <span class="cls">BoardMapper</span> {
+
+    <span class="cmt">/** 목록 조회 (페이징 + 검색) */</span>
+    <span class="cls">List</span>&lt;<span class="cls">BoardVO</span>&gt; <span class="met">findList</span>(<span class="cls">SearchVO</span> search);
+
+    <span class="cmt">/** 검색 조건 총 건수 */</span>
+    <span class="kw">long</span> <span class="met">countTotal</span>(<span class="cls">SearchVO</span> search);
+
+    <span class="cmt">/** 단건 조회 */</span>
+    <span class="cls">Optional</span>&lt;<span class="cls">BoardVO</span>&gt; <span class="met">findById</span>(<span class="kw">long</span> id);
+
+    <span class="cmt">/** 조회수 증가 */</span>
+    <span class="kw">int</span> <span class="met">increaseViewCount</span>(<span class="kw">long</span> id);
+
+    <span class="cmt">/** 등록 (id 자동 주입) */</span>
+    <span class="kw">int</span> <span class="met">insert</span>(<span class="cls">BoardVO</span> board);
+
+    <span class="cmt">/** 수정 */</span>
+    <span class="kw">int</span> <span class="met">update</span>(<span class="cls">BoardVO</span> board);
+
+    <span class="cmt">/** 삭제 */</span>
+    <span class="kw">int</span> <span class="met">delete</span>(<span class="kw">long</span> id);
+}</pre>
+  </div>
+</section>
+
+<!-- ===== 9. SERVICE ===== -->
+<section id="service">
+  <div class="section-label">09 / Service Layer</div>
+  <h2>Service 레이어</h2>
+
+  <div class="file-tabs">
+    <div class="file-tab active" onclick="showTab(this,'svc-if')">BoardService.java</div>
+    <div class="file-tab" onclick="showTab(this,'svc-impl')">BoardServiceImpl.java</div>
+  </div>
+
+  <div class="code-wrap" id="svc-if">
+    <div class="code-header"><span>BoardService.java</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.service;
+
+<span class="kw">import</span> com.example.board.vo.*;
+
+<span class="kw">public interface</span> <span class="cls">BoardService</span> {
+    <span class="cls">PageResult</span>&lt;<span class="cls">BoardVO</span>&gt; <span class="met">getList</span>(<span class="cls">SearchVO</span> search);
+    <span class="cls">BoardVO</span>             <span class="met">getDetail</span>(<span class="kw">long</span> id);
+    <span class="cls">BoardVO</span>             <span class="met">write</span>(<span class="cls">BoardVO</span> board);
+    <span class="cls">BoardVO</span>             <span class="met">modify</span>(<span class="kw">long</span> id, <span class="cls">BoardVO</span> board);
+    <span class="kw">void</span>                <span class="met">remove</span>(<span class="kw">long</span> id);
+}</pre>
+  </div>
+
+  <div class="code-wrap" id="svc-impl" style="display:none">
+    <div class="code-header"><span>BoardServiceImpl.java</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.service;
+
+<span class="kw">import</span> com.example.board.mapper.BoardMapper;
+<span class="kw">import</span> com.example.board.vo.*;
+<span class="kw">import</span> lombok.RequiredArgsConstructor;
+<span class="kw">import</span> org.springframework.stereotype.Service;
+<span class="kw">import</span> org.springframework.transaction.annotation.Transactional;
+
+<span class="ann">@Service</span>
+<span class="ann">@RequiredArgsConstructor</span>
+<span class="ann">@Transactional</span>(readOnly = <span class="kw">true</span>)
+<span class="kw">public class</span> <span class="cls">BoardServiceImpl</span> <span class="kw">implements</span> <span class="cls">BoardService</span> {
+
+    <span class="kw">private final</span> <span class="cls">BoardMapper</span> boardMapper;
+
+    <span class="cmt">/** 목록 + 페이지 정보 반환 */</span>
+    <span class="ann">@Override</span>
+    <span class="kw">public</span> <span class="cls">PageResult</span>&lt;<span class="cls">BoardVO</span>&gt; <span class="met">getList</span>(<span class="cls">SearchVO</span> search) {
+        <span class="kw">long</span>             total = boardMapper.<span class="met">countTotal</span>(search);
+        <span class="cls">List</span>&lt;<span class="cls">BoardVO</span>&gt;  list  = boardMapper.<span class="met">findList</span>(search);
+        <span class="kw">return</span> <span class="cls">PageResult</span>.<span class="met">of</span>(list, total, search);
+    }
+
+    <span class="cmt">/** 단건 조회 + 조회수 증가 */</span>
+    <span class="ann">@Override</span>
+    <span class="ann">@Transactional</span>
+    <span class="kw">public</span> <span class="cls">BoardVO</span> <span class="met">getDetail</span>(<span class="kw">long</span> id) {
+        boardMapper.<span class="met">increaseViewCount</span>(id);
+        <span class="kw">return</span> boardMapper.<span class="met">findById</span>(id)
+                .<span class="met">orElseThrow</span>(() -> <span class="kw">new</span> <span class="cls">RuntimeException</span>(<span class="str">"게시글을 찾을 수 없습니다. id="</span> + id));
+    }
+
+    <span class="cmt">/** 등록 */</span>
+    <span class="ann">@Override</span>
+    <span class="ann">@Transactional</span>
+    <span class="kw">public</span> <span class="cls">BoardVO</span> <span class="met">write</span>(<span class="cls">BoardVO</span> board) {
+        boardMapper.<span class="met">insert</span>(board);
+        <span class="kw">return</span> boardMapper.<span class="met">findById</span>(board.<span class="met">getId</span>()).<span class="met">orElseThrow</span>();
+    }
+
+    <span class="cmt">/** 수정 */</span>
+    <span class="ann">@Override</span>
+    <span class="ann">@Transactional</span>
+    <span class="kw">public</span> <span class="cls">BoardVO</span> <span class="met">modify</span>(<span class="kw">long</span> id, <span class="cls">BoardVO</span> board) {
+        board.<span class="met">setId</span>(id);
+        <span class="kw">int</span> updated = boardMapper.<span class="met">update</span>(board);
+        <span class="kw">if</span> (updated == <span class="num">0</span>) <span class="kw">throw new</span> <span class="cls">RuntimeException</span>(<span class="str">"수정 실패. id="</span> + id);
+        <span class="kw">return</span> boardMapper.<span class="met">findById</span>(id).<span class="met">orElseThrow</span>();
+    }
+
+    <span class="cmt">/** 삭제 */</span>
+    <span class="ann">@Override</span>
+    <span class="ann">@Transactional</span>
+    <span class="kw">public void</span> <span class="met">remove</span>(<span class="kw">long</span> id) {
+        <span class="kw">int</span> deleted = boardMapper.<span class="met">delete</span>(id);
+        <span class="kw">if</span> (deleted == <span class="num">0</span>) <span class="kw">throw new</span> <span class="cls">RuntimeException</span>(<span class="str">"삭제 실패. id="</span> + id);
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- ===== 10. CONTROLLER ===== -->
+<section id="controller">
+  <div class="section-label">10 / REST Controller</div>
+  <h2>BoardController.java</h2>
+
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>BoardController.java</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.controller;
+
+<span class="kw">import</span> com.example.board.common.ApiResponse;
+<span class="kw">import</span> com.example.board.service.BoardService;
+<span class="kw">import</span> com.example.board.vo.*;
+<span class="kw">import</span> jakarta.validation.Valid;
+<span class="kw">import</span> lombok.RequiredArgsConstructor;
+<span class="kw">import</span> org.springframework.http.*;
+<span class="kw">import</span> org.springframework.web.bind.annotation.*;
+
+<span class="ann">@RestController</span>
+<span class="ann">@RequestMapping</span>(<span class="str">"/api/boards"</span>)
+<span class="ann">@RequiredArgsConstructor</span>
+<span class="kw">public class</span> <span class="cls">BoardController</span> {
+
+    <span class="kw">private final</span> <span class="cls">BoardService</span> boardService;
+
+    <span class="cmt">/**
+     * 목록 조회 (페이징 + 검색)
+     * GET /api/boards?page=1&amp;pageSize=10&amp;searchType=title&amp;keyword=spring
+     */</span>
+    <span class="ann">@GetMapping</span>
+    <span class="kw">public</span> <span class="cls">ResponseEntity</span>&lt;<span class="cls">ApiResponse</span>&lt;<span class="cls">PageResult</span>&lt;<span class="cls">BoardVO</span>&gt;&gt;&gt; <span class="met">list</span>(
+            <span class="ann">@ModelAttribute</span> <span class="ann">@Valid</span> <span class="cls">SearchVO</span> search) {
+
+        <span class="cls">PageResult</span>&lt;<span class="cls">BoardVO</span>&gt; result = boardService.<span class="met">getList</span>(search);
+        <span class="kw">return</span> <span class="cls">ResponseEntity</span>.<span class="met">ok</span>(<span class="cls">ApiResponse</span>.<span class="met">ok</span>(result));
+    }
+
+    <span class="cmt">/**
+     * 단건 조회
+     * GET /api/boards/{id}
+     */</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> <span class="cls">ResponseEntity</span>&lt;<span class="cls">ApiResponse</span>&lt;<span class="cls">BoardVO</span>&gt;&gt; <span class="met">detail</span>(<span class="ann">@PathVariable</span> <span class="kw">long</span> id) {
+        <span class="kw">return</span> <span class="cls">ResponseEntity</span>.<span class="met">ok</span>(<span class="cls">ApiResponse</span>.<span class="met">ok</span>(boardService.<span class="met">getDetail</span>(id)));
+    }
+
+    <span class="cmt">/**
+     * 등록
+     * POST /api/boards
+     * Body: { "writer":"홍길동", "title":"제목", "content":"내용" }
+     */</span>
+    <span class="ann">@PostMapping</span>
+    <span class="kw">public</span> <span class="cls">ResponseEntity</span>&lt;<span class="cls">ApiResponse</span>&lt;<span class="cls">BoardVO</span>&gt;&gt; <span class="met">write</span>(
+            <span class="ann">@RequestBody</span> <span class="ann">@Valid</span> <span class="cls">BoardVO</span> board) {
+        <span class="kw">return</span> <span class="cls">ResponseEntity</span>
+                .<span class="met">status</span>(<span class="cls">HttpStatus</span>.CREATED)
+                .<span class="met">body</span>(<span class="cls">ApiResponse</span>.<span class="met">created</span>(boardService.<span class="met">write</span>(board)));
+    }
+
+    <span class="cmt">/**
+     * 수정
+     * PUT /api/boards/{id}
+     * Body: { "title":"새제목", "content":"새내용" }
+     */</span>
+    <span class="ann">@PutMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> <span class="cls">ResponseEntity</span>&lt;<span class="cls">ApiResponse</span>&lt;<span class="cls">BoardVO</span>&gt;&gt; <span class="met">modify</span>(
+            <span class="ann">@PathVariable</span> <span class="kw">long</span> id,
+            <span class="ann">@RequestBody</span>  <span class="cls">BoardVO</span> board) {
+        <span class="kw">return</span> <span class="cls">ResponseEntity</span>.<span class="met">ok</span>(<span class="cls">ApiResponse</span>.<span class="met">ok</span>(boardService.<span class="met">modify</span>(id, board)));
+    }
+
+    <span class="cmt">/**
+     * 삭제
+     * DELETE /api/boards/{id}
+     */</span>
+    <span class="ann">@DeleteMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> <span class="cls">ResponseEntity</span>&lt;<span class="cls">ApiResponse</span>&lt;<span class="cls">Void</span>&gt;&gt; <span class="met">remove</span>(<span class="ann">@PathVariable</span> <span class="kw">long</span> id) {
+        boardService.<span class="met">remove</span>(id);
+        <span class="kw">return</span> <span class="cls">ResponseEntity</span>.<span class="met">ok</span>(<span class="cls">ApiResponse</span>.&lt;<span class="cls">Void</span>&gt;<span class="met">builder</span>()
+                .success(<span class="kw">true</span>).message(<span class="str">"삭제되었습니다."</span>).status(<span class="num">200</span>).<span class="met">build</span>());
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- ===== 11. GLOBAL HANDLER ===== -->
+<section id="global-handler">
+  <div class="section-label">11 / Exception</div>
+  <h2>GlobalExceptionHandler</h2>
+
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>GlobalExceptionHandler.java</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.common;
+
+<span class="kw">import</span> org.springframework.http.*;
+<span class="kw">import</span> org.springframework.web.bind.MethodArgumentNotValidException;
+<span class="kw">import</span> org.springframework.web.bind.annotation.*;
+
+<span class="ann">@RestControllerAdvice</span>
+<span class="kw">public class</span> <span class="cls">GlobalExceptionHandler</span> {
+
+    <span class="cmt">/** Validation 에러 */</span>
+    <span class="ann">@ExceptionHandler</span>(<span class="cls">MethodArgumentNotValidException</span>.<span class="kw">class</span>)
+    <span class="kw">public</span> <span class="cls">ResponseEntity</span>&lt;<span class="cls">ApiResponse</span>&lt;?&gt;&gt; <span class="met">handleValidation</span>(
+            <span class="cls">MethodArgumentNotValidException</span> ex) {
+        <span class="cls">String</span> msg = ex.<span class="met">getBindingResult</span>()
+                       .<span class="met">getFieldErrors</span>()
+                       .<span class="met">stream</span>()
+                       .<span class="met">map</span>(e -> e.<span class="met">getField</span>() + <span class="str">": "</span> + e.<span class="met">getDefaultMessage</span>())
+                       .<span class="met">findFirst</span>()
+                       .<span class="met">orElse</span>(<span class="str">"잘못된 요청"</span>);
+        <span class="kw">return</span> <span class="cls">ResponseEntity</span>
+                .<span class="met">status</span>(<span class="cls">HttpStatus</span>.BAD_REQUEST)
+                .<span class="met">body</span>(<span class="cls">ApiResponse</span>.<span class="met">error</span>(msg, <span class="num">400</span>));
+    }
+
+    <span class="cmt">/** 게시글 없음 등 비즈니스 에러 */</span>
+    <span class="ann">@ExceptionHandler</span>(<span class="cls">RuntimeException</span>.<span class="kw">class</span>)
+    <span class="kw">public</span> <span class="cls">ResponseEntity</span>&lt;<span class="cls">ApiResponse</span>&lt;?&gt;&gt; <span class="met">handleRuntime</span>(<span class="cls">RuntimeException</span> ex) {
+        <span class="kw">return</span> <span class="cls">ResponseEntity</span>
+                .<span class="met">status</span>(<span class="cls">HttpStatus</span>.NOT_FOUND)
+                .<span class="met">body</span>(<span class="cls">ApiResponse</span>.<span class="met">error</span>(ex.<span class="met">getMessage</span>(), <span class="num">404</span>));
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- ===== 12. MYBATIS CONFIG ===== -->
+<section id="mybatis-config">
+  <div class="section-label">12 / MyBatis Config</div>
+  <h2>MyBatis 추가 설정</h2>
+
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>MyBatisConfig.java — LocalDateTime TypeHandler</span><span class="lang-badge lang-java">Java</span></div>
+    <pre><span class="kw">package</span> com.example.board.config;
+
+<span class="kw">import</span> org.apache.ibatis.type.*;
+<span class="kw">import</span> org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
+<span class="kw">import</span> org.springframework.context.annotation.*;
+<span class="kw">import</span> java.sql.*;
+<span class="kw">import</span> java.time.LocalDateTime;
+
+<span class="ann">@Configuration</span>
+<span class="kw">public class</span> <span class="cls">MyBatisConfig</span> {
+
+    <span class="ann">@Bean</span>
+    <span class="kw">public</span> <span class="cls">ConfigurationCustomizer</span> <span class="met">mybatisConfigurationCustomizer</span>() {
+        <span class="kw">return</span> configuration -> {
+            <span class="cmt">// LocalDateTime ↔ DATETIME 자동 변환</span>
+            configuration.<span class="met">getTypeHandlerRegistry</span>()
+                    .<span class="met">register</span>(<span class="cls">LocalDateTime</span>.<span class="kw">class</span>,
+                              <span class="cls">JdbcType</span>.TIMESTAMP,
+                              <span class="kw">new</span> <span class="cls">LocalDateTimeTypeHandler</span>());
+        };
+    }
+
+    <span class="cmt">/** LocalDateTime TypeHandler */</span>
+    <span class="kw">public static class</span> <span class="cls">LocalDateTimeTypeHandler</span>
+            <span class="kw">extends</span> <span class="cls">BaseTypeHandler</span>&lt;<span class="cls">LocalDateTime</span>&gt; {
+        <span class="ann">@Override</span>
+        <span class="kw">public void</span> <span class="met">setNonNullParameter</span>(<span class="cls">PreparedStatement</span> ps,
+                <span class="kw">int</span> i, <span class="cls">LocalDateTime</span> parameter, <span class="cls">JdbcType</span> jdbcType) <span class="kw">throws</span> <span class="cls">SQLException</span> {
+            ps.<span class="met">setTimestamp</span>(i, <span class="cls">Timestamp</span>.<span class="met">valueOf</span>(parameter));
+        }
+        <span class="ann">@Override</span>
+        <span class="kw">public</span> <span class="cls">LocalDateTime</span> <span class="met">getNullableResult</span>(<span class="cls">ResultSet</span> rs, <span class="cls">String</span> columnName)
+                <span class="kw">throws</span> <span class="cls">SQLException</span> {
+            <span class="cls">Timestamp</span> ts = rs.<span class="met">getTimestamp</span>(columnName);
+            <span class="kw">return</span> ts == <span class="kw">null</span> ? <span class="kw">null</span> : ts.<span class="met">toLocalDateTime</span>();
+        }
+        <span class="ann">@Override</span>
+        <span class="kw">public</span> <span class="cls">LocalDateTime</span> <span class="met">getNullableResult</span>(<span class="cls">ResultSet</span> rs, <span class="kw">int</span> columnIndex)
+                <span class="kw">throws</span> <span class="cls">SQLException</span> {
+            <span class="cls">Timestamp</span> ts = rs.<span class="met">getTimestamp</span>(columnIndex);
+            <span class="kw">return</span> ts == <span class="kw">null</span> ? <span class="kw">null</span> : ts.<span class="met">toLocalDateTime</span>();
+        }
+        <span class="ann">@Override</span>
+        <span class="kw">public</span> <span class="cls">LocalDateTime</span> <span class="met">getNullableResult</span>(<span class="cls">CallableStatement</span> cs, <span class="kw">int</span> columnIndex)
+                <span class="kw">throws</span> <span class="cls">SQLException</span> {
+            <span class="cls">Timestamp</span> ts = cs.<span class="met">getTimestamp</span>(columnIndex);
+            <span class="kw">return</span> ts == <span class="kw">null</span> ? <span class="kw">null</span> : ts.<span class="met">toLocalDateTime</span>();
+        }
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- ===== 13. ENDPOINTS ===== -->
+<section id="endpoints">
+  <div class="section-label">13 / API Reference</div>
+  <h2>엔드포인트 목록</h2>
+
+  <div class="endpoint-card">
+    <div class="endpoint-line">
+      <span class="chip chip-get">GET</span>
+      <span class="ep-path">/api/boards</span>
+    </div>
+    <div class="ep-desc">목록 조회 (페이징 + 검색)</div>
+    <div class="tbl-wrap" style="margin-top:.8rem">
+      <table>
+        <thead><tr><th>파라미터</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>int</td><td>1</td><td>현재 페이지 (1-based)</td></tr>
+          <tr><td><code>pageSize</code></td><td>int</td><td>10</td><td>페이지당 건수 (1~100)</td></tr>
+          <tr><td><code>searchType</code></td><td>String</td><td>all</td><td><code>all</code> | <code>name</code> | <code>title</code> | <code>content</code></td></tr>
+          <tr><td><code>keyword</code></td><td>String</td><td>null</td><td>검색 키워드 (없으면 전체 조회)</td></tr>
+          <tr><td><code>sortColumn</code></td><td>String</td><td>id</td><td><code>id</code> | <code>title</code> | <code>writer</code> | <code>viewCount</code> | <code>createdAt</code></td></tr>
+          <tr><td><code>sortDir</code></td><td>String</td><td>DESC</td><td><code>ASC</code> | <code>DESC</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="endpoint-card">
+    <div class="endpoint-line">
+      <span class="chip chip-get">GET</span>
+      <span class="ep-path">/api/boards/{id}</span>
+    </div>
+    <div class="ep-desc">단건 조회 + 조회수 증가</div>
+  </div>
+
+  <div class="endpoint-card">
+    <div class="endpoint-line">
+      <span class="chip chip-post">POST</span>
+      <span class="ep-path">/api/boards</span>
+    </div>
+    <div class="ep-desc">게시글 등록 — Body: <code>{ writer, title, content }</code></div>
+  </div>
+
+  <div class="endpoint-card">
+    <div class="endpoint-line">
+      <span class="chip chip-put">PUT</span>
+      <span class="ep-path">/api/boards/{id}</span>
+    </div>
+    <div class="ep-desc">게시글 수정 — Body: <code>{ title?, content? }</code> (선택적 수정)</div>
+  </div>
+
+  <div class="endpoint-card">
+    <div class="endpoint-line">
+      <span class="chip chip-delete">DELETE</span>
+      <span class="ep-path">/api/boards/{id}</span>
+    </div>
+    <div class="ep-desc">게시글 삭제</div>
+  </div>
+</section>
+
+<!-- ===== 14. HTTP TEST ===== -->
+<section id="test-examples">
+  <div class="section-label">14 / HTTP 테스트</div>
+  <h2>HTTP 요청 예제</h2>
+
+  <h3>목록 조회 — 제목으로 검색, 2페이지</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>GET — 페이징 + 제목 검색</span><span class="lang-badge lang-http">HTTP</span></div>
+    <pre><span class="http-method">GET</span> <span class="http-url">http://localhost:8080/api/boards</span>?<span class="http-param">page=2&pageSize=5&searchType=title&keyword=Spring</span>
+Accept: application/json</pre>
+  </div>
+
+  <h3>목록 조회 — 이름으로 검색</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>GET — 작성자 이름 검색</span><span class="lang-badge lang-http">HTTP</span></div>
+    <pre><span class="http-method">GET</span> <span class="http-url">http://localhost:8080/api/boards</span>?<span class="http-param">searchType=name&keyword=홍길동&sortColumn=createdAt&sortDir=DESC</span>
+Accept: application/json</pre>
+  </div>
+
+  <h3>목록 조회 — 내용 검색</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>GET — 내용 검색</span><span class="lang-badge lang-http">HTTP</span></div>
+    <pre><span class="http-method">GET</span> <span class="http-url">http://localhost:8080/api/boards</span>?<span class="http-param">searchType=content&keyword=JWT&pageSize=20</span>
+Accept: application/json</pre>
+  </div>
+
+  <h3>등록</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>POST — 게시글 등록</span><span class="lang-badge lang-http">HTTP</span></div>
+    <pre><span class="http-method">POST</span> <span class="http-url">http://localhost:8080/api/boards</span>
+Content-Type: application/json
+
+{
+  <span class="str">"writer"</span>:  <span class="str">"홍길동"</span>,
+  <span class="str">"title"</span>:   <span class="str">"MyBatis 동적 SQL 완벽 정리"</span>,
+  <span class="str">"content"</span>: <span class="str">"&lt;where&gt;, &lt;if&gt;, &lt;foreach&gt; 태그 활용법 정리"</span>
+}</pre>
+  </div>
+
+  <h3>수정</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>PUT — 게시글 수정 (선택적 필드만)</span><span class="lang-badge lang-http">HTTP</span></div>
+    <pre><span class="http-method">PUT</span> <span class="http-url">http://localhost:8080/api/boards/3</span>
+Content-Type: application/json
+
+{
+  <span class="str">"title"</span>: <span class="str">"수정된 제목"</span>
+}</pre>
+  </div>
+
+  <h3>삭제</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>DELETE — 게시글 삭제</span><span class="lang-badge lang-http">HTTP</span></div>
+    <pre><span class="http-method">DELETE</span> <span class="http-url">http://localhost:8080/api/boards/3</span></pre>
+  </div>
+</section>
+
+<!-- ===== 15. RESPONSE EXAMPLES ===== -->
+<section id="response-examples">
+  <div class="section-label">15 / Response JSON</div>
+  <h2>응답 JSON 예제</h2>
+
+  <h3>목록 조회 성공 응답</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>200 OK — PageResult</span><span class="lang-badge lang-json">JSON</span></div>
+    <pre>{
+  <span class="xa">"success"</span>: <span class="kw">true</span>,
+  <span class="xa">"message"</span>: <span class="str">"OK"</span>,
+  <span class="xa">"status"</span>:  <span class="num">200</span>,
+  <span class="xa">"data"</span>: {
+    <span class="xa">"list"</span>: [
+      {
+        <span class="xa">"id"</span>:        <span class="num">8</span>,
+        <span class="xa">"writer"</span>:   <span class="str">"이영희"</span>,
+        <span class="xa">"title"</span>:    <span class="str">"Spring Security 인증"</span>,
+        <span class="xa">"content"</span>:  <span class="str">"JWT 토큰 기반 인증 구현"</span>,
+        <span class="xa">"viewCount"</span>:<span class="num">12</span>,
+        <span class="xa">"createdAt"</span>:<span class="str">"2026-05-19T09:00:00"</span>,
+        <span class="xa">"updatedAt"</span>:<span class="str">"2026-05-19T09:00:00"</span>
+      },
+      {
+        <span class="xa">"id"</span>:        <span class="num">1</span>,
+        <span class="xa">"writer"</span>:   <span class="str">"홍길동"</span>,
+        <span class="xa">"title"</span>:    <span class="str">"Spring Boot 입문"</span>,
+        <span class="xa">"content"</span>:  <span class="str">"Spring Boot 기초 내용입니다"</span>,
+        <span class="xa">"viewCount"</span>:<span class="num">35</span>,
+        <span class="xa">"createdAt"</span>:<span class="str">"2026-05-18T10:00:00"</span>,
+        <span class="xa">"updatedAt"</span>:<span class="str">"2026-05-18T10:00:00"</span>
+      }
+    ],
+    <span class="xa">"page"</span>:        <span class="num">1</span>,
+    <span class="xa">"pageSize"</span>:    <span class="num">5</span>,
+    <span class="xa">"totalCount"</span>: <span class="num">2</span>,
+    <span class="xa">"totalPages"</span>: <span class="num">1</span>,
+    <span class="xa">"hasNext"</span>:    <span class="kw">false</span>,
+    <span class="xa">"hasPrev"</span>:    <span class="kw">false</span>,
+    <span class="xa">"searchType"</span>: <span class="str">"title"</span>,
+    <span class="xa">"keyword"</span>:    <span class="str">"Spring"</span>
+  }
+}</pre>
+  </div>
+
+  <h3>오류 응답 (존재하지 않는 id)</h3>
+  <div class="code-wrap standalone">
+    <div class="code-header"><span>404 Not Found</span><span class="lang-badge lang-json">JSON</span></div>
+    <pre>{
+  <span class="xa">"success"</span>: <span class="kw">false</span>,
+  <span class="xa">"message"</span>: <span class="str">"게시글을 찾을 수 없습니다. id=999"</span>,
+  <span class="xa">"status"</span>:  <span class="num">404</span>,
+  <span class="xa">"data"</span>:    <span class="kw">null</span>
+}</pre>
+  </div>
+</section>
+
+<!-- ===== 16. TIPS ===== -->
+<section id="tips">
+  <div class="section-label">16 / Best Practices</div>
+  <h2>실전 팁</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>권장 사항</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>${}` SQL Injection</code></td>
+          <td>정렬 컬럼·방향은 반드시 화이트리스트 검증 후 <code>${}</code> 사용 (<code>getSafeSortColumn()</code>)</td>
+        </tr>
+        <tr>
+          <td>N+1 방지</td>
+          <td>목록 API는 <code>content</code> 컬럼 제외 (SUBSTR 또는 별도 VO), 단건 API에서만 전체 조회</td>
+        </tr>
+        <tr>
+          <td>LIKE 인덱스</td>
+          <td><code>LIKE '%keyword'</code>는 인덱스 미사용 → FULLTEXT INDEX + <code>MATCH AGAINST</code> 고려</td>
+        </tr>
+        <tr>
+          <td>COUNT 쿼리 최적화</td>
+          <td><code>SELECT COUNT(*)</code>는 동일 WHERE 절로 캐싱 가능; 2차 캐시 또는 Redis로 TTL 적용</td>
+        </tr>
+        <tr>
+          <td>페이지 번호 검증</td>
+          <td>page &gt; totalPages 요청 시 빈 리스트 대신 마지막 페이지로 리다이렉트 고려</td>
+        </tr>
+        <tr>
+          <td>Cursor 페이징</td>
+          <td>데이터가 수백만 건 이상이면 OFFSET 대신 <code>WHERE id &lt; #{lastId}</code> 방식 사용</td>
+        </tr>
+        <tr>
+          <td>SQL 로그</td>
+          <td><code>log-impl: StdOutImpl</code>은 개발용; 운영에서는 <code>slf4j</code>로 변경</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box tip" style="margin-top:1.5rem">
+    <strong>✅ 디렉토리 구조</strong>
+    <code style="display:block;margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:2">
+src/main/<br>
+├── java/com/example/board/<br>
+│   ├── BoardApplication.java<br>
+│   ├── common/   ApiResponse.java · GlobalExceptionHandler.java<br>
+│   ├── config/   MyBatisConfig.java<br>
+│   ├── controller/ BoardController.java<br>
+│   ├── mapper/   BoardMapper.java<br>
+│   ├── service/  BoardService.java · BoardServiceImpl.java<br>
+│   └── vo/       BoardVO.java · SearchVO.java · PageResult.java<br>
+└── resources/<br>
+    ├── application.yml<br>
+    └── mapper/ BoardMapper.xml
+    </code>
+  </div>
+</section>
+
+</main>
+
+<script>
+// Tab switching
+function showTab(btn, targetId) {
+  const wrap = btn.closest('section') || btn.closest('div').parentElement;
+  // deactivate all tabs in same group
+  btn.parentElement.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  // hide/show panels — find siblings with ids referenced by file-tabs
+  const tabBar = btn.parentElement;
+  const section = tabBar.parentElement;
+  // collect all panel ids from tab onclick
+  tabBar.querySelectorAll('.file-tab').forEach(t => {
+    const match = t.getAttribute('onclick')?.match(/showTab\(this,'(.+?)'\)/);
+    if (match) {
+      const el = document.getElementById(match[1]);
+      if (el) el.style.display = 'none';
+    }
+  });
+  const target = document.getElementById(targetId);
+  if (target) target.style.display = 'block';
+}
+
+// Sidebar active highlight on scroll
+const sections = document.querySelectorAll('section[id]');
+const navItems = document.querySelectorAll('.nav-item');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navItems.forEach(n => n.classList.remove('active'));
+      const link = document.querySelector(`.nav-item[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

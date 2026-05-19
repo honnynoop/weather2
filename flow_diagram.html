@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Commerce AI — 호출 흐름 다이어그램</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --c-ui:    #1e40af; --c-ui-l:  #dbeafe;
+  --c-ctrl:  #0f766e; --c-ctrl-l:#ccfbf1;
+  --c-svc:   #7c3aed; --c-svc-l: #ede9fe;
+  --c-repo:  #b45309; --c-repo-l:#fef3c7;
+  --c-db:    #374151; --c-db-l:  #f3f4f6;
+  --c-ai:    #dc2626; --c-ai-l:  #fee2e2;
+  --c-af:    #15803d; --c-af-l:  #dcfce7;
+  --c-sc:    #0369a1; --c-sc-l:  #e0f2fe;
+  --c-batch: #9a3412; --c-batch-l:#ffedd5;
+  --bd:#e5e7eb; --bg2:#f9fafb; --ink:#111827; --mu:#6b7280;
+  --mn:'JetBrains Mono',monospace; --bd-r:'Noto Sans KR',sans-serif;
+}
+body{font-family:var(--bd-r);background:#fff;color:var(--ink);font-size:13.5px;line-height:1.6}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;background:#fff;border-bottom:2px solid var(--bd);padding:0 24px;position:sticky;top:0;z-index:100;overflow-x:auto;gap:2px}
+.tab{padding:12px 18px;font-size:12.5px;font-weight:600;color:var(--mu);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.12s}
+.tab:hover{color:var(--ink);background:var(--bg2)}
+.tab.on{color:var(--c-ui);border-bottom-color:var(--c-ui)}
+.panel{display:none;padding:28px 28px 48px}
+.panel.on{display:block}
+
+/* ── Legend ── */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;padding:14px 18px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500}
+.leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+/* ── Section title ── */
+.stitle{font-size:20px;font-weight:700;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.ssub  {font-size:12.5px;color:var(--mu);margin-bottom:22px}
+
+/* ── Flow node ── */
+.fn{border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.5;min-width:130px;border:1.5px solid}
+.fn .fn-layer{font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px;opacity:.8}
+.fn .fn-class{font-family:var(--mn);font-weight:600;font-size:12px;margin-bottom:1px}
+.fn .fn-method{font-family:var(--mn);font-size:10.5px;opacity:.75}
+.fn .fn-desc{font-size:11px;color:var(--mu);margin-top:3px}
+/* Layer colors */
+.fn-ui   {background:var(--c-ui-l);border-color:var(--c-ui);color:var(--c-ui)}
+.fn-ctrl {background:var(--c-ctrl-l);border-color:var(--c-ctrl);color:var(--c-ctrl)}
+.fn-svc  {background:var(--c-svc-l);border-color:var(--c-svc);color:var(--c-svc)}
+.fn-repo {background:var(--c-repo-l);border-color:var(--c-repo);color:var(--c-repo)}
+.fn-db   {background:var(--c-db-l);border-color:var(--c-db);color:var(--c-db)}
+.fn-ai   {background:var(--c-ai-l);border-color:var(--c-ai);color:var(--c-ai)}
+.fn-af   {background:var(--c-af-l);border-color:var(--c-af);color:var(--c-af)}
+.fn-sc   {background:var(--c-sc-l);border-color:var(--c-sc);color:var(--c-sc)}
+.fn-batch{background:var(--c-batch-l);border-color:var(--c-batch);color:var(--c-batch)}
+
+/* ── Arrow ── */
+.arr{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0;padding:0 4px}
+.arr-line{width:2px;flex:1;min-height:12px}
+.arr-label{font-size:10px;color:var(--mu);white-space:nowrap;text-align:center;font-family:var(--mn);background:#fff;padding:1px 4px;border-radius:3px;border:1px solid var(--bd)}
+.arr-head{font-size:14px;line-height:1;color:var(--mu)}
+
+/* ── Horizontal chain ── */
+.hchain{display:flex;align-items:center;flex-wrap:nowrap;gap:0;overflow-x:auto;padding:8px 0}
+.hchain .arr{flex-direction:row;padding:0}
+.hchain .arr-line{height:2px;width:20px;flex:none}
+.hchain .arr-label{writing-mode:initial;font-size:9.5px}
+.hchain .arr-head{font-size:16px}
+
+/* ── Vertical chain ── */
+.vchain{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.vchain .arr{flex-direction:column;padding:2px 0;min-height:28px}
+.vchain .arr-line{width:2px;flex:1}
+
+/* ── Flow sections ── */
+.flow-section{margin-bottom:32px}
+.flow-section h3{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:14px;padding:8px 14px;background:var(--bg2);border-radius:6px;border-left:4px solid var(--c-ui);display:flex;align-items:center;gap:8px}
+
+/* ── Split flow (parallel branches) ── */
+.split-flow{display:flex;gap:0;align-items:flex-start}
+.split-main{display:flex;flex-direction:column;gap:0;align-items:flex-start}
+.split-branches{display:flex;flex-direction:column;gap:10px}
+.branch-line{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+
+/* ── Complex flow layout ── */
+.cf-wrap{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:20px;margin-top:10px;overflow-x:auto}
+.cf-row{display:flex;align-items:flex-start;gap:6px;flex-wrap:nowrap}
+.cf-col{display:flex;flex-direction:column;align-items:center;gap:0;min-width:140px}
+.cf-connector{border-left:2px dashed var(--bd);margin-left:70px;padding-left:12px;margin-top:6px;display:flex;flex-direction:column;gap:10px}
+.cf-connector .branch{display:flex;align-items:center;gap:6px}
+.cf-connector .branch::before{content:'├─';font-family:var(--mn);color:var(--mu);flex-shrink:0}
+.cf-connector .branch:last-child::before{content:'└─'}
+
+/* ── H arrow between columns ── */
+.h-arr{display:flex;align-items:center;gap:2px;padding:0 4px;flex-shrink:0;margin-top:20px}
+.h-arr-line{height:2px;width:32px;background:var(--mu)}
+.h-arr span{font-size:14px;color:var(--mu)}
+
+/* ── V arrow ── */
+.v-arr{display:flex;flex-direction:column;align-items:center;padding:2px 0;min-height:28px}
+.v-arr-line{width:2px;height:20px;background:var(--mu)}
+.v-arr span{font-size:14px;color:var(--mu)}
+.v-arr-label{font-family:var(--mn);font-size:9.5px;color:var(--mu);white-space:nowrap;background:#fff;padding:1px 5px;border:1px solid var(--bd);border-radius:3px;margin:1px 0}
+
+/* ── HTTP pill ── */
+.http{display:inline-block;font-family:var(--mn);font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;margin:0 4px}
+.get{background:#dbeafe;color:#1e40af}
+.post{background:#dcfce7;color:#166534}
+
+/* ── Overview SVG ── */
+.overview-wrap{overflow-x:auto;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:20px}
+.overview-wrap svg{display:block;margin:0 auto}
+
+/* ── Step number badge ── */
+.step-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+
+/* ── Callout ── */
+.note{background:var(--c-sc-l);border:1px solid #7dd3fc;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#075985;margin:12px 0}
+.note strong{color:#0369a1}
+</style>
+</head>
+<body>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab on"  onclick="show('overview',this)">🗺️ 전체 구조</button>
+  <button class="tab"     onclick="show('step1',this)">① 날씨 시딩</button>
+  <button class="tab"     onclick="show('step2',this)">② 배치 분석</button>
+  <button class="tab"     onclick="show('step3',this)">③ RAG 임베딩</button>
+  <button class="tab"     onclick="show('step4',this)">④ AI 추천</button>
+  <button class="tab"     onclick="show('step5',this)">⑤ AI 채팅</button>
+  <button class="tab"     onclick="show('step6',this)">⑥ 리포트</button>
+  <button class="tab"     onclick="show('bg',this)">🔄 백그라운드</button>
+</div>
+
+<!-- ════════════════ OVERVIEW ════════════════ -->
+<div id="p-overview" class="panel on">
+  <div class="stitle">🗺️ 전체 시스템 호출 구조</div>
+  <div class="ssub">각 레이어의 클래스와 데이터 저장소를 색상으로 구분합니다. 탭을 클릭하면 각 단계의 상세 흐름을 볼 수 있습니다.</div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-ui)"></div>UI (index.html)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-ctrl)"></div>Controller</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-svc)"></div>Service</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-batch)"></div>Spring Batch</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-repo)"></div>Repository/DAO</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-db)"></div>PostgreSQL</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-ai)"></div>Ollama AI</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-af)"></div>Airflow</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-sc)"></div>Scheduler</div>
+  </div>
+
+  <div class="overview-wrap">
+  <svg viewBox="0 0 980 680" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:980px;min-width:800px">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M2 2L8 5L2 8" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ar1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M2 2L8 5L2 8" fill="none" stroke="#1e40af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M2 2L8 5L2 8" fill="none" stroke="#0f766e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ar3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M2 2L8 5L2 8" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- ── Layer Labels ── -->
+  <text x="10" y="62"  font-size="9" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1" transform="rotate(-90,10,62)">UI</text>
+  <text x="10" y="164" font-size="9" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1" transform="rotate(-90,10,164)">CONTROLLER</text>
+  <text x="10" y="278" font-size="9" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1" transform="rotate(-90,10,278)">SERVICE</text>
+  <text x="10" y="392" font-size="9" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1" transform="rotate(-90,10,392)">REPOSITORY</text>
+  <text x="10" y="506" font-size="9" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1" transform="rotate(-90,10,506)">DATABASE</text>
+  <text x="10" y="616" font-size="9" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-weight="700" letter-spacing="1" transform="rotate(-90,10,616)">EXTERNAL</text>
+
+  <!-- ── Layer backgrounds ── -->
+  <rect x="28" y="18"  width="820" height="64"  rx="6" fill="#dbeafe" fill-opacity=".35"/>
+  <rect x="28" y="96"  width="820" height="64"  rx="6" fill="#ccfbf1" fill-opacity=".35"/>
+  <rect x="28" y="210" width="820" height="64"  rx="6" fill="#ede9fe" fill-opacity=".35"/>
+  <rect x="28" y="324" width="820" height="64"  rx="6" fill="#fef3c7" fill-opacity=".35"/>
+  <rect x="28" y="438" width="820" height="64"  rx="6" fill="#f3f4f6" fill-opacity=".5"/>
+  <rect x="28" y="552" width="820" height="64"  rx="6" fill="#f0fdf4" fill-opacity=".5"/>
+
+  <!-- ═══════ UI Layer ═══════ -->
+  <!-- Step 1 -->
+  <rect x="36"  y="26" width="106" height="48" rx="6" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+  <text x="89"  y="44" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af" font-family="'JetBrains Mono',monospace">①시딩버튼</text>
+  <text x="89"  y="58" text-anchor="middle" font-size="9"  fill="#3b82f6" font-family="'JetBrains Mono',monospace">POST /seed</text>
+  <!-- Step 2 -->
+  <rect x="152" y="26" width="116" height="48" rx="6" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+  <text x="210" y="44" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af" font-family="'JetBrains Mono',monospace">②분석배치</text>
+  <text x="210" y="58" text-anchor="middle" font-size="9"  fill="#3b82f6" font-family="'JetBrains Mono',monospace">POST /batch/run</text>
+  <!-- Step 3 -->
+  <rect x="278" y="26" width="116" height="48" rx="6" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+  <text x="336" y="44" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af" font-family="'JetBrains Mono',monospace">③임베딩배치</text>
+  <text x="336" y="58" text-anchor="middle" font-size="9"  fill="#3b82f6" font-family="'JetBrains Mono',monospace">POST /batch/run</text>
+  <!-- Step 4 -->
+  <rect x="404" y="26" width="116" height="48" rx="6" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+  <text x="462" y="44" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af" font-family="'JetBrains Mono',monospace">④AI추천</text>
+  <text x="462" y="58" text-anchor="middle" font-size="9"  fill="#3b82f6" font-family="'JetBrains Mono',monospace">GET /recommend</text>
+  <!-- Step 5 -->
+  <rect x="530" y="26" width="106" height="48" rx="6" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+  <text x="583" y="44" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af" font-family="'JetBrains Mono',monospace">⑤AI채팅</text>
+  <text x="583" y="58" text-anchor="middle" font-size="9"  fill="#3b82f6" font-family="'JetBrains Mono',monospace">POST /chat</text>
+  <!-- Step 6 -->
+  <rect x="646" y="26" width="106" height="48" rx="6" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+  <text x="699" y="44" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af" font-family="'JetBrains Mono',monospace">⑥리포트</text>
+  <text x="699" y="58" text-anchor="middle" font-size="9"  fill="#3b82f6" font-family="'JetBrains Mono',monospace">GET /report</text>
+
+  <!-- ═══════ Controller Layer ═══════ -->
+  <rect x="36"  y="104" width="106" height="48" rx="6" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.5"/>
+  <text x="89"  y="121" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f766e" font-family="'JetBrains Mono',monospace">MockWeather</text>
+  <text x="89"  y="135" text-anchor="middle" font-size="9"   fill="#0f766e" font-family="'JetBrains Mono',monospace">Controller</text>
+  <text x="89"  y="147" text-anchor="middle" font-size="8.5" fill="#5eead4" font-family="'JetBrains Mono',monospace">.seed()</text>
+
+  <rect x="152" y="104" width="242" height="48" rx="6" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.5"/>
+  <text x="273" y="121" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f766e" font-family="'JetBrains Mono',monospace">BatchController</text>
+  <text x="273" y="135" text-anchor="middle" font-size="9"   fill="#0f766e" font-family="'JetBrains Mono',monospace">.runBatch(jobName)</text>
+  <text x="273" y="147" text-anchor="middle" font-size="8.5" fill="#5eead4" font-family="'JetBrains Mono',monospace">→ JobLauncher.run(job, params)</text>
+
+  <rect x="404" y="104" width="116" height="48" rx="6" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.5"/>
+  <text x="462" y="121" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f766e" font-family="'JetBrains Mono',monospace">Recommendation</text>
+  <text x="462" y="135" text-anchor="middle" font-size="9"   fill="#0f766e" font-family="'JetBrains Mono',monospace">Controller</text>
+  <text x="462" y="147" text-anchor="middle" font-size="8.5" fill="#5eead4" font-family="'JetBrains Mono',monospace">.recommend()</text>
+
+  <rect x="530" y="104" width="106" height="48" rx="6" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.5"/>
+  <text x="583" y="121" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f766e" font-family="'JetBrains Mono',monospace">Chat</text>
+  <text x="583" y="135" text-anchor="middle" font-size="9"   fill="#0f766e" font-family="'JetBrains Mono',monospace">Controller</text>
+  <text x="583" y="147" text-anchor="middle" font-size="8.5" fill="#5eead4" font-family="'JetBrains Mono',monospace">.chat()</text>
+
+  <rect x="646" y="104" width="106" height="48" rx="6" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.5"/>
+  <text x="699" y="121" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f766e" font-family="'JetBrains Mono',monospace">Report</text>
+  <text x="699" y="135" text-anchor="middle" font-size="9"   fill="#0f766e" font-family="'JetBrains Mono',monospace">Controller</text>
+  <text x="699" y="147" text-anchor="middle" font-size="8.5" fill="#5eead4" font-family="'JetBrains Mono',monospace">.report()</text>
+
+  <!-- ═══════ Service Layer ═══════ -->
+  <rect x="36"  y="218" width="106" height="48" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="89"  y="235" text-anchor="middle" font-size="9.5" font-weight="700" fill="#7c3aed" font-family="'JetBrains Mono',monospace">MockWeather</text>
+  <text x="89"  y="249" text-anchor="middle" font-size="9"   fill="#7c3aed" font-family="'JetBrains Mono',monospace">Service</text>
+  <text x="89"  y="261" text-anchor="middle" font-size="8.5" fill="#a78bfa" font-family="'JetBrains Mono',monospace">.seedHistory()</text>
+
+  <!-- Batch Jobs -->
+  <rect x="152" y="218" width="112" height="48" rx="6" fill="#ffedd5" stroke="#9a3412" stroke-width="1.5"/>
+  <text x="208" y="235" text-anchor="middle" font-size="9.5" font-weight="700" fill="#9a3412" font-family="'JetBrains Mono',monospace">WeatherAnalysis</text>
+  <text x="208" y="249" text-anchor="middle" font-size="9"   fill="#9a3412" font-family="'JetBrains Mono',monospace">BatchConfig</text>
+  <text x="208" y="261" text-anchor="middle" font-size="8.5" fill="#c2410c" font-family="'JetBrains Mono',monospace">Job1:R→P→W</text>
+
+  <rect x="274" y="218" width="116" height="48" rx="6" fill="#ffedd5" stroke="#9a3412" stroke-width="1.5"/>
+  <text x="332" y="235" text-anchor="middle" font-size="9.5" font-weight="700" fill="#9a3412" font-family="'JetBrains Mono',monospace">EmbeddingIndex</text>
+  <text x="332" y="249" text-anchor="middle" font-size="9"   fill="#9a3412" font-family="'JetBrains Mono',monospace">BatchConfig</text>
+  <text x="332" y="261" text-anchor="middle" font-size="8.5" fill="#c2410c" font-family="'JetBrains Mono',monospace">Job2:Tasklet</text>
+
+  <rect x="400" y="218" width="120" height="48" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="460" y="235" text-anchor="middle" font-size="9.5" font-weight="700" fill="#7c3aed" font-family="'JetBrains Mono',monospace">Recommendation</text>
+  <text x="460" y="249" text-anchor="middle" font-size="9"   fill="#7c3aed" font-family="'JetBrains Mono',monospace">Service</text>
+  <text x="460" y="261" text-anchor="middle" font-size="8.5" fill="#a78bfa" font-family="'JetBrains Mono',monospace">.recommend()</text>
+
+  <rect x="530" y="218" width="106" height="48" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="583" y="235" text-anchor="middle" font-size="9.5" font-weight="700" fill="#7c3aed" font-family="'JetBrains Mono',monospace">WeatherChat</text>
+  <text x="583" y="249" text-anchor="middle" font-size="9"   fill="#7c3aed" font-family="'JetBrains Mono',monospace">Service</text>
+  <text x="583" y="261" text-anchor="middle" font-size="8.5" fill="#a78bfa" font-family="'JetBrains Mono',monospace">RAG Advisor</text>
+
+  <rect x="646" y="218" width="106" height="48" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="699" y="235" text-anchor="middle" font-size="9.5" font-weight="700" fill="#7c3aed" font-family="'JetBrains Mono',monospace">WeatherReport</text>
+  <text x="699" y="249" text-anchor="middle" font-size="9"   fill="#7c3aed" font-family="'JetBrains Mono',monospace">Service</text>
+  <text x="699" y="261" text-anchor="middle" font-size="8.5" fill="#a78bfa" font-family="'JetBrains Mono',monospace">.generateReport()</text>
+
+  <!-- ═══════ Repository Layer ═══════ -->
+  <rect x="36"  y="332" width="106" height="48" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+  <text x="89"  y="349" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b45309" font-family="'JetBrains Mono',monospace">JdbcTemplate</text>
+  <text x="89"  y="363" text-anchor="middle" font-size="9"   fill="#b45309" font-family="'JetBrains Mono',monospace">INSERT INTO</text>
+  <text x="89"  y="375" text-anchor="middle" font-size="8.5" fill="#d97706" font-family="'JetBrains Mono',monospace">weather_data</text>
+
+  <rect x="152" y="332" width="112" height="48" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+  <text x="208" y="349" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b45309" font-family="'JetBrains Mono',monospace">JdbcCursor</text>
+  <text x="208" y="363" text-anchor="middle" font-size="9"   fill="#b45309" font-family="'JetBrains Mono',monospace">ItemReader</text>
+  <text x="208" y="375" text-anchor="middle" font-size="8.5" fill="#d97706" font-family="'JetBrains Mono',monospace">JOIN SQL쿼리</text>
+
+  <rect x="274" y="332" width="116" height="48" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+  <text x="332" y="349" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b45309" font-family="'JetBrains Mono',monospace">WeatherData</text>
+  <text x="332" y="363" text-anchor="middle" font-size="9"   fill="#b45309" font-family="'JetBrains Mono',monospace">Repository</text>
+  <text x="332" y="375" text-anchor="middle" font-size="8.5" fill="#d97706" font-family="'JetBrains Mono',monospace">findNotEmbedded()</text>
+
+  <rect x="400" y="332" width="120" height="48" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+  <text x="460" y="349" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b45309" font-family="'JetBrains Mono',monospace">WeatherDataRepo</text>
+  <text x="460" y="363" text-anchor="middle" font-size="9"   fill="#b45309" font-family="'JetBrains Mono',monospace">SalesOrderRepo</text>
+  <text x="460" y="375" text-anchor="middle" font-size="8.5" fill="#d97706" font-family="'JetBrains Mono',monospace">JPA findTop...()</text>
+
+  <rect x="530" y="332" width="106" height="48" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+  <text x="583" y="349" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b45309" font-family="'JetBrains Mono',monospace">VectorStore</text>
+  <text x="583" y="363" text-anchor="middle" font-size="9"   fill="#b45309" font-family="'JetBrains Mono',monospace">PgVectorStore</text>
+  <text x="583" y="375" text-anchor="middle" font-size="8.5" fill="#d97706" font-family="'JetBrains Mono',monospace">similaritySearch()</text>
+
+  <rect x="646" y="332" width="106" height="48" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+  <text x="699" y="349" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b45309" font-family="'JetBrains Mono',monospace">WeatherSalesCorr</text>
+  <text x="699" y="363" text-anchor="middle" font-size="9"   fill="#b45309" font-family="'JetBrains Mono',monospace">Repository</text>
+  <text x="699" y="375" text-anchor="middle" font-size="8.5" fill="#d97706" font-family="'JetBrains Mono',monospace">findBetween()</text>
+
+  <!-- ═══════ DB Layer ═══════ -->
+  <rect x="36"  y="446" width="106" height="48" rx="6" fill="#f3f4f6" stroke="#374151" stroke-width="1.5"/>
+  <text x="89"  y="465" text-anchor="middle" font-size="10" font-weight="700" fill="#374151" font-family="'JetBrains Mono',monospace">weather.</text>
+  <text x="89"  y="479" text-anchor="middle" font-size="9"  fill="#6b7280" font-family="'JetBrains Mono',monospace">weather_data</text>
+
+  <rect x="152" y="446" width="238" height="48" rx="6" fill="#f3f4f6" stroke="#374151" stroke-width="1.5"/>
+  <text x="271" y="465" text-anchor="middle" font-size="10" font-weight="700" fill="#374151" font-family="'JetBrains Mono',monospace">raw.orders + raw.customers</text>
+  <text x="271" y="479" text-anchor="middle" font-size="9"  fill="#6b7280" font-family="'JetBrains Mono',monospace">→ analytics.weather_sales_corr</text>
+
+  <rect x="400" y="446" width="120" height="48" rx="6" fill="#f3f4f6" stroke="#374151" stroke-width="1.5"/>
+  <text x="460" y="465" text-anchor="middle" font-size="10" font-weight="700" fill="#374151" font-family="'JetBrains Mono',monospace">weather. + raw.</text>
+  <text x="460" y="479" text-anchor="middle" font-size="9"  fill="#6b7280" font-family="'JetBrains Mono',monospace">weather_data · orders</text>
+
+  <rect x="530" y="446" width="106" height="48" rx="6" fill="#f3f4f6" stroke="#374151" stroke-width="1.5"/>
+  <text x="583" y="465" text-anchor="middle" font-size="10" font-weight="700" fill="#374151" font-family="'JetBrains Mono',monospace">pgvector.</text>
+  <text x="583" y="479" text-anchor="middle" font-size="9"  fill="#6b7280" font-family="'JetBrains Mono',monospace">vector_store</text>
+
+  <rect x="646" y="446" width="106" height="48" rx="6" fill="#f3f4f6" stroke="#374151" stroke-width="1.5"/>
+  <text x="699" y="465" text-anchor="middle" font-size="10" font-weight="700" fill="#374151" font-family="'JetBrains Mono',monospace">analytics.</text>
+  <text x="699" y="479" text-anchor="middle" font-size="9"  fill="#6b7280" font-family="'JetBrains Mono',monospace">weather_sales_corr</text>
+
+  <!-- ═══════ External Layer ═══════ -->
+  <!-- Ollama -->
+  <rect x="856" y="218" width="116" height="68" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="914" y="240" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626" font-family="'JetBrains Mono',monospace">Ollama</text>
+  <text x="914" y="256" text-anchor="middle" font-size="9"  fill="#dc2626" font-family="'JetBrains Mono',monospace">llama3.2</text>
+  <text x="914" y="271" text-anchor="middle" font-size="9"  fill="#dc2626" font-family="'JetBrains Mono',monospace">nomic-embed</text>
+  <text x="914" y="283" text-anchor="middle" font-size="8.5" fill="#ef4444" font-family="'JetBrains Mono',monospace">:11434</text>
+
+  <!-- Airflow (bottom-left external) -->
+  <rect x="36" y="560" width="106" height="48" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="1.5"/>
+  <text x="89" y="577" text-anchor="middle" font-size="10" font-weight="700" fill="#15803d" font-family="'JetBrains Mono',monospace">Airflow DAG</text>
+  <text x="89" y="591" text-anchor="middle" font-size="9"  fill="#15803d" font-family="'JetBrains Mono',monospace">weather_etl</text>
+  <text x="89" y="603" text-anchor="middle" font-size="8.5" fill="#4ade80" font-family="'JetBrains Mono',monospace">@hourly :8080</text>
+
+  <!-- Schedulers -->
+  <rect x="152" y="560" width="106" height="48" rx="6" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.5"/>
+  <text x="205" y="577" text-anchor="middle" font-size="10" font-weight="700" fill="#0369a1" font-family="'JetBrains Mono',monospace">BatchScheduler</text>
+  <text x="205" y="591" text-anchor="middle" font-size="9"  fill="#0369a1" font-family="'JetBrains Mono',monospace">@Scheduled</text>
+  <text x="205" y="603" text-anchor="middle" font-size="8.5" fill="#38bdf8" font-family="'JetBrains Mono',monospace">daily/6h</text>
+
+  <rect x="268" y="560" width="106" height="48" rx="6" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.5"/>
+  <text x="321" y="577" text-anchor="middle" font-size="10" font-weight="700" fill="#0369a1" font-family="'JetBrains Mono',monospace">MockWeather</text>
+  <text x="321" y="591" text-anchor="middle" font-size="9"  fill="#0369a1" font-family="'JetBrains Mono',monospace">Scheduler</text>
+  <text x="321" y="603" text-anchor="middle" font-size="8.5" fill="#38bdf8" font-family="'JetBrains Mono',monospace">@hourly</text>
+
+  <rect x="384" y="560" width="116" height="48" rx="6" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.5"/>
+  <text x="442" y="577" text-anchor="middle" font-size="10" font-weight="700" fill="#0369a1" font-family="'JetBrains Mono',monospace">DataSeeder</text>
+  <text x="442" y="591" text-anchor="middle" font-size="9"  fill="#0369a1" font-family="'JetBrains Mono',monospace">Runner</text>
+  <text x="442" y="603" text-anchor="middle" font-size="8.5" fill="#38bdf8" font-family="'JetBrains Mono',monospace">App Startup</text>
+
+  <!-- ═══════ Vertical Arrows (UI → Ctrl) ═══════ -->
+  <line x1="89"  y1="74" x2="89"  y2="102" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="210" y1="74" x2="210" y2="102" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="336" y1="74" x2="336" y2="102" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="462" y1="74" x2="462" y2="102" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="583" y1="74" x2="583" y2="102" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="699" y1="74" x2="699" y2="102" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- Ctrl → Service -->
+  <line x1="89"  y1="152" x2="89"  y2="216" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="208" y1="152" x2="208" y2="216" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="336" y1="152" x2="336" y2="216" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="462" y1="152" x2="462" y2="216" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="583" y1="152" x2="583" y2="216" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="699" y1="152" x2="699" y2="216" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- Service → Repo -->
+  <line x1="89"  y1="266" x2="89"  y2="330" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="208" y1="266" x2="208" y2="330" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="332" y1="266" x2="332" y2="330" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="460" y1="266" x2="460" y2="330" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="583" y1="266" x2="583" y2="330" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="699" y1="266" x2="699" y2="330" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- Repo → DB -->
+  <line x1="89"  y1="380" x2="89"  y2="444" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="208" y1="380" x2="208" y2="444" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="332" y1="380" x2="332" y2="444" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="460" y1="380" x2="460" y2="444" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="583" y1="380" x2="583" y2="444" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="699" y1="380" x2="699" y2="444" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- AI calls (→ Ollama) -->
+  <line x1="760" y1="242" x2="854" y2="242" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+  <text x="806" y="238" text-anchor="middle" font-size="8.5" fill="#dc2626" font-family="'JetBrains Mono',monospace">ChatClient</text>
+  <line x1="636" y1="252" x2="854" y2="252" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+  <text x="744" y="262" text-anchor="middle" font-size="8.5" fill="#dc2626" font-family="'JetBrains Mono',monospace">QuestionAnswerAdvisor</text>
+  <line x1="752" y1="262" x2="854" y2="262" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+  <!-- Airflow → weather_data -->
+  <line x1="89" y1="558" x2="89" y2="494" stroke="#15803d" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+  <text x="100" y="528" font-size="8.5" fill="#15803d" font-family="'JetBrains Mono',monospace">ETL</text>
+
+  <!-- Schedulers → Jobs -->
+  <line x1="205" y1="558" x2="205" y2="382" stroke="#0369a1" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+  <line x1="321" y1="558" x2="89"  y2="382" stroke="#0369a1" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+  <line x1="442" y1="558" x2="89"  y2="382" stroke="#0369a1" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+  </svg>
+  </div>
+</div>
+
+<!-- ════════════════ STEP 1 ════════════════ -->
+<div id="p-step1" class="panel">
+  <div class="stitle"><span class="step-badge" style="background:var(--c-ui)">1</span>날씨 히스토리 데이터 시딩</div>
+  <div class="ssub">Mock 날씨 데이터를 N일치 생성합니다. OpenWeatherMap API 키 없이 실행 가능합니다.</div>
+
+  <div class="cf-wrap">
+    <div class="cf-row" style="flex-wrap:wrap;gap:6px">
+      <div class="cf-col">
+        <div class="fn fn-ui" style="min-width:150px">
+          <div class="fn-layer">UI (index.html)</div>
+          <div class="fn-class">7일 시딩 버튼</div>
+          <div class="fn-method">onclick="quickSeed(7)"</div>
+          <div class="fn-desc">또는 슬라이더로 일수 선택</div>
+        </div>
+      </div>
+      <div class="h-arr"><div class="h-arr-line"></div><span>▶</span>
+        <div style="font-family:var(--mn);font-size:9px;color:#6b7280;white-space:nowrap;position:absolute;margin-top:-18px"><span class="http post">POST</span> /api/mock/seed?days=7</div>
+      </div>
+      <div class="cf-col">
+        <div class="fn fn-ctrl">
+          <div class="fn-layer">Controller</div>
+          <div class="fn-class">MockWeatherController</div>
+          <div class="fn-method">.seed(days)</div>
+          <div class="fn-desc">@PostMapping("/api/mock/seed")</div>
+        </div>
+      </div>
+      <div class="h-arr"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-svc">
+          <div class="fn-layer">Service</div>
+          <div class="fn-class">MockWeatherService</div>
+          <div class="fn-method">.seedHistory(7)</div>
+          <div class="fn-desc">days × 4시간대 × 4도시 반복</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">.generate(city, datetime)</div></div>
+        <div class="fn fn-svc">
+          <div class="fn-class">MockWeatherService</div>
+          <div class="fn-method">.generate(city, at)</div>
+          <div class="fn-desc">계절 기온·습도·날씨 계산</div>
+        </div>
+      </div>
+      <div class="h-arr"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-repo">
+          <div class="fn-layer">DAO</div>
+          <div class="fn-class">JdbcTemplate</div>
+          <div class="fn-method">.update(INSERT SQL)</div>
+          <div class="fn-desc">17개 컬럼 INSERT</div>
+        </div>
+      </div>
+      <div class="h-arr"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">weather.weather_data</div>
+          <div class="fn-method">7일 × 4시 × 4도시</div>
+          <div class="fn-desc">= 112건 INSERT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:18px">
+    <strong>생성 공식:</strong> days(7) × 4시간대(0/6/12/18h) × 4도시(Seoul/Busan/Incheon/Daegu) = 112건<br>
+    <strong>계절 기온:</strong> 1월 -2°C ~ 8월 28°C, 도시 오프셋: Busan +2.5, Incheon -1, Daegu +3.5<br>
+    <strong>DataSeederRunner:</strong> 앱 시작 시 DB가 비어 있으면 <code>seedHistory(7)</code> 자동 호출 (ApplicationRunner)
+  </div>
+</div>
+
+<!-- ════════════════ STEP 2 ════════════════ -->
+<div id="p-step2" class="panel">
+  <div class="stitle"><span class="step-badge" style="background:var(--c-batch)">2</span>날씨-매출 분석 배치 실행</div>
+  <div class="ssub">weather.weather_data ⋈ raw.orders/customers를 JOIN하여 analytics 테이블에 집계합니다.</div>
+
+  <div class="cf-wrap">
+    <div class="cf-row" style="flex-wrap:wrap;gap:6px;align-items:flex-start">
+      <div class="cf-col">
+        <div class="fn fn-ui">
+          <div class="fn-layer">UI</div>
+          <div class="fn-class">▶ 분석 배치 실행</div>
+          <div class="fn-method">onclick="doBatch('weather-analysis',...)"</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:16px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-ctrl">
+          <div class="fn-layer">Controller</div>
+          <div class="fn-class">BatchController</div>
+          <div class="fn-method">.runBatch("weather-analysis")</div>
+          <div class="fn-desc">@PostMapping("/api/batch/run/{name}")</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-sc">
+          <div class="fn-layer">Spring Batch</div>
+          <div class="fn-class">JobLauncher</div>
+          <div class="fn-method">.run(weatherAnalysisJob, params)</div>
+          <div class="fn-desc">runAt=현재시각 포함 → 재실행 허용</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:80px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col" style="gap:8px">
+        <div class="fn fn-batch" style="min-width:160px">
+          <div class="fn-layer">Spring Batch — Job</div>
+          <div class="fn-class">weatherAnalysisJob</div>
+          <div class="fn-method">→ weatherAnalysisStep</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">chunk(10)</div></div>
+        <div class="fn fn-repo">
+          <div class="fn-layer">ItemReader</div>
+          <div class="fn-class">JdbcCursorItemReader</div>
+          <div class="fn-method">weather JOIN orders</div>
+          <div class="fn-desc">Seoul↔서울 CASE 매핑 SQL</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-repo">
+          <div class="fn-layer">ItemProcessor</div>
+          <div class="fn-class">ItemProcessor</div>
+          <div class="fn-method">로깅 · 검증</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-repo">
+          <div class="fn-layer">ItemWriter</div>
+          <div class="fn-class">JdbcItemWriter</div>
+          <div class="fn-method">UPSERT ON CONFLICT</div>
+          <div class="fn-desc">(city, calc_date) 기준</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:200px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col" style="margin-top:200px">
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">analytics.</div>
+          <div class="fn-method">weather_sales_corr</div>
+          <div class="fn-desc">city, avg_temp, total_orders,<br>total_revenue, top_category</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:18px">
+    <strong>핵심 JOIN SQL:</strong> <code>raw.customers.city LIKE CASE w.city WHEN 'Seoul' THEN '서울%' ... END</code><br>
+    <strong>자동 실행:</strong> BatchScheduler @Scheduled(cron="0 0 1 * * *") — 매일 01:00 자동 실행<br>
+    <strong>COMPLETED 로그:</strong> <code>JobExecutionListener.afterJob()</code>에서 최종 상태 출력
+  </div>
+</div>
+
+<!-- ════════════════ STEP 3 ════════════════ -->
+<div id="p-step3" class="panel">
+  <div class="stitle"><span class="step-badge" style="background:var(--c-svc)">3</span>RAG 임베딩 인덱스 생성</div>
+  <div class="ssub">날씨 데이터를 nomic-embed-text로 임베딩하여 PgVectorStore에 저장합니다. AI 채팅의 RAG 기반입니다.</div>
+
+  <div class="cf-wrap">
+    <div class="cf-row" style="flex-wrap:wrap;gap:6px;align-items:flex-start">
+      <div class="cf-col">
+        <div class="fn fn-ui">
+          <div class="fn-layer">UI</div>
+          <div class="fn-class">▶ 임베딩 배치 실행</div>
+          <div class="fn-method">onclick="doBatch('embedding-index',...)"</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:16px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-ctrl">
+          <div class="fn-layer">Controller</div>
+          <div class="fn-class">BatchController</div>
+          <div class="fn-method">.runBatch("embedding-index")</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-sc">
+          <div class="fn-layer">Spring Batch</div>
+          <div class="fn-class">JobLauncher</div>
+          <div class="fn-method">.run(embeddingIndexJob, params)</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:80px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-batch">
+          <div class="fn-layer">Batch — Tasklet</div>
+          <div class="fn-class">embeddingIndexJob</div>
+          <div class="fn-method">EmbeddingTasklet</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">findNotEmbedded(100)</div></div>
+        <div class="fn fn-repo">
+          <div class="fn-layer">Repository</div>
+          <div class="fn-class">WeatherDataRepository</div>
+          <div class="fn-method">embedding_log 기준 조회</div>
+          <div class="fn-desc">아직 처리 안 된 최대 100건</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">WeatherData → Document</div></div>
+        <div class="fn fn-repo">
+          <div class="fn-layer">변환</div>
+          <div class="fn-class">Document()</div>
+          <div class="fn-method">content=toText()</div>
+          <div class="fn-desc">metadata: city, collected_at</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">vectorStore.add(docs)</div></div>
+        <div class="fn fn-ai">
+          <div class="fn-layer">Ollama (임베딩)</div>
+          <div class="fn-class">nomic-embed-text</div>
+          <div class="fn-method">768차원 벡터 생성</div>
+          <div class="fn-desc">→ PgVectorStore 저장</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:260px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col" style="margin-top:220px;gap:10px">
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">pgvector.vector_store</div>
+          <div class="fn-method">HNSW 인덱스</div>
+          <div class="fn-desc">embedding VECTOR(768)</div>
+        </div>
+        <div style="margin-top:8px">
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">analytics.embedding_log</div>
+          <div class="fn-method">중복 방지 기록</div>
+          <div class="fn-desc">UNIQUE(source_type, id)</div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:18px">
+    <strong>자동 실행:</strong> BatchScheduler @Scheduled(cron="0 0 */6 * * *") — 6시간마다<br>
+    <strong>중복 방지:</strong> analytics.embedding_log 테이블로 이미 처리된 ID 추적<br>
+    <strong>Spring AI 자동 설정:</strong> <code>spring.ai.vectorstore.pgvector.initialize-schema=true</code> → 앱 시작 시 테이블 자동 생성
+  </div>
+</div>
+
+<!-- ════════════════ STEP 4 ════════════════ -->
+<div id="p-step4" class="panel">
+  <div class="stitle"><span class="step-badge" style="background:var(--c-af)">4</span>AI 상품 추천</div>
+  <div class="ssub">현재 날씨 + 고객 구매 이력을 llama3.2에 전달하여 개인화 상품 추천을 생성합니다.</div>
+
+  <div class="cf-wrap">
+    <div class="cf-row" style="flex-wrap:wrap;gap:6px;align-items:flex-start">
+      <div class="cf-col">
+        <div class="fn fn-ui">
+          <div class="fn-layer">UI</div>
+          <div class="fn-class">추천 받기 버튼</div>
+          <div class="fn-method">city + customerId 선택</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:16px"><div class="h-arr-line"></div><span>▶</span>
+        <div style="position:absolute;font-family:var(--mn);font-size:9px;color:#6b7280;margin-top:-16px;white-space:nowrap"><span class="http get">GET</span> /api/recommend?city=Seoul&amp;customerId=1</div>
+      </div>
+      <div class="cf-col">
+        <div class="fn fn-ctrl">
+          <div class="fn-layer">Controller</div>
+          <div class="fn-class">RecommendationController</div>
+          <div class="fn-method">.recommend(city, customerId)</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-svc">
+          <div class="fn-layer">Service</div>
+          <div class="fn-class">WeatherRecommendation</div>
+          <div class="fn-method">Service.recommend()</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:80px"><div class="h-arr-line"></div><span>▶</span></div>
+      <!-- 병렬 조회 -->
+      <div class="cf-col" style="gap:8px">
+        <div class="fn fn-repo">
+          <div class="fn-layer">Repository ①</div>
+          <div class="fn-class">WeatherDataRepository</div>
+          <div class="fn-method">.findTopByCity...Desc(city)</div>
+          <div class="fn-desc">최신 날씨 1건 조회</div>
+        </div>
+        <div class="fn fn-repo" style="margin-top:8px">
+          <div class="fn-layer">Repository ②</div>
+          <div class="fn-class">SalesOrderRepository</div>
+          <div class="fn-method">.findTop10...Desc(customerId)</div>
+          <div class="fn-desc">최근 구매 이력 10건</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:50px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col" style="margin-top:30px;gap:8px">
+        <div class="fn fn-db">
+          <div class="fn-layer">DB ①</div>
+          <div class="fn-class">weather.weather_data</div>
+          <div class="fn-method">temperature_c, description...</div>
+        </div>
+        <div class="fn fn-db" style="margin-top:8px">
+          <div class="fn-layer">DB ②</div>
+          <div class="fn-class">raw.orders</div>
+          <div class="fn-method">JOIN raw.products</div>
+          <div class="fn-desc">category, name...</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:50px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col" style="margin-top:30px">
+        <div class="fn fn-ai">
+          <div class="fn-layer">Spring AI</div>
+          <div class="fn-class">ChatClient</div>
+          <div class="fn-method">.prompt().user({weather+history}).call()</div>
+          <div class="fn-desc">↓ Ollama llama3.2</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-ai">
+          <div class="fn-layer">LLM 응답</div>
+          <div class="fn-class">추천 결과 (한국어)</div>
+          <div class="fn-method">상품명 + 추천이유 + 문구</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:18px">
+    <strong>익명 추천:</strong> GET /api/recommend/anonymous?city=Seoul — 구매 이력 없이 날씨만으로 카테고리 추천<br>
+    <strong>시스템 프롬프트:</strong> AiConfig.java — "한국 이커머스 AI, 항상 한국어로 답변" 고정<br>
+    <strong>응답 시간:</strong> llama3.2(3B) CPU 기준 10~30초 소요
+  </div>
+</div>
+
+<!-- ════════════════ STEP 5 ════════════════ -->
+<div id="p-step5" class="panel">
+  <div class="stitle"><span class="step-badge" style="background:var(--c-tl,#0f766e)">5</span>AI 채팅 (RAG)</div>
+  <div class="ssub">질문을 벡터로 변환 → PgVectorStore 검색 → 컨텍스트 포함 LLM 답변 생성 (Retrieval-Augmented Generation)</div>
+
+  <div class="cf-wrap">
+    <div class="cf-row" style="flex-wrap:wrap;gap:6px;align-items:flex-start">
+      <div class="cf-col">
+        <div class="fn fn-ui">
+          <div class="fn-layer">UI</div>
+          <div class="fn-class">채팅 입력창</div>
+          <div class="fn-method">"비 올 때 잘 팔린 상품은?"</div>
+          <div class="fn-desc">Enter / 전송 버튼</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:20px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-ctrl">
+          <div class="fn-layer">Controller</div>
+          <div class="fn-class">ChatController</div>
+          <div class="fn-method">.chat(ChatRequest req)</div>
+          <div class="fn-desc">@PostMapping("/api/chat")</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-svc">
+          <div class="fn-layer">Service</div>
+          <div class="fn-class">WeatherChatService</div>
+          <div class="fn-method">.chat(question)</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:80px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-ai" style="border-width:2px">
+          <div class="fn-layer">Spring AI — RAG</div>
+          <div class="fn-class">QuestionAnswerAdvisor</div>
+          <div class="fn-method">.builder(vectorStore)</div>
+          <div class="fn-desc">.searchRequest(topK=5, threshold=0.5)</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">①질문 임베딩</div></div>
+        <div class="fn fn-ai">
+          <div class="fn-layer">Ollama (임베딩)</div>
+          <div class="fn-class">nomic-embed-text</div>
+          <div class="fn-method">질문 → 768차원 벡터</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">②벡터 검색</div></div>
+        <div class="fn fn-repo">
+          <div class="fn-layer">Repository</div>
+          <div class="fn-class">PgVectorStore</div>
+          <div class="fn-method">.similaritySearch()</div>
+          <div class="fn-desc">코사인 유사도 Top5 반환</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">③컨텍스트+질문</div></div>
+        <div class="fn fn-ai">
+          <div class="fn-layer">Ollama (채팅)</div>
+          <div class="fn-class">llama3.2</div>
+          <div class="fn-method">검색결과+질문 → 한국어 답변</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:320px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col" style="margin-top:280px;gap:8px">
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">pgvector.vector_store</div>
+          <div class="fn-method">HNSW 인덱스 검색</div>
+          <div class="fn-desc">embedding VECTOR(768)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:18px">
+    <strong>도시 필터:</strong> POST /api/chat/city + {"city":"Seoul"} → <code>filterExpression("city == 'Seoul'")</code><br>
+    <strong>RAG 품질:</strong> Step 3 임베딩 인덱스 생성 완료 후에만 관련 답변 가능. 인덱스 없으면 일반 LLM 답변<br>
+    <strong>메타데이터:</strong> Document에 city, collected_at 포함 → 필터링에 활용
+  </div>
+</div>
+
+<!-- ════════════════ STEP 6 ════════════════ -->
+<div id="p-step6" class="panel">
+  <div class="stitle"><span class="step-badge" style="background:var(--c-ai)">6</span>AI 인사이트 리포트</div>
+  <div class="ssub">analytics.weather_sales_corr 집계 데이터를 llama3.2에 전달하여 5섹션 마크다운 리포트를 자동 생성합니다.</div>
+
+  <div class="cf-wrap">
+    <div class="cf-row" style="flex-wrap:wrap;gap:6px;align-items:flex-start">
+      <div class="cf-col">
+        <div class="fn fn-ui">
+          <div class="fn-layer">UI</div>
+          <div class="fn-class">📊 리포트 생성 버튼</div>
+          <div class="fn-method">days=7 (기간 선택)</div>
+          <div class="fn-desc">또는 도시별 리포트 선택</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:20px"><div class="h-arr-line"></div><span>▶</span>
+        <div style="position:absolute;font-family:var(--mn);font-size:9px;color:#6b7280;margin-top:-16px;white-space:nowrap"><span class="http get">GET</span> /api/report?days=7</div>
+      </div>
+      <div class="cf-col">
+        <div class="fn fn-ctrl">
+          <div class="fn-layer">Controller</div>
+          <div class="fn-class">ReportController</div>
+          <div class="fn-method">.report(days)</div>
+          <div class="fn-desc">@GetMapping("/api/report")</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-svc">
+          <div class="fn-layer">Service</div>
+          <div class="fn-class">WeatherReportService</div>
+          <div class="fn-method">.generateReport(days)</div>
+        </div>
+      </div>
+      <div class="h-arr" style="margin-top:80px"><div class="h-arr-line"></div><span>▶</span></div>
+      <div class="cf-col">
+        <div class="fn fn-repo">
+          <div class="fn-layer">Repository</div>
+          <div class="fn-class">WeatherSalesCorr</div>
+          <div class="fn-method">Repository.findBetween(from, to)</div>
+          <div class="fn-desc">최근 N일 집계 데이터 조회</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">analytics.weather_sales_corr</div>
+          <div class="fn-method">city, weather_desc, avg_temp</div>
+          <div class="fn-desc">total_orders, revenue, top_category</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">.toText() 직렬화</div></div>
+        <div class="fn fn-ai">
+          <div class="fn-layer">Spring AI</div>
+          <div class="fn-class">ChatClient.prompt()</div>
+          <div class="fn-method">.user({days, data}).call().content()</div>
+          <div class="fn-desc">↓ Ollama llama3.2</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-ai">
+          <div class="fn-layer">LLM 생성</div>
+          <div class="fn-class">마크다운 리포트 (5섹션)</div>
+          <div class="fn-method">핵심요약·상관관계·도시별·카테고리·제안</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:18px">
+    <strong>전제 조건:</strong> Step 2(weather-analysis 배치)가 완료되어 analytics 테이블에 데이터가 있어야 함<br>
+    <strong>도시별 리포트:</strong> GET /api/report/city?city=Seoul → 최근 2주(14건) 데이터로 도시 집중 분석<br>
+    <strong>UI 렌더링:</strong> <code>showReportResult()</code>에서 마크다운을 HTML h1~h3, bold, code로 변환
+  </div>
+</div>
+
+<!-- ════════════════ BACKGROUND ════════════════ -->
+<div id="p-bg" class="panel">
+  <div class="stitle">🔄 백그라운드 자동 실행 프로세스</div>
+  <div class="ssub">사용자 요청 없이도 주기적으로 실행되는 컴포넌트들입니다.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <div class="cf-wrap">
+      <div class="flow-section"><h3>🕐 DataSeederRunner — 앱 시작 시 1회</h3></div>
+      <div class="vchain">
+        <div class="fn fn-sc">
+          <div class="fn-layer">ApplicationRunner</div>
+          <div class="fn-class">DataSeederRunner.run()</div>
+          <div class="fn-method">앱 완전 시작 후 자동 호출</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span><div class="v-arr-label">countRecords() == 0?</div></div>
+        <div class="fn fn-svc">
+          <div class="fn-layer">Service</div>
+          <div class="fn-class">MockWeatherService</div>
+          <div class="fn-method">.seedHistory(7)</div>
+          <div class="fn-desc">DB 비어 있을 때만 실행</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">weather.weather_data</div>
+          <div class="fn-method">112건 INSERT (7일치)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cf-wrap">
+      <div class="flow-section"><h3>⏰ MockWeatherScheduler — 매시간</h3></div>
+      <div class="vchain">
+        <div class="fn fn-sc">
+          <div class="fn-layer">@Scheduled</div>
+          <div class="fn-class">MockWeatherScheduler</div>
+          <div class="fn-method">cron="0 0 * * * *" (매 정각)</div>
+          <div class="fn-desc">설정: app.mock-weather.schedule</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-svc">
+          <div class="fn-layer">Service</div>
+          <div class="fn-class">MockWeatherService</div>
+          <div class="fn-method">.generateAll()</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">weather.weather_data</div>
+          <div class="fn-method">4건 INSERT (현재 시각)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cf-wrap">
+      <div class="flow-section"><h3>📊 BatchScheduler — 날씨 분석 매일 01:00</h3></div>
+      <div class="vchain">
+        <div class="fn fn-sc">
+          <div class="fn-layer">@Scheduled</div>
+          <div class="fn-class">BatchScheduler</div>
+          <div class="fn-method">cron="0 0 1 * * *"</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-sc">
+          <div class="fn-class">JobLauncher</div>
+          <div class="fn-method">.run(weatherAnalysisJob, params)</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-db">
+          <div class="fn-class">analytics.weather_sales_corr</div>
+          <div class="fn-method">당일 데이터 UPSERT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cf-wrap">
+      <div class="flow-section"><h3>🧠 BatchScheduler — 임베딩 6시간마다</h3></div>
+      <div class="vchain">
+        <div class="fn fn-sc">
+          <div class="fn-layer">@Scheduled</div>
+          <div class="fn-class">BatchScheduler</div>
+          <div class="fn-method">cron="0 0 */6 * * *"</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-sc">
+          <div class="fn-class">JobLauncher</div>
+          <div class="fn-method">.run(embeddingIndexJob, params)</div>
+        </div>
+        <div class="v-arr"><div class="v-arr-line"></div><span>▼</span></div>
+        <div class="fn fn-ai">
+          <div class="fn-class">nomic-embed-text</div>
+          <div class="fn-method">신규 날씨 → 임베딩 → pgvector</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cf-wrap" style="grid-column:1/-1">
+      <div class="flow-section"><h3>🌤️ Airflow DAG — weather_etl_pipeline (API 키 있을 때)</h3></div>
+      <div class="cf-row" style="flex-wrap:wrap;gap:6px;align-items:center">
+        <div class="fn fn-af">
+          <div class="fn-layer">Airflow @hourly</div>
+          <div class="fn-class">weather_etl_pipeline</div>
+          <div class="fn-method">4개 도시 병렬 체인</div>
+        </div>
+        <div class="h-arr"><div class="h-arr-line"></div><span>▶</span></div>
+        <div class="fn fn-af">
+          <div class="fn-layer">Task 1: HttpSensor</div>
+          <div class="fn-class">is_api_ready_{city}</div>
+          <div class="fn-method">API 200 응답 확인</div>
+        </div>
+        <div class="h-arr"><div class="h-arr-line"></div><span>▶</span></div>
+        <div class="fn fn-af">
+          <div class="fn-layer">Task 2: SimpleHttpOp</div>
+          <div class="fn-class">extract_weather_{city}</div>
+          <div class="fn-method">JSON → XCom 저장</div>
+        </div>
+        <div class="h-arr"><div class="h-arr-line"></div><span>▶</span></div>
+        <div class="fn fn-af">
+          <div class="fn-layer">Task 3: PythonOp</div>
+          <div class="fn-class">transform_load_{city}</div>
+          <div class="fn-method">Kelvin→°C + PostgresHook INSERT</div>
+        </div>
+        <div class="h-arr"><div class="h-arr-line"></div><span>▶</span></div>
+        <div class="fn fn-db">
+          <div class="fn-layer">PostgreSQL</div>
+          <div class="fn-class">weather.weather_data</div>
+          <div class="fn-method">실제 날씨 데이터 저장</div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:12px">
+        <strong>Mock vs 실제:</strong> OpenWeatherMap API 키가 없으면 MockWeatherService로 대체. DB 테이블은 동일 (weather.weather_data)<br>
+        <strong>Connection:</strong> Airflow Connection ID <code>weathermap_api</code> (HTTP) + <code>postgres_default</code> (PostgreSQL) 사용
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+</script>
+</body>
+</html>
