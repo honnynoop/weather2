@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring MVC / Boot 어노테이션 정리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f8f9fb;
+    --bg3: #f0f2f5;
+    --border: #e2e6ea;
+    --border2: #d0d5dd;
+    --text: #1a1d23;
+    --text2: #4a5568;
+    --text3: #718096;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --accent2: #16a34a;
+    --accent2-light: #f0fdf4;
+    --accent3: #9333ea;
+    --accent3-light: #faf5ff;
+    --accent4: #ea580c;
+    --accent4-light: #fff7ed;
+    --accent5: #0891b2;
+    --accent5-light: #ecfeff;
+    --accent6: #dc2626;
+    --accent6-light: #fef2f2;
+    --tag-mvc: #2563eb;
+    --tag-boot: #16a34a;
+    --tag-both: #9333ea;
+    --tag-security: #dc2626;
+    --tag-data: #ea580c;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --radius: 8px;
+    --mono: 'Fira Code', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  /* ───────────── 헤더 ───────────── */
+  .page-header {
+    background: #fff;
+    border-bottom: 2px solid var(--border);
+    padding: 28px 40px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .page-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .page-header h1 span { color: var(--accent); }
+  .header-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .tag.mvc   { background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; }
+  .tag.boot  { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+  .tag.both  { background:#faf5ff; color:#9333ea; border:1px solid #e9d5ff; }
+  .tag.sec   { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+  .tag.data  { background:#fff7ed; color:#ea580c; border:1px solid #fed7aa; }
+  .tag.test  { background:#ecfeff; color:#0891b2; border:1px solid #a5f3fc; }
+
+  /* ───────────── 레이아웃 ───────────── */
+  .layout { display: flex; min-height: calc(100vh - 74px); }
+
+  /* ───────────── 사이드바 TOC ───────────── */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 74px;
+    height: calc(100vh - 74px);
+    overflow-y: auto;
+  }
+  .sidebar-title {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text3); padding: 0 20px 12px;
+  }
+  .toc-item {
+    display: block; padding: 7px 20px;
+    font-size: 13px; color: var(--text2);
+    text-decoration: none; border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .toc-item:hover  { background: var(--bg3); color: var(--accent); border-left-color: var(--accent); }
+  .toc-item.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+  .toc-item .toc-badge {
+    float: right; font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 10px;
+    background: var(--bg3); color: var(--text3);
+  }
+
+  /* ───────────── 메인 ───────────── */
+  .main { flex: 1; padding: 36px 40px; overflow-x: auto; }
+
+  /* ───────────── 섹션 ───────────── */
+  .section { margin-bottom: 56px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px; padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 18px; font-weight: 700; }
+  .section-header .section-count {
+    margin-left: auto; font-size: 12px; color: var(--text3);
+    background: var(--bg3); padding: 3px 10px; border-radius: 20px;
+  }
+
+  /* ───────────── 어노테이션 카드 ───────────── */
+  .anno-table { width: 100%; border-collapse: collapse; }
+  .anno-table thead tr {
+    background: var(--bg3);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3);
+  }
+  .anno-table th {
+    padding: 10px 14px; text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .anno-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .anno-table tbody tr:hover { background: var(--bg2); }
+  .anno-table td { padding: 14px 14px; vertical-align: top; }
+  .anno-table td:first-child { white-space: nowrap; }
+
+  /* 어노테이션 이름 */
+  .anno-name {
+    display: inline-block;
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    background: var(--bg3); color: var(--text);
+    padding: 3px 9px; border-radius: 5px;
+    border: 1px solid var(--border2);
+    white-space: nowrap;
+  }
+  .anno-name.highlight { background: var(--accent-light); color: var(--accent); border-color: #bfdbfe; }
+
+  /* 코드 블록 */
+  .code-block {
+    background: #1e2330; color: #e2e8f0;
+    border-radius: 7px; padding: 12px 16px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.65;
+    overflow-x: auto; margin-top: 6px;
+    border: 1px solid #2d3748;
+  }
+  .code-block .k  { color: #7dd3fc; }  /* 키워드 (public, class 등) */
+  .code-block .a  { color: #86efac; }  /* 어노테이션 */
+  .code-block .s  { color: #fbbf24; }  /* 문자열 */
+  .code-block .t  { color: #f9a8d4; }  /* 타입 */
+  .code-block .c  { color: #94a3b8; }  /* 주석 */
+  .code-block .m  { color: #c084fc; }  /* 메서드명 */
+  .code-block .n  { color: #e2e8f0; }  /* 일반 */
+  .code-block .p  { color: #fca5a5; }  /* 파라미터/변수 */
+
+  /* 설명 텍스트 */
+  .desc { color: var(--text2); line-height: 1.7; }
+  .desc strong { color: var(--text); font-weight: 600; }
+
+  /* 컬럼 너비 */
+  .col-anno  { width: 180px; }
+  .col-desc  { width: 28%; }
+  .col-scope { width: 90px; }
+  .col-code  { }
+
+  /* scope 배지 */
+  .scope-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .scope-class  { background: #eff6ff; color: #1d4ed8; }
+  .scope-method { background: #f0fdf4; color: #15803d; }
+  .scope-param  { background: #faf5ff; color: #7e22ce; }
+  .scope-field  { background: #fff7ed; color: #c2410c; }
+  .scope-cons   { background: #ecfeff; color: #0e7490; }
+
+  /* 인트로 설명 박스 */
+  .intro-box {
+    background: var(--accent-light); border: 1px solid #bfdbfe;
+    border-radius: var(--radius); padding: 14px 18px;
+    margin-bottom: 24px; font-size: 13px; color: #1e40af;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .intro-box .icon { font-size: 16px; flex-shrink:0; margin-top:1px; }
+
+  /* 범례 */
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    padding: 14px 0 28px;
+    font-size: 12px;
+  }
+
+  .section-mvc    .section-icon { background: #eff6ff; }
+  .section-boot   .section-icon { background: #f0fdf4; }
+  .section-req    .section-icon { background: #faf5ff; }
+  .section-di     .section-icon { background: #fff7ed; }
+  .section-data   .section-icon { background: #fff7ed; }
+  .section-boot2  .section-icon { background: #f0fdf4; }
+  .section-sec    .section-icon { background: #fef2f2; }
+  .section-trans  .section-icon { background: #ecfeff; }
+  .section-val    .section-icon { background: #fdf4ff; }
+  .section-aop    .section-icon { background: #f0f9ff; }
+
+  /* 반응형 */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { padding: 24px 16px; }
+    .page-header { padding: 16px; }
+    .col-code { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Spring <span>MVC / Boot</span> 어노테이션 레퍼런스</h1>
+  <div class="header-tags">
+    <span class="tag mvc">Spring MVC</span>
+    <span class="tag boot">Spring Boot</span>
+    <span class="tag both">공통</span>
+    <span class="tag sec">Security</span>
+    <span class="tag data">Data JPA</span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- 사이드바 TOC -->
+  <nav class="sidebar">
+    <div class="sidebar-title">목 차</div>
+    <a class="toc-item active" href="#sec-core">핵심 스테레오타입 <span class="toc-badge">5</span></a>
+    <a class="toc-item" href="#sec-req">요청 매핑 <span class="toc-badge">7</span></a>
+    <a class="toc-item" href="#sec-param">파라미터 바인딩 <span class="toc-badge">6</span></a>
+    <a class="toc-item" href="#sec-resp">응답 처리 <span class="toc-badge">4</span></a>
+    <a class="toc-item" href="#sec-di">의존성 주입 <span class="toc-badge">5</span></a>
+    <a class="toc-item" href="#sec-config">설정/Bean <span class="toc-badge">6</span></a>
+    <a class="toc-item" href="#sec-boot">Spring Boot 전용 <span class="toc-badge">7</span></a>
+    <a class="toc-item" href="#sec-data">Data JPA <span class="toc-badge">5</span></a>
+    <a class="toc-item" href="#sec-trans">트랜잭션 <span class="toc-badge">2</span></a>
+    <a class="toc-item" href="#sec-val">유효성 검사 <span class="toc-badge">5</span></a>
+    <a class="toc-item" href="#sec-sec">Spring Security <span class="toc-badge">4</span></a>
+    <a class="toc-item" href="#sec-aop">AOP <span class="toc-badge">5</span></a>
+    <a class="toc-item" href="#sec-test">테스트 <span class="toc-badge">5</span></a>
+  </nav>
+
+  <main class="main">
+
+    <div class="legend">
+      <span class="tag mvc">MVC 전용</span>
+      <span class="tag boot">Boot 전용</span>
+      <span class="tag both">MVC + Boot 공통</span>
+      <span class="tag sec">Security</span>
+      <span class="tag data">Data JPA</span>
+    </div>
+
+    <!-- ① 핵심 스테레오타입 -->
+    <section class="section section-mvc" id="sec-core">
+      <div class="section-header">
+        <div class="section-icon">🏷️</div>
+        <h2>핵심 스테레오타입 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">5개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name highlight">@Component</span></td>
+            <td class="desc">스프링 컨테이너가 관리하는 <strong>일반 Bean</strong> 등록. 다른 스테레오타입의 기반.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Component</span>
+<span class="k">public class</span> <span class="t">PasswordEncoder</span> {
+  <span class="k">public</span> <span class="t">String</span> <span class="m">encode</span>(<span class="t">String</span> <span class="p">raw</span>) { ... }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name highlight">@Service</span></td>
+            <td class="desc">비즈니스 로직 계층 Bean. <code>@Component</code>의 특화형. 트랜잭션 경계 설정에 주로 사용.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Service</span>
+<span class="k">public class</span> <span class="t">UserService</span> {
+  <span class="k">private final</span> <span class="t">UserRepository</span> <span class="p">repo</span>;
+  <span class="m">UserService</span>(<span class="t">UserRepository</span> <span class="p">repo</span>) {
+    <span class="k">this</span>.<span class="p">repo</span> = <span class="p">repo</span>;
+  }
+  <span class="k">public</span> <span class="t">User</span> <span class="m">findById</span>(<span class="t">Long</span> <span class="p">id</span>) { ... }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name highlight">@Repository</span></td>
+            <td class="desc">데이터 접근 계층 Bean. DB 예외를 <code>DataAccessException</code>으로 변환해줌.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Repository</span>
+<span class="k">public class</span> <span class="t">UserDao</span> {
+  <span class="a">@Autowired</span>
+  <span class="k">private</span> <span class="t">JdbcTemplate</span> <span class="p">jdbc</span>;
+  <span class="k">public</span> <span class="t">User</span> <span class="m">findById</span>(<span class="t">Long</span> <span class="p">id</span>) { ... }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name highlight">@Controller</span></td>
+            <td class="desc">MVC 컨트롤러. <strong>뷰(View)</strong>를 반환. ModelAndView나 String 뷰 이름 리턴.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Controller</span>
+<span class="k">public class</span> <span class="t">HomeController</span> {
+  <span class="a">@GetMapping</span>(<span class="s">"/"</span>)
+  <span class="k">public</span> <span class="t">String</span> <span class="m">home</span>(<span class="t">Model</span> <span class="p">model</span>) {
+    <span class="p">model</span>.addAttribute(<span class="s">"msg"</span>, <span class="s">"Hello"</span>);
+    <span class="k">return</span> <span class="s">"index"</span>; <span class="c">// templates/index.html</span>
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name highlight">@RestController</span></td>
+            <td class="desc"><code>@Controller</code> + <code>@ResponseBody</code>. 모든 메서드가 JSON/XML 등 <strong>응답 본문</strong> 반환.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@RestController</span>
+<span class="a">@RequestMapping</span>(<span class="s">"/api/users"</span>)
+<span class="k">public class</span> <span class="t">UserController</span> {
+  <span class="a">@GetMapping</span>(<span class="s">"/{id}"</span>)
+  <span class="k">public</span> <span class="t">UserDto</span> <span class="m">getUser</span>(<span class="a">@PathVariable</span> <span class="t">Long</span> <span class="p">id</span>) {
+    <span class="k">return</span> service.<span class="m">findById</span>(<span class="p">id</span>);
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ② 요청 매핑 -->
+    <section class="section section-req" id="sec-req">
+      <div class="section-header">
+        <div class="section-icon">🛣️</div>
+        <h2>요청 매핑 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">7개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@RequestMapping</span></td>
+            <td class="desc">HTTP 메서드·URL·헤더·파라미터 등 <strong>모든 요청 조건</strong>을 지정. 클래스/메서드 모두 적용 가능.</td>
+            <td>
+              <span class="scope-badge scope-class">클래스</span><br><br>
+              <span class="scope-badge scope-method">메서드</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="a">@RequestMapping</span>(
+  value = <span class="s">"/api/orders"</span>,
+  method = <span class="t">RequestMethod</span>.GET,
+  produces = <span class="s">"application/json"</span>
+)
+<span class="k">public</span> <span class="t">List</span>&lt;<span class="t">Order</span>&gt; <span class="m">list</span>() { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@GetMapping</span></td>
+            <td class="desc">HTTP <strong>GET</strong> 요청 처리 (조회). <code>@RequestMapping(method=GET)</code>의 단축형.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@GetMapping</span>(<span class="s">"/users/{id}"</span>)
+<span class="k">public</span> <span class="t">UserDto</span> <span class="m">getUser</span>(<span class="a">@PathVariable</span> <span class="t">Long</span> <span class="p">id</span>) {
+  <span class="k">return</span> userService.<span class="m">findById</span>(<span class="p">id</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@PostMapping</span></td>
+            <td class="desc">HTTP <strong>POST</strong> 요청 처리 (생성).</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@PostMapping</span>(<span class="s">"/users"</span>)
+<span class="a">@ResponseStatus</span>(<span class="t">HttpStatus</span>.CREATED)
+<span class="k">public</span> <span class="t">UserDto</span> <span class="m">create</span>(<span class="a">@RequestBody</span> <span class="t">UserRequest</span> <span class="p">req</span>) {
+  <span class="k">return</span> userService.<span class="m">save</span>(<span class="p">req</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@PutMapping</span></td>
+            <td class="desc">HTTP <strong>PUT</strong> 요청 처리 (전체 수정).</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@PutMapping</span>(<span class="s">"/users/{id}"</span>)
+<span class="k">public</span> <span class="t">UserDto</span> <span class="m">update</span>(
+    <span class="a">@PathVariable</span> <span class="t">Long</span> <span class="p">id</span>,
+    <span class="a">@RequestBody</span> <span class="t">UserRequest</span> <span class="p">req</span>) {
+  <span class="k">return</span> userService.<span class="m">update</span>(<span class="p">id</span>, <span class="p">req</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@PatchMapping</span></td>
+            <td class="desc">HTTP <strong>PATCH</strong> 요청 처리 (부분 수정).</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@PatchMapping</span>(<span class="s">"/users/{id}/password"</span>)
+<span class="k">public</span> <span class="t">void</span> <span class="m">changePassword</span>(
+    <span class="a">@PathVariable</span> <span class="t">Long</span> <span class="p">id</span>,
+    <span class="a">@RequestBody</span> <span class="t">PasswordDto</span> <span class="p">dto</span>) { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@DeleteMapping</span></td>
+            <td class="desc">HTTP <strong>DELETE</strong> 요청 처리 (삭제).</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@DeleteMapping</span>(<span class="s">"/users/{id}"</span>)
+<span class="a">@ResponseStatus</span>(<span class="t">HttpStatus</span>.NO_CONTENT)
+<span class="k">public</span> <span class="t">void</span> <span class="m">delete</span>(<span class="a">@PathVariable</span> <span class="t">Long</span> <span class="p">id</span>) {
+  userService.<span class="m">delete</span>(<span class="p">id</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@CrossOrigin</span></td>
+            <td class="desc"><strong>CORS</strong> 허용 설정. 클래스/메서드 단위로 출처·헤더·메서드 지정 가능.</td>
+            <td>
+              <span class="scope-badge scope-class">클래스</span><br><br>
+              <span class="scope-badge scope-method">메서드</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="a">@CrossOrigin</span>(origins = <span class="s">"http://localhost:3000"</span>)
+<span class="a">@RestController</span>
+<span class="k">public class</span> <span class="t">ApiController</span> { ... }
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ③ 파라미터 바인딩 -->
+    <section class="section" id="sec-param">
+      <div class="section-header">
+        <div class="section-icon">🔗</div>
+        <h2>파라미터 바인딩 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">6개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@PathVariable</span></td>
+            <td class="desc">URL 경로 변수(<code>{id}</code>) 바인딩. REST API에서 리소스 ID 추출에 사용.</td>
+            <td><span class="scope-badge scope-param">파라미터</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@GetMapping</span>(<span class="s">"/items/{category}/{id}"</span>)
+<span class="k">public</span> <span class="t">Item</span> <span class="m">get</span>(
+  <span class="a">@PathVariable</span> <span class="t">String</span> <span class="p">category</span>,
+  <span class="a">@PathVariable</span>(<span class="s">"id"</span>) <span class="t">Long</span> <span class="p">itemId</span>) { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@RequestParam</span></td>
+            <td class="desc">쿼리 파라미터·폼 데이터 바인딩. <code>required</code>, <code>defaultValue</code> 속성 지원.</td>
+            <td><span class="scope-badge scope-param">파라미터</span></td>
+            <td>
+              <div class="code-block">
+<span class="c">// GET /search?keyword=spring&page=1</span>
+<span class="a">@GetMapping</span>(<span class="s">"/search"</span>)
+<span class="k">public</span> <span class="t">List</span>&lt;<span class="t">Item</span>&gt; <span class="m">search</span>(
+  <span class="a">@RequestParam</span> <span class="t">String</span> <span class="p">keyword</span>,
+  <span class="a">@RequestParam</span>(defaultValue = <span class="s">"0"</span>) <span class="t">int</span> <span class="p">page</span>) { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@RequestBody</span></td>
+            <td class="desc">HTTP 요청 <strong>본문(JSON 등)</strong>을 객체로 역직렬화. HttpMessageConverter 사용.</td>
+            <td><span class="scope-badge scope-param">파라미터</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@PostMapping</span>(<span class="s">"/login"</span>)
+<span class="k">public</span> <span class="t">TokenResponse</span> <span class="m">login</span>(
+    <span class="a">@RequestBody</span> <span class="t">LoginRequest</span> <span class="p">req</span>) {
+  <span class="k">return</span> authService.<span class="m">login</span>(<span class="p">req</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@RequestHeader</span></td>
+            <td class="desc">HTTP <strong>요청 헤더</strong> 값 바인딩.</td>
+            <td><span class="scope-badge scope-param">파라미터</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@GetMapping</span>(<span class="s">"/protected"</span>)
+<span class="k">public</span> <span class="t">String</span> <span class="m">getData</span>(
+  <span class="a">@RequestHeader</span>(<span class="s">"Authorization"</span>) <span class="t">String</span> <span class="p">token</span>) { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ModelAttribute</span></td>
+            <td class="desc">폼 데이터를 <strong>객체로 바인딩</strong> + Model에 추가. Thymeleaf 폼 처리에 활용.</td>
+            <td>
+              <span class="scope-badge scope-param">파라미터</span><br><br>
+              <span class="scope-badge scope-method">메서드</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="a">@PostMapping</span>(<span class="s">"/register"</span>)
+<span class="k">public</span> <span class="t">String</span> <span class="m">register</span>(
+    <span class="a">@ModelAttribute</span> <span class="t">UserForm</span> <span class="p">form</span>,
+    <span class="t">BindingResult</span> <span class="p">result</span>) {
+  <span class="k">if</span> (<span class="p">result</span>.hasErrors()) <span class="k">return</span> <span class="s">"register"</span>;
+  userService.<span class="m">save</span>(<span class="p">form</span>);
+  <span class="k">return</span> <span class="s">"redirect:/"</span>;
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@CookieValue</span></td>
+            <td class="desc">HTTP 요청 <strong>쿠키</strong> 값 바인딩.</td>
+            <td><span class="scope-badge scope-param">파라미터</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@GetMapping</span>(<span class="s">"/dashboard"</span>)
+<span class="k">public</span> <span class="t">String</span> <span class="m">dashboard</span>(
+  <span class="a">@CookieValue</span>(value = <span class="s">"sessionId"</span>,
+               required = <span class="k">false</span>) <span class="t">String</span> <span class="p">sid</span>) { ... }
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ④ 응답 처리 -->
+    <section class="section" id="sec-resp">
+      <div class="section-header">
+        <div class="section-icon">📤</div>
+        <h2>응답 처리 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">4개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@ResponseBody</span></td>
+            <td class="desc">반환값을 뷰 대신 <strong>HTTP 응답 본문</strong>으로 직접 출력.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@ResponseBody</span>
+<span class="a">@GetMapping</span>(<span class="s">"/ping"</span>)
+<span class="k">public</span> <span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">String</span>&gt; <span class="m">ping</span>() {
+  <span class="k">return</span> Map.of(<span class="s">"status"</span>, <span class="s">"ok"</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ResponseStatus</span></td>
+            <td class="desc">HTTP <strong>상태 코드</strong> 직접 지정. 예외 클래스에도 사용 가능.</td>
+            <td>
+              <span class="scope-badge scope-method">메서드</span><br><br>
+              <span class="scope-badge scope-class">클래스</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="a">@ResponseStatus</span>(<span class="t">HttpStatus</span>.NOT_FOUND)
+<span class="k">public class</span> <span class="t">UserNotFoundException</span>
+    <span class="k">extends</span> <span class="t">RuntimeException</span> { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ExceptionHandler</span></td>
+            <td class="desc">특정 예외 발생 시 처리 메서드 지정. <code>@ControllerAdvice</code>와 함께 전역 처리.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@RestControllerAdvice</span>
+<span class="k">public class</span> <span class="t">GlobalExHandler</span> {
+  <span class="a">@ExceptionHandler</span>(<span class="t">UserNotFoundException</span>.<span class="k">class</span>)
+  <span class="a">@ResponseStatus</span>(<span class="t">HttpStatus</span>.NOT_FOUND)
+  <span class="k">public</span> <span class="t">ErrorDto</span> <span class="m">handle</span>(<span class="t">UserNotFoundException</span> <span class="p">e</span>) {
+    <span class="k">return new</span> <span class="t">ErrorDto</span>(<span class="p">e</span>.getMessage());
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ControllerAdvice<br>@RestControllerAdvice</span></td>
+            <td class="desc">모든 컨트롤러에 공통 적용되는 <strong>전역 예외 처리</strong> 및 데이터 바인딩 설정.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@RestControllerAdvice</span>
+<span class="k">public class</span> <span class="t">ApiExceptionHandler</span> {
+  <span class="a">@ExceptionHandler</span>(<span class="t">Exception</span>.<span class="k">class</span>)
+  <span class="k">public</span> <span class="t">ResponseEntity</span>&lt;<span class="t">ErrorDto</span>&gt; <span class="m">handleAll</span>(
+      <span class="t">Exception</span> <span class="p">e</span>) {
+    <span class="k">return</span> <span class="t">ResponseEntity</span>.internalServerError()
+        .body(<span class="k">new</span> <span class="t">ErrorDto</span>(<span class="p">e</span>.getMessage()));
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤ 의존성 주입 -->
+    <section class="section section-di" id="sec-di">
+      <div class="section-header">
+        <div class="section-icon">💉</div>
+        <h2>의존성 주입 (DI) 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">5개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@Autowired</span></td>
+            <td class="desc">타입 기반 자동 주입. 생성자 주입 권장 (순환 의존성 방지). 단일 생성자 시 생략 가능.</td>
+            <td>
+              <span class="scope-badge scope-field">필드</span>
+              <span class="scope-badge scope-cons">생성자</span>
+              <span class="scope-badge scope-method">메서드</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="c">// 생성자 주입 (권장)</span>
+<span class="a">@Service</span>
+<span class="k">public class</span> <span class="t">OrderService</span> {
+  <span class="k">private final</span> <span class="t">OrderRepo</span> <span class="p">orderRepo</span>;
+  <span class="k">private final</span> <span class="t">PaymentService</span> <span class="p">payService</span>;
+
+  <span class="a">@Autowired</span> <span class="c">// 단일 생성자면 생략 가능</span>
+  <span class="k">public</span> <span class="t">OrderService</span>(<span class="t">OrderRepo</span> <span class="p">r</span>, <span class="t">PaymentService</span> <span class="p">p</span>) {
+    <span class="k">this</span>.<span class="p">orderRepo</span> = <span class="p">r</span>; <span class="k">this</span>.<span class="p">payService</span> = <span class="p">p</span>;
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Qualifier</span></td>
+            <td class="desc">같은 타입의 Bean이 여러 개일 때 <strong>이름으로 구분</strong>하여 주입.</td>
+            <td>
+              <span class="scope-badge scope-param">파라미터</span>
+              <span class="scope-badge scope-field">필드</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="a">@Autowired</span>
+<span class="a">@Qualifier</span>(<span class="s">"mainDataSource"</span>)
+<span class="k">private</span> <span class="t">DataSource</span> <span class="p">dataSource</span>;
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Value</span></td>
+            <td class="desc"><code>application.properties</code> 값 또는 SpEL 표현식을 필드/파라미터에 주입.</td>
+            <td>
+              <span class="scope-badge scope-field">필드</span>
+              <span class="scope-badge scope-param">파라미터</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="a">@Value</span>(<span class="s">"${jwt.secret}"</span>)
+<span class="k">private</span> <span class="t">String</span> <span class="p">jwtSecret</span>;
+
+<span class="a">@Value</span>(<span class="s">"${server.port:8080}"</span>) <span class="c">// 기본값 설정</span>
+<span class="k">private int</span> <span class="p">port</span>;
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Primary</span></td>
+            <td class="desc">같은 타입의 Bean이 여러 개일 때 <strong>기본 Bean</strong>으로 지정.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Primary</span>
+<span class="a">@Bean</span>
+<span class="k">public</span> <span class="t">DataSource</span> <span class="m">primaryDataSource</span>() {
+  <span class="k">return new</span> <span class="t">HikariDataSource</span>(config);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Lazy</span></td>
+            <td class="desc">Bean을 <strong>처음 사용 시점</strong>에 초기화(지연 로딩). 기동 시간 단축.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Lazy</span>
+<span class="a">@Service</span>
+<span class="k">public class</span> <span class="t">HeavyService</span> {
+  <span class="k">public</span> <span class="t">HeavyService</span>() {
+    <span class="c">// 처음 사용 시에만 실행됨</span>
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑥ 설정/Bean -->
+    <section class="section" id="sec-config">
+      <div class="section-header">
+        <div class="section-icon">⚙️</div>
+        <h2>설정 및 Bean 등록 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">6개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@Configuration</span></td>
+            <td class="desc">Java 기반 Spring <strong>설정 클래스</strong>. <code>@Bean</code> 메서드를 포함하여 컨테이너에 등록.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Configuration</span>
+<span class="k">public class</span> <span class="t">AppConfig</span> {
+  <span class="a">@Bean</span>
+  <span class="k">public</span> <span class="t">ModelMapper</span> <span class="m">modelMapper</span>() {
+    <span class="k">return new</span> <span class="t">ModelMapper</span>();
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Bean</span></td>
+            <td class="desc"><code>@Configuration</code> 내에서 <strong>Bean 객체</strong>를 수동 등록. 반환값이 Bean으로 관리됨.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Bean</span>
+<span class="k">public</span> <span class="t">PasswordEncoder</span> <span class="m">passwordEncoder</span>() {
+  <span class="k">return new</span> <span class="t">BCryptPasswordEncoder</span>();
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ComponentScan</span></td>
+            <td class="desc">지정한 패키지에서 <code>@Component</code> 계열 클래스를 <strong>자동 탐색</strong>하여 등록.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Configuration</span>
+<span class="a">@ComponentScan</span>(basePackages = <span class="s">"com.example.app"</span>)
+<span class="k">public class</span> <span class="t">AppConfig</span> { }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@PropertySource</span></td>
+            <td class="desc">외부 <code>.properties</code> 파일을 <strong>Environment에 로드</strong>.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Configuration</span>
+<span class="a">@PropertySource</span>(<span class="s">"classpath:db.properties"</span>)
+<span class="k">public class</span> <span class="t">DbConfig</span> {
+  <span class="a">@Value</span>(<span class="s">"${db.url}"</span>)
+  <span class="k">private</span> <span class="t">String</span> <span class="p">dbUrl</span>;
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Profile</span></td>
+            <td class="desc">특정 <strong>프로파일 활성 시</strong>에만 Bean 등록. dev/prod 환경 분리.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Profile</span>(<span class="s">"dev"</span>)
+<span class="a">@Bean</span>
+<span class="k">public</span> <span class="t">DataSource</span> <span class="m">devDataSource</span>() {
+  <span class="k">return new</span> <span class="t">EmbeddedDatabaseBuilder</span>()
+    .setType(<span class="t">H2</span>).build();
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Scope</span></td>
+            <td class="desc">Bean의 <strong>생명주기 범위</strong>. singleton(기본), prototype, request, session 등.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Component</span>
+<span class="a">@Scope</span>(<span class="s">"prototype"</span>) <span class="c">// 매번 새 인스턴스</span>
+<span class="k">public class</span> <span class="t">RequestHandler</span> { ... }
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑦ Spring Boot 전용 -->
+    <section class="section section-boot2" id="sec-boot">
+      <div class="section-header">
+        <div class="section-icon">🚀</div>
+        <h2>Spring Boot 전용 어노테이션</h2>
+        <span class="tag boot" style="margin-left:8px">Boot 전용</span>
+        <span class="section-count">7개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name highlight">@SpringBootApplication</span></td>
+            <td class="desc"><code>@Configuration</code> + <code>@EnableAutoConfiguration</code> + <code>@ComponentScan</code>. <strong>Boot 진입점</strong>에 사용.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@SpringBootApplication</span>
+<span class="k">public class</span> <span class="t">Application</span> {
+  <span class="k">public static void</span> <span class="m">main</span>(<span class="t">String</span>[] <span class="p">args</span>) {
+    <span class="t">SpringApplication</span>.run(<span class="t">Application</span>.<span class="k">class</span>, <span class="p">args</span>);
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@EnableAutoConfiguration</span></td>
+            <td class="desc">클래스패스 기반으로 Spring 설정을 <strong>자동 구성</strong>. <code>@SpringBootApplication</code>에 포함.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="c">// 특정 자동구성 제외</span>
+<span class="a">@SpringBootApplication</span>(
+  exclude = { <span class="t">DataSourceAutoConfiguration</span>.<span class="k">class</span> }
+)
+<span class="k">public class</span> <span class="t">App</span> { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ConfigurationProperties</span></td>
+            <td class="desc"><code>application.yml</code>의 prefix 블록을 <strong>POJO에 바인딩</strong>. 타입 안전한 설정 관리.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="c"># application.yml</span>
+<span class="c"># jwt.secret=... jwt.expiry=3600</span>
+<span class="a">@ConfigurationProperties</span>(prefix = <span class="s">"jwt"</span>)
+<span class="k">public class</span> <span class="t">JwtProperties</span> {
+  <span class="k">private</span> <span class="t">String</span> <span class="p">secret</span>;
+  <span class="k">private long</span> <span class="p">expiry</span>;
+  <span class="c">// getters/setters</span>
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ConditionalOnProperty</span></td>
+            <td class="desc">특정 프로퍼티 값 조건을 만족할 때만 Bean 등록 (Auto Configuration에서 자주 사용).</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Bean</span>
+<span class="a">@ConditionalOnProperty</span>(
+  name = <span class="s">"feature.cache.enabled"</span>,
+  havingValue = <span class="s">"true"</span>)
+<span class="k">public</span> <span class="t">CacheManager</span> <span class="m">cacheManager</span>() { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ConditionalOnMissingBean</span></td>
+            <td class="desc">해당 타입의 Bean이 <strong>없을 때만</strong> 등록. Auto Configuration 기본값 제공 패턴.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Bean</span>
+<span class="a">@ConditionalOnMissingBean</span>(<span class="t">ObjectMapper</span>.<span class="k">class</span>)
+<span class="k">public</span> <span class="t">ObjectMapper</span> <span class="m">objectMapper</span>() {
+  <span class="k">return new</span> <span class="t">ObjectMapper</span>();
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@SpringBootTest</span></td>
+            <td class="desc">통합 테스트용. 전체 ApplicationContext 로드. 포트 설정 가능.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@SpringBootTest</span>(
+  webEnvironment = <span class="t">SpringBootTest</span>.<span class="t">WebEnvironment</span>.RANDOM_PORT)
+<span class="k">class</span> <span class="t">UserApiTest</span> {
+  <span class="a">@Autowired</span>
+  <span class="k">private</span> <span class="t">TestRestTemplate</span> <span class="p">restTemplate</span>;
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@EnableScheduling<br>@Scheduled</span></td>
+            <td class="desc">스케줄링 활성화 및 cron/fixedRate/fixedDelay로 <strong>주기적 작업</strong> 실행.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Scheduled</span>(cron = <span class="s">"0 0 * * * *"</span>) <span class="c">// 매시 정각</span>
+<span class="k">public void</span> <span class="m">hourlyTask</span>() { ... }
+
+<span class="a">@Scheduled</span>(fixedRate = <span class="n">60000</span>) <span class="c">// 1분마다</span>
+<span class="k">public void</span> <span class="m">periodicTask</span>() { ... }
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑧ Data JPA -->
+    <section class="section section-data" id="sec-data">
+      <div class="section-header">
+        <div class="section-icon">🗄️</div>
+        <h2>Data JPA / ORM 어노테이션</h2>
+        <span class="tag data" style="margin-left:8px">Data JPA</span>
+        <span class="section-count">5개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@Entity</span></td>
+            <td class="desc">JPA가 관리하는 <strong>영속성 엔티티</strong> 클래스임을 선언. DB 테이블에 매핑.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Entity</span>
+<span class="a">@Table</span>(name = <span class="s">"users"</span>)
+<span class="k">public class</span> <span class="t">User</span> {
+  <span class="a">@Id</span>
+  <span class="a">@GeneratedValue</span>(strategy = <span class="t">GenerationType</span>.IDENTITY)
+  <span class="k">private</span> <span class="t">Long</span> <span class="p">id</span>;
+
+  <span class="a">@Column</span>(nullable = <span class="k">false</span>, length = <span class="n">50</span>)
+  <span class="k">private</span> <span class="t">String</span> <span class="p">username</span>;
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Id<br>@GeneratedValue</span></td>
+            <td class="desc">기본키 지정 및 <strong>자동 생성 전략</strong> 설정 (IDENTITY, SEQUENCE, AUTO).</td>
+            <td><span class="scope-badge scope-field">필드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Id</span>
+<span class="a">@GeneratedValue</span>(strategy = <span class="t">GenerationType</span>.SEQUENCE,
+               generator = <span class="s">"user_seq"</span>)
+<span class="a">@SequenceGenerator</span>(name = <span class="s">"user_seq"</span>,
+                   allocationSize = <span class="n">50</span>)
+<span class="k">private</span> <span class="t">Long</span> <span class="p">id</span>;
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@OneToMany<br>@ManyToOne<br>@ManyToMany</span></td>
+            <td class="desc">엔티티 간 <strong>연관관계</strong> 매핑. FetchType, cascade, orphanRemoval 설정.</td>
+            <td><span class="scope-badge scope-field">필드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@OneToMany</span>(mappedBy = <span class="s">"user"</span>,
+           cascade = <span class="t">CascadeType</span>.ALL,
+           fetch = <span class="t">FetchType</span>.LAZY)
+<span class="k">private</span> <span class="t">List</span>&lt;<span class="t">Order</span>&gt; <span class="p">orders</span> = <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;();
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Query</span></td>
+            <td class="desc">Repository 메서드에 <strong>JPQL 또는 Native SQL</strong> 직접 작성.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Query</span>(<span class="s">"SELECT u FROM User u WHERE u.email = :email AND u.active = true"</span>)
+<span class="t">Optional</span>&lt;<span class="t">User</span>&gt; <span class="m">findActiveByEmail</span>(
+    <span class="a">@Param</span>(<span class="s">"email"</span>) <span class="t">String</span> <span class="p">email</span>);
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Modifying</span></td>
+            <td class="desc"><code>@Query</code>와 함께 사용. <strong>UPDATE/DELETE</strong> 쿼리를 Repository에서 직접 실행.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Modifying</span>
+<span class="a">@Transactional</span>
+<span class="a">@Query</span>(<span class="s">"UPDATE User u SET u.active = false WHERE u.id = :id"</span>)
+<span class="t">int</span> <span class="m">deactivateUser</span>(<span class="a">@Param</span>(<span class="s">"id"</span>) <span class="t">Long</span> <span class="p">id</span>);
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑨ 트랜잭션 -->
+    <section class="section section-trans" id="sec-trans">
+      <div class="section-header">
+        <div class="section-icon">🔄</div>
+        <h2>트랜잭션 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">2개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@Transactional</span></td>
+            <td class="desc">메서드(또는 클래스 전체)를 <strong>트랜잭션 범위</strong>로 묶음. readOnly, rollbackFor, propagation 등 설정.</td>
+            <td>
+              <span class="scope-badge scope-class">클래스</span><br><br>
+              <span class="scope-badge scope-method">메서드</span>
+            </td>
+            <td>
+              <div class="code-block">
+<span class="a">@Transactional</span>(
+  rollbackFor = <span class="t">Exception</span>.<span class="k">class</span>,
+  isolation = <span class="t">Isolation</span>.READ_COMMITTED)
+<span class="k">public void</span> <span class="m">transfer</span>(<span class="t">Long</span> <span class="p">from</span>, <span class="t">Long</span> <span class="p">to</span>, <span class="t">BigDecimal</span> <span class="p">amt</span>) {
+  accountRepo.<span class="m">withdraw</span>(<span class="p">from</span>, <span class="p">amt</span>);
+  accountRepo.<span class="m">deposit</span>(<span class="p">to</span>, <span class="p">amt</span>);
+}
+
+<span class="a">@Transactional</span>(readOnly = <span class="k">true</span>) <span class="c">// 조회 최적화</span>
+<span class="k">public</span> <span class="t">List</span>&lt;<span class="t">User</span>&gt; <span class="m">findAll</span>() { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@EnableTransactionManagement</span></td>
+            <td class="desc">Java Config에서 <strong>트랜잭션 관리자</strong> 활성화. Boot에서는 자동 설정.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Configuration</span>
+<span class="a">@EnableTransactionManagement</span>
+<span class="k">public class</span> <span class="t">TxConfig</span> {
+  <span class="a">@Bean</span>
+  <span class="k">public</span> <span class="t">PlatformTransactionManager</span> <span class="m">txManager</span>(...) { ... }
+}
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑩ 유효성 검사 -->
+    <section class="section section-val" id="sec-val">
+      <div class="section-header">
+        <div class="section-icon">✅</div>
+        <h2>유효성 검사 (Validation) 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">5개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@Valid<br>@Validated</span></td>
+            <td class="desc">파라미터 유효성 검사 실행 트리거. <code>@Validated</code>는 그룹 검증 지원.</td>
+            <td><span class="scope-badge scope-param">파라미터</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@PostMapping</span>(<span class="s">"/users"</span>)
+<span class="k">public</span> <span class="t">UserDto</span> <span class="m">create</span>(<span class="a">@Valid</span> <span class="a">@RequestBody</span> <span class="t">UserRequest</span> <span class="p">req</span>,
+                       <span class="t">BindingResult</span> <span class="p">result</span>) {
+  <span class="k">if</span> (<span class="p">result</span>.hasErrors()) <span class="k">throw new</span> <span class="t">ValidationException</span>();
+  <span class="k">return</span> userService.<span class="m">save</span>(<span class="p">req</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@NotNull / @NotBlank<br>@NotEmpty</span></td>
+            <td class="desc">null 불가 / 공백 포함 빈 문자열 불가 / null·빈 컬렉션 불가 검증.</td>
+            <td><span class="scope-badge scope-field">필드</span></td>
+            <td>
+              <div class="code-block">
+<span class="k">public class</span> <span class="t">UserRequest</span> {
+  <span class="a">@NotBlank</span>(message = <span class="s">"이름은 필수입니다"</span>)
+  <span class="k">private</span> <span class="t">String</span> <span class="p">name</span>;
+
+  <span class="a">@NotNull</span>
+  <span class="k">private</span> <span class="t">Integer</span> <span class="p">age</span>;
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Size / @Min / @Max</span></td>
+            <td class="desc">문자열 길이 또는 숫자 범위 검증.</td>
+            <td><span class="scope-badge scope-field">필드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Size</span>(min = <span class="n">8</span>, max = <span class="n">20</span>, message = <span class="s">"8~20자 입력"</span>)
+<span class="k">private</span> <span class="t">String</span> <span class="p">password</span>;
+
+<span class="a">@Min</span>(<span class="n">1</span>) <span class="a">@Max</span>(<span class="n">100</span>)
+<span class="k">private int</span> <span class="p">quantity</span>;
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Pattern</span></td>
+            <td class="desc">정규식으로 형식 검증.</td>
+            <td><span class="scope-badge scope-field">필드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Pattern</span>(regexp = <span class="s">"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"</span>,
+          message = <span class="s">"이메일 형식이 올바르지 않습니다"</span>)
+<span class="k">private</span> <span class="t">String</span> <span class="p">email</span>;
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Email</span></td>
+            <td class="desc">이메일 형식 검증 (Jakarta Validation 내장).</td>
+            <td><span class="scope-badge scope-field">필드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Email</span>(message = <span class="s">"유효한 이메일 주소를 입력해주세요"</span>)
+<span class="k">private</span> <span class="t">String</span> <span class="p">email</span>;
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑪ Spring Security -->
+    <section class="section section-sec" id="sec-sec">
+      <div class="section-header">
+        <div class="section-icon">🔒</div>
+        <h2>Spring Security 어노테이션</h2>
+        <span class="tag sec" style="margin-left:8px">Security</span>
+        <span class="section-count">4개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@EnableWebSecurity</span></td>
+            <td class="desc">Spring Security <strong>활성화</strong>. SecurityFilterChain Bean 등록과 함께 사용.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Configuration</span>
+<span class="a">@EnableWebSecurity</span>
+<span class="k">public class</span> <span class="t">SecurityConfig</span> {
+  <span class="a">@Bean</span>
+  <span class="k">public</span> <span class="t">SecurityFilterChain</span> <span class="m">filterChain</span>(<span class="t">HttpSecurity</span> <span class="p">http</span>)
+      <span class="k">throws</span> <span class="t">Exception</span> {
+    <span class="p">http</span>.authorizeHttpRequests(a -> a
+        .requestMatchers(<span class="s">"/api/**"</span>).authenticated()
+        .anyRequest().permitAll());
+    <span class="k">return</span> <span class="p">http</span>.build();
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@EnableMethodSecurity</span></td>
+            <td class="desc">메서드 레벨 보안 활성화. <code>@PreAuthorize</code> 등 사용 가능.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Configuration</span>
+<span class="a">@EnableMethodSecurity</span>(prePostEnabled = <span class="k">true</span>)
+<span class="k">public class</span> <span class="t">MethodSecurityConfig</span> { }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@PreAuthorize</span></td>
+            <td class="desc">메서드 실행 <strong>전</strong> 권한 확인. SpEL 표현식으로 세밀한 접근 제어.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@PreAuthorize</span>(<span class="s">"hasRole('ADMIN')"</span>)
+<span class="k">public void</span> <span class="m">deleteUser</span>(<span class="t">Long</span> <span class="p">id</span>) { ... }
+
+<span class="a">@PreAuthorize</span>(<span class="s">"#userId == authentication.principal.id"</span>)
+<span class="k">public</span> <span class="t">UserDto</span> <span class="m">getMyInfo</span>(<span class="t">Long</span> <span class="p">userId</span>) { ... }
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@PostAuthorize<br>@Secured</span></td>
+            <td class="desc"><code>@PostAuthorize</code>: 반환값 기반 권한 확인. <code>@Secured</code>: 역할 목록으로 접근 제한.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@PostAuthorize</span>(<span class="s">"returnObject.owner == authentication.name"</span>)
+<span class="k">public</span> <span class="t">Document</span> <span class="m">getDocument</span>(<span class="t">Long</span> <span class="p">id</span>) { ... }
+
+<span class="a">@Secured</span>({ <span class="s">"ROLE_USER"</span>, <span class="s">"ROLE_ADMIN"</span> })
+<span class="k">public</span> <span class="t">List</span>&lt;<span class="t">Product</span>&gt; <span class="m">getProducts</span>() { ... }
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑫ AOP -->
+    <section class="section section-aop" id="sec-aop">
+      <div class="section-header">
+        <div class="section-icon">🔀</div>
+        <h2>AOP 어노테이션</h2>
+        <span class="tag both" style="margin-left:8px">공통</span>
+        <span class="section-count">5개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@Aspect</span></td>
+            <td class="desc">AOP <strong>Aspect 클래스</strong> 선언. 횡단 관심사(로깅, 보안 등) 분리.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Aspect</span>
+<span class="a">@Component</span>
+<span class="k">public class</span> <span class="t">LoggingAspect</span> {
+  <span class="a">@Around</span>(<span class="s">"execution(* com.example.service.*.*(..))"</span>)
+  <span class="k">public</span> <span class="t">Object</span> <span class="m">logExecution</span>(<span class="t">ProceedingJoinPoint</span> <span class="p">pjp</span>)
+      <span class="k">throws</span> <span class="t">Throwable</span> {
+    <span class="k">long</span> <span class="p">start</span> = <span class="t">System</span>.currentTimeMillis();
+    <span class="t">Object</span> <span class="p">result</span> = <span class="p">pjp</span>.proceed();
+    log.info(<span class="s">"실행시간: {}ms"</span>, <span class="t">System</span>.currentTimeMillis() - <span class="p">start</span>);
+    <span class="k">return</span> <span class="p">result</span>;
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Before</span></td>
+            <td class="desc">대상 메서드 실행 <strong>이전</strong> 실행되는 Advice.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Before</span>(<span class="s">"@annotation(com.example.audit.Auditable)"</span>)
+<span class="k">public void</span> <span class="m">auditBefore</span>(<span class="t">JoinPoint</span> <span class="p">jp</span>) {
+  log.info(<span class="s">"호출: {}"</span>, <span class="p">jp</span>.getSignature().getName());
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@After<br>@AfterReturning</span></td>
+            <td class="desc">실행 <strong>후</strong> / 정상 반환 후 Advice. 반환값 접근 가능.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@AfterReturning</span>(
+  pointcut = <span class="s">"execution(* *.save(..))"</span>,
+  returning = <span class="s">"result"</span>)
+<span class="k">public void</span> <span class="m">afterSave</span>(<span class="t">Object</span> <span class="p">result</span>) {
+  log.info(<span class="s">"저장 완료: {}"</span>, <span class="p">result</span>);
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Around</span></td>
+            <td class="desc">메서드 실행 전후를 <strong>완전히 제어</strong>. 실행 여부·반환값 변경 가능.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Around</span>(<span class="s">"@annotation(Cacheable)"</span>)
+<span class="k">public</span> <span class="t">Object</span> <span class="m">cacheAround</span>(<span class="t">ProceedingJoinPoint</span> <span class="p">pjp</span>)
+    <span class="k">throws</span> <span class="t">Throwable</span> {
+  <span class="t">String</span> <span class="p">key</span> = generateKey(<span class="p">pjp</span>);
+  <span class="k">if</span> (cache.has(<span class="p">key</span>)) <span class="k">return</span> cache.get(<span class="p">key</span>);
+  <span class="t">Object</span> <span class="p">val</span> = <span class="p">pjp</span>.proceed();
+  cache.put(<span class="p">key</span>, <span class="p">val</span>);
+  <span class="k">return</span> <span class="p">val</span>;
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Pointcut</span></td>
+            <td class="desc">Pointcut 표현식을 <strong>재사용 가능한 메서드</strong>로 정의.</td>
+            <td><span class="scope-badge scope-method">메서드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Pointcut</span>(<span class="s">"execution(* com.example.service..*(..))"</span>)
+<span class="k">public void</span> <span class="m">serviceLayer</span>() {}
+
+<span class="a">@Before</span>(<span class="s">"serviceLayer()"</span>)
+<span class="k">public void</span> <span class="m">logBefore</span>(<span class="t">JoinPoint</span> <span class="p">jp</span>) { ... }
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑬ 테스트 -->
+    <section class="section" id="sec-test">
+      <div class="section-header">
+        <div class="section-icon">🧪</div>
+        <h2>테스트 어노테이션</h2>
+        <span class="tag test" style="margin-left:8px">Test</span>
+        <span class="section-count">5개</span>
+      </div>
+      <table class="anno-table">
+        <thead><tr>
+          <th class="col-anno">어노테이션</th>
+          <th class="col-desc">설명</th>
+          <th class="col-scope">적용 위치</th>
+          <th class="col-code">사용 예</th>
+        </tr></thead>
+        <tbody>
+
+          <tr>
+            <td><span class="anno-name">@WebMvcTest</span></td>
+            <td class="desc">Web 계층만 로드하는 <strong>슬라이스 테스트</strong>. MockMvc 자동 구성.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@WebMvcTest</span>(<span class="t">UserController</span>.<span class="k">class</span>)
+<span class="k">class</span> <span class="t">UserControllerTest</span> {
+  <span class="a">@Autowired</span> <span class="k">private</span> <span class="t">MockMvc</span> <span class="p">mvc</span>;
+  <span class="a">@MockBean</span>  <span class="k">private</span> <span class="t">UserService</span> <span class="p">service</span>;
+
+  <span class="a">@Test</span>
+  <span class="k">void</span> <span class="m">testGetUser</span>() <span class="k">throws</span> <span class="t">Exception</span> {
+    <span class="p">mvc</span>.perform(get(<span class="s">"/users/1"</span>))
+       .andExpect(status().isOk());
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@DataJpaTest</span></td>
+            <td class="desc">JPA 관련 Bean만 로드하는 <strong>슬라이스 테스트</strong>. H2 인메모리 DB 사용.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@DataJpaTest</span>
+<span class="k">class</span> <span class="t">UserRepositoryTest</span> {
+  <span class="a">@Autowired</span>
+  <span class="k">private</span> <span class="t">UserRepository</span> <span class="p">repo</span>;
+
+  <span class="a">@Test</span>
+  <span class="k">void</span> <span class="m">testFindByEmail</span>() {
+    <span class="t">User</span> <span class="p">u</span> = <span class="k">new</span> <span class="t">User</span>(<span class="s">"test@mail.com"</span>);
+    <span class="p">repo</span>.save(<span class="p">u</span>);
+    assertThat(<span class="p">repo</span>.findByEmail(<span class="s">"test@mail.com"</span>)).isPresent();
+  }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@MockBean<br>@SpyBean</span></td>
+            <td class="desc">Spring 컨텍스트에 <strong>Mockito Mock/Spy</strong>를 Bean으로 등록.</td>
+            <td><span class="scope-badge scope-field">필드</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@MockBean</span>
+<span class="k">private</span> <span class="t">EmailService</span> <span class="p">emailService</span>; <span class="c">// 전체 Mock</span>
+
+<span class="a">@SpyBean</span>
+<span class="k">private</span> <span class="t">UserService</span> <span class="p">userService</span>; <span class="c">// 실제 Bean + 일부 Override</span>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@ExtendWith</span></td>
+            <td class="desc">JUnit 5 확장. <code>MockitoExtension</code>으로 <code>@Mock</code>, <code>@InjectMocks</code> 활성화.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@ExtendWith</span>(<span class="t">MockitoExtension</span>.<span class="k">class</span>)
+<span class="k">class</span> <span class="t">OrderServiceTest</span> {
+  <span class="a">@Mock</span>  <span class="k">private</span> <span class="t">OrderRepo</span> <span class="p">repo</span>;
+  <span class="a">@InjectMocks</span> <span class="k">private</span> <span class="t">OrderService</span> <span class="p">svc</span>;
+  <span class="a">@Test</span>
+  <span class="k">void</span> <span class="m">test</span>() { ... }
+}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><span class="anno-name">@Sql / @SqlGroup</span></td>
+            <td class="desc">테스트 전후에 SQL 스크립트 실행. 테스트 데이터 세팅에 활용.</td>
+            <td><span class="scope-badge scope-class">클래스</span></td>
+            <td>
+              <div class="code-block">
+<span class="a">@Sql</span>(scripts = <span class="s">"/test-data.sql"</span>,
+     executionPhase = <span class="t">Sql</span>.<span class="t">ExecutionPhase</span>.BEFORE_TEST_METHOD)
+<span class="a">@DataJpaTest</span>
+<span class="k">class</span> <span class="t">OrderRepoTest</span> { ... }
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // 사이드바 활성 TOC 추적
+  const sections = document.querySelectorAll('.section');
+  const tocItems = document.querySelectorAll('.toc-item');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        tocItems.forEach(t => t.classList.remove('active'));
+        const id = entry.target.id;
+        const active = document.querySelector(`.toc-item[href="#${id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-74px 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // 사이드바 클릭 스무스 스크롤
+  tocItems.forEach(item => {
+    item.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(item.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+</body>
+</html>
