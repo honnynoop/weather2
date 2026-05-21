@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>브라우저 렌더링 파이프라인</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;font-family:'Noto Sans KR',sans-serif;color:#0f172a;display:flex}
+aside{width:220px;min-height:100vh;position:sticky;top:0;height:100vh;overflow-y:auto;
+  border-right:1px solid #e2e8f0;padding:16px 0;flex-shrink:0;background:#fafafa}
+aside h3{font-size:10px;font-weight:700;color:#94a3b8;padding:0 14px 6px;
+  letter-spacing:1.2px;text-transform:uppercase;margin-top:12px}
+aside a{display:block;padding:5px 14px;font-size:12px;color:#475569;text-decoration:none;
+  border-left:2px solid transparent;transition:all .15s}
+aside a:hover{color:#2563eb;border-left-color:#2563eb;background:#f1f5f9}
+aside a.indent{padding-left:26px;font-size:11px}
+main{flex:1;padding:32px 40px 80px;max-width:960px}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.subtitle{font-size:13px;color:#64748b;margin-bottom:36px}
+h2{font-size:15px;font-weight:700;margin:40px 0 4px;padding:10px 14px;border-radius:0 8px 8px 0;border-left:4px solid}
+.sec-net h2{border-color:#2563eb;background:#eff6ff;color:#1e3a8a}
+.sec-parse h2{border-color:#ea580c;background:#fff7ed;color:#7c2d12}
+.sec-css h2{border-color:#7c3aed;background:#f5f3ff;color:#3b0764}
+.sec-js h2{border-color:#d97706;background:#fffbeb;color:#451a03}
+.sec-render h2{border-color:#059669;background:#f0fdf4;color:#14532d}
+.sec-layout h2{border-color:#0891b2;background:#ecfeff;color:#0c4a6e}
+.sec-paint h2{border-color:#db2777;background:#fdf2f8;color:#500724}
+.sec-gpu h2{border-color:#6366f1;background:#eef2ff;color:#1e1b4b}
+h3{font-size:13px;font-weight:700;margin:18px 0 6px;color:#1e293b}
+p{font-size:13px;color:#334155;line-height:1.8;margin-bottom:10px}
+ul,ol{font-size:13px;color:#334155;padding-left:20px;line-height:1.9;margin-bottom:12px}
+code{font-family:'Fira Code',monospace;font-size:11.5px;background:#f1f5f9;
+  padding:2px 5px;border-radius:4px;color:#0f172a}
+.note{background:#eff6ff;border-left:3px solid #3b82f6;padding:9px 13px;border-radius:0 6px 6px 0;
+  font-size:12.5px;color:#1e3a8a;margin:10px 0}
+.warn{background:#fefce8;border-left:3px solid #f59e0b;padding:9px 13px;border-radius:0 6px 6px 0;
+  font-size:12.5px;color:#451a03;margin:10px 0}
+.perf{background:#fdf2f8;border-left:3px solid #db2777;padding:9px 13px;border-radius:0 6px 6px 0;
+  font-size:12.5px;color:#500724;margin:10px 0}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;margin:2px}
+.b-blue{background:#dbeafe;color:#1e3a8a}
+.b-orange{background:#ffedd5;color:#7c2d12}
+.b-green{background:#d1fae5;color:#064e3b}
+.b-pink{background:#fce7f3;color:#500724}
+svg{display:block;width:100%;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:12px 0}
+th{background:#f1f5f9;padding:7px 10px;text-align:left;font-weight:600;border:1px solid #e2e8f0}
+td{padding:7px 10px;border:1px solid #e2e8f0;color:#334155;vertical-align:top}
+tr:nth-child(even) td{background:#f8fafc}
+</style>
+</head>
+<body>
+<aside>
+  <h3>목차</h3>
+  <a href="#overview">전체 파이프라인</a>
+  <a href="#multiprocess">멀티 프로세스 아키텍처</a>
+  <a href="#network">네트워크 → HTML 수신</a>
+  <h3>파싱 단계</h3>
+  <a href="#html-parse">HTML 파싱 → DOM Tree</a>
+  <a href="#cssom">CSS → CSSOM</a>
+  <a href="#javascript">V8 JavaScript 엔진</a>
+  <a class="indent" href="#event-loop">이벤트 루프</a>
+  <h3>렌더링 단계</h3>
+  <a href="#render-tree">Render Tree</a>
+  <a href="#layout">Layout (Reflow)</a>
+  <a href="#paint">Paint (래스터화)</a>
+  <a href="#composite">Composite (GPU)</a>
+  <a href="#perf">성능 비용 비교</a>
+</aside>
+
+<main>
+<h1>🌐 브라우저 렌더링 파이프라인</h1>
+<p class="subtitle">서버 HTML 수신 → DOM/CSSOM → V8 엔진 → Layout → Paint → Composite → 화면 출력 전 과정</p>
+
+<!-- ══ OVERVIEW ══ -->
+<section id="overview">
+<div class="sec-net"><h2>🔄 전체 Critical Rendering Path (CRP)</h2></div>
+<p>브라우저가 서버에서 HTML을 받아 픽셀로 출력하기까지의 전체 흐름입니다.</p>
+
+<svg viewBox="0 0 680 510" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>Critical Rendering Path 전체 흐름</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Server -->
+<rect x="200" y="14" width="280" height="42" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1"/>
+<text x="340" y="29" text-anchor="middle" font-size="12" font-weight="600" fill="#1e3a8a">Server HTTP Response</text>
+<text x="340" y="47" text-anchor="middle" font-size="10" fill="#3b82f6">HTML · CSS · JavaScript 파일 전송</text>
+
+<!-- arrows from server to 3 cols -->
+<path d="M340 56 L340 70 L120 70 L120 82" fill="none" stroke="#ea580c" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="340" y1="56" x2="340" y2="82" stroke="#7c3aed" stroke-width="1.2" marker-end="url(#arr)"/>
+<path d="M340 56 L340 70 L560 70 L560 82" fill="none" stroke="#d97706" stroke-width="1.2" marker-end="url(#arr)"/>
+
+<!-- HTML col -->
+<rect x="40" y="84" width="160" height="40" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="120" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">HTML 바이트 스트림</text>
+<text x="120" y="115" text-anchor="middle" font-size="10" fill="#9a3412">Content-Type: text/html</text>
+<line x1="120" y1="124" x2="120" y2="142" stroke="#ea580c" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="40" y="144" width="160" height="48" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="120" y="161" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">HTML 파서 (Blink)</text>
+<text x="120" y="177" text-anchor="middle" font-size="10" fill="#9a3412">Tokenizer + Tree Builder</text>
+<line x1="120" y1="192" x2="120" y2="210" stroke="#ea580c" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="40" y="212" width="160" height="42" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1.2"/>
+<text x="120" y="228" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">DOM Tree</text>
+<text x="120" y="244" text-anchor="middle" font-size="10" fill="#9a3412">노드 트리 구조</text>
+
+<!-- CSS col -->
+<rect x="260" y="84" width="160" height="40" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="340" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">CSS 바이트 스트림</text>
+<text x="340" y="115" text-anchor="middle" font-size="10" fill="#5b21b6">link · style · inline</text>
+<line x1="340" y1="124" x2="340" y2="142" stroke="#7c3aed" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="260" y="144" width="160" height="48" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="340" y="161" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">CSS 파서</text>
+<text x="340" y="177" text-anchor="middle" font-size="10" fill="#5b21b6">Cascade 계산 · 특이성</text>
+<line x1="340" y1="192" x2="340" y2="210" stroke="#7c3aed" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="260" y="212" width="160" height="42" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.2"/>
+<text x="340" y="228" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">CSSOM Tree</text>
+<text x="340" y="244" text-anchor="middle" font-size="10" fill="#5b21b6">계산된 스타일</text>
+
+<!-- JS col -->
+<rect x="480" y="84" width="160" height="40" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="560" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">JavaScript 소스</text>
+<text x="560" y="115" text-anchor="middle" font-size="10" fill="#92400e">script src / inline</text>
+<line x1="560" y1="124" x2="560" y2="142" stroke="#d97706" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="480" y="144" width="160" height="48" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="560" y="161" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">V8 엔진</text>
+<text x="560" y="177" text-anchor="middle" font-size="10" fill="#92400e">Parse→AST→Bytecode→JIT</text>
+<line x1="560" y1="192" x2="560" y2="210" stroke="#d97706" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="480" y="212" width="160" height="42" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.2"/>
+<text x="560" y="228" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">JS 실행</text>
+<text x="560" y="244" text-anchor="middle" font-size="10" fill="#92400e">DOM/CSSOM 수정 가능</text>
+
+<!-- Render Tree -->
+<path d="M120 254 L120 278 L340 278 L340 296" fill="none" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M340 254 L340 296" fill="none" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arr)"/>
+<rect x="190" y="298" width="300" height="48" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.2"/>
+<text x="340" y="316" text-anchor="middle" font-size="13" font-weight="700" fill="#134e4a">Render Tree</text>
+<text x="340" y="334" text-anchor="middle" font-size="10" fill="#0f766e">DOM + CSSOM 병합 · 시각적 노드만</text>
+
+<!-- Bottom pipeline -->
+<line x1="340" y1="346" x2="340" y2="364" stroke="#0d9488" stroke-width="1.5"/>
+<path d="M340 364 L95 364 L95 382" fill="none" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<rect x="34" y="384" width="122" height="42" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+<text x="95" y="400" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">Layout</text>
+<text x="95" y="416" text-anchor="middle" font-size="10" fill="#166534">위치·크기 계산</text>
+<line x1="156" y1="405" x2="172" y2="405" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<rect x="174" y="384" width="122" height="42" rx="6" fill="#fdf2f8" stroke="#db2777" stroke-width="1"/>
+<text x="235" y="400" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">Paint</text>
+<text x="235" y="416" text-anchor="middle" font-size="10" fill="#9d174d">드로우 명령 기록</text>
+<line x1="296" y1="405" x2="312" y2="405" stroke="#db2777" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<rect x="314" y="384" width="132" height="42" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="1"/>
+<text x="380" y="400" text-anchor="middle" font-size="11" font-weight="600" fill="#312e81">Composite</text>
+<text x="380" y="416" text-anchor="middle" font-size="10" fill="#3730a3">GPU 레이어 합성</text>
+<line x1="446" y1="405" x2="462" y2="405" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<rect x="464" y="384" width="182" height="42" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2"/>
+<text x="555" y="400" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Screen 출력</text>
+<text x="555" y="416" text-anchor="middle" font-size="10" fill="#1d4ed8">60fps · 16.67ms/frame</text>
+
+<!-- Legend -->
+<rect x="34" y="444" width="612" height="52" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="0.5"/>
+<rect x="50" y="458" width="10" height="10" rx="2" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="64" y="465" font-size="10" fill="#7c2d12">HTML/DOM</text>
+<rect x="136" y="458" width="10" height="10" rx="2" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="150" y="465" font-size="10" fill="#4c1d95">CSS/CSSOM</text>
+<rect x="232" y="458" width="10" height="10" rx="2" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="246" y="465" font-size="10" fill="#78350f">JavaScript</text>
+<rect x="318" y="458" width="10" height="10" rx="2" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.8"/>
+<text x="332" y="465" font-size="10" fill="#134e4a">Render Tree</text>
+<rect x="414" y="458" width="10" height="10" rx="2" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="428" y="465" font-size="10" fill="#14532d">Layout</text>
+<rect x="482" y="458" width="10" height="10" rx="2" fill="#fdf2f8" stroke="#db2777" stroke-width="0.8"/>
+<text x="496" y="465" font-size="10" fill="#831843">Paint</text>
+<rect x="548" y="458" width="10" height="10" rx="2" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="562" y="465" font-size="10" fill="#312e81">Composite</text>
+<text x="340" y="487" text-anchor="middle" font-size="10" fill="#94a3b8">← 이 경로를 Critical Rendering Path (CRP) 라고 합니다 →</text>
+</svg>
+</section>
+
+<!-- ══ MULTI-PROCESS ══ -->
+<section id="multiprocess">
+<div class="sec-net"><h2>🏗 브라우저 멀티-프로세스 아키텍처 (Chrome)</h2></div>
+<p>Chrome은 탭 크래시 격리·보안 샌드박스를 위해 여러 프로세스로 분리됩니다. 각 프로세스는 IPC(Inter-Process Communication)로 통신합니다.</p>
+
+<svg viewBox="0 0 680 320" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>Chrome 멀티 프로세스 아키텍처</title>
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Browser Process (top) -->
+<rect x="30" y="14" width="620" height="68" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1"/>
+<text x="340" y="34" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Browser Process (브라우저 프로세스)</text>
+<text x="340" y="52" text-anchor="middle" font-size="10" fill="#1e40af">UI Thread · Navigation · Storage · Cookie/DB · I/O</text>
+<text x="340" y="68" text-anchor="middle" font-size="10" fill="#3b82f6">주소창 · 탭 관리 · 북마크 · 다운로드 조율</text>
+
+<!-- IPC line -->
+<text x="340" y="96" text-anchor="middle" font-size="10" fill="#94a3b8">── IPC (Inter-Process Communication) ──</text>
+<line x1="30" y1="101" x2="650" y2="101" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="4,3"/>
+
+<!-- Renderer Process -->
+<rect x="30" y="108" width="195" height="196" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="127" y="128" text-anchor="middle" font-size="11" font-weight="700" fill="#7c2d12">Renderer Process</text>
+<text x="127" y="144" text-anchor="middle" font-size="10" fill="#9a3412">탭 당 1개 (격리)</text>
+<rect x="44" y="154" width="167" height="22" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="127" y="165" text-anchor="middle" font-size="10" fill="#7c2d12">Blink (HTML/CSS/Layout)</text>
+<rect x="44" y="182" width="167" height="22" rx="4" fill="#fffbeb" stroke="#d97706" stroke-width="0.5"/>
+<text x="127" y="193" text-anchor="middle" font-size="10" fill="#78350f">V8 (JS Engine)</text>
+<rect x="44" y="210" width="167" height="22" rx="4" fill="#fdf2f8" stroke="#db2777" stroke-width="0.5"/>
+<text x="127" y="221" text-anchor="middle" font-size="10" fill="#831843">Compositor Thread</text>
+<rect x="44" y="238" width="167" height="22" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="127" y="249" text-anchor="middle" font-size="10" fill="#4c1d95">Raster Threads</text>
+<rect x="44" y="266" width="167" height="22" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.5"/>
+<text x="127" y="277" text-anchor="middle" font-size="10" fill="#14532d">Worker Threads</text>
+
+<!-- GPU Process -->
+<rect x="242" y="108" width="195" height="196" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="340" y="128" text-anchor="middle" font-size="11" font-weight="700" fill="#312e81">GPU Process</text>
+<text x="340" y="144" text-anchor="middle" font-size="10" fill="#3730a3">GPU 명령 실행</text>
+<rect x="256" y="154" width="167" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="340" y="165" text-anchor="middle" font-size="10" fill="#312e81">Viz (크로미움 컴포지터)</text>
+<rect x="256" y="182" width="167" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="340" y="193" text-anchor="middle" font-size="10" fill="#312e81">Skia (2D 그래픽 라이브러리)</text>
+<rect x="256" y="210" width="167" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="340" y="221" text-anchor="middle" font-size="10" fill="#312e81">OpenGL / Vulkan / Metal</text>
+<rect x="256" y="238" width="167" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="340" y="249" text-anchor="middle" font-size="10" fill="#312e81">GPU 메모리 관리</text>
+<rect x="256" y="266" width="167" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="340" y="277" text-anchor="middle" font-size="10" fill="#312e81">Frame Buffer 출력</text>
+
+<!-- Network Process -->
+<rect x="454" y="108" width="196" height="196" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="0.8"/>
+<text x="552" y="128" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a">Network Process</text>
+<text x="552" y="144" text-anchor="middle" font-size="10" fill="#1e40af">네트워크 요청 처리</text>
+<rect x="468" y="154" width="168" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="552" y="165" text-anchor="middle" font-size="10" fill="#1e3a8a">DNS 조회 (도메인→IP)</text>
+<rect x="468" y="182" width="168" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="552" y="193" text-anchor="middle" font-size="10" fill="#1e3a8a">TCP 3-way Handshake</text>
+<rect x="468" y="210" width="168" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="552" y="221" text-anchor="middle" font-size="10" fill="#1e3a8a">TLS/SSL Handshake</text>
+<rect x="468" y="238" width="168" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="552" y="249" text-anchor="middle" font-size="10" fill="#1e3a8a">HTTP/1.1 · HTTP/2 · QUIC</text>
+<rect x="468" y="266" width="168" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="552" y="277" text-anchor="middle" font-size="10" fill="#1e3a8a">캐시 / Service Worker</text>
+</svg>
+
+<table>
+<tr><th>엔진/라이브러리</th><th>브라우저</th><th>역할</th></tr>
+<tr><td><code>Blink</code></td><td>Chrome, Edge, Opera</td><td>HTML 파싱, CSS, Layout, DOM API</td></tr>
+<tr><td><code>WebKit</code></td><td>Safari, iOS 전체 브라우저</td><td>Blink의 조상 (2013년 분기)</td></tr>
+<tr><td><code>Gecko</code></td><td>Firefox</td><td>Mozilla 독자 렌더링 엔진</td></tr>
+<tr><td><code>V8</code></td><td>Chrome, Edge, Node.js</td><td>JavaScript JIT 컴파일 엔진</td></tr>
+<tr><td><code>Skia</code></td><td>Chrome, Android</td><td>2D 벡터 그래픽 라이브러리</td></tr>
+</table>
+</section>
+
+<!-- ══ HTML PARSING ══ -->
+<section id="html-parse">
+<div class="sec-parse"><h2>📄 HTML 파싱 → DOM Tree 생성</h2></div>
+<p>HTML 파서는 바이트 스트림을 받아 <strong>토크나이징</strong>과 <strong>트리 구성</strong> 두 단계로 DOM을 만듭니다. 스크립트 태그를 만나면 파싱이 일시 중단됩니다.</p>
+
+<svg viewBox="0 0 680 320" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>HTML 파싱 파이프라인 및 DOM 구조</title>
+<defs><marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Pipeline row -->
+<rect x="14" y="14" width="90" height="46" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="59" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">Bytes</text>
+<text x="59" y="50" text-anchor="middle" font-size="10" fill="#64748b">3C 68 74...</text>
+<line x1="104" y1="37" x2="116" y2="37" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+<rect x="118" y="14" width="100" height="46" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="168" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">Characters</text>
+<text x="168" y="50" text-anchor="middle" font-size="10" fill="#9a3412">인코딩 변환</text>
+<line x1="218" y1="37" x2="230" y2="37" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+<rect x="232" y="14" width="100" height="46" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="282" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">Tokens</text>
+<text x="282" y="50" text-anchor="middle" font-size="10" fill="#9a3412">Tokenizer</text>
+<line x1="332" y1="37" x2="344" y2="37" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+<rect x="346" y="14" width="100" height="46" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="396" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">Nodes</text>
+<text x="396" y="50" text-anchor="middle" font-size="10" fill="#9a3412">Tree Builder</text>
+<line x1="446" y1="37" x2="458" y2="37" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+<rect x="460" y="14" width="110" height="46" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="1.2"/>
+<text x="515" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">DOM Tree</text>
+<text x="515" y="50" text-anchor="middle" font-size="10" fill="#9a3412">완성된 트리</text>
+
+<!-- Token types -->
+<rect x="14" y="78" width="656" height="28" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="342" y="92" text-anchor="middle" font-size="10" fill="#7c2d12">토큰 종류: DOCTYPE · StartTag &lt;div&gt; · EndTag &lt;/div&gt; · Character (텍스트) · Comment · EOF</text>
+
+<!-- DOM Tree structure -->
+<text x="14" y="128" font-size="11" font-weight="600" fill="#334155">DOM Tree 구조 예시</text>
+
+<!-- Document node -->
+<rect x="278" y="136" width="124" height="30" rx="5" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="340" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">Document</text>
+<line x1="340" y1="166" x2="340" y2="178" stroke="#94a3b8" stroke-width="1" marker-end="url(#arr4)"/>
+
+<!-- html node -->
+<rect x="278" y="180" width="124" height="30" rx="5" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="340" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">&lt;html&gt;</text>
+<path d="M340 210 L340 220 L210 220 L210 230" fill="none" stroke="#ea580c" stroke-width="1" marker-end="url(#arr4)"/>
+<path d="M340 210 L340 220 L470 220 L470 230" fill="none" stroke="#ea580c" stroke-width="1" marker-end="url(#arr4)"/>
+
+<!-- head / body -->
+<rect x="150" y="232" width="120" height="30" rx="5" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="210" y="247" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">&lt;head&gt;</text>
+<rect x="410" y="232" width="120" height="30" rx="5" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="470" y="247" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">&lt;body&gt;</text>
+
+<path d="M210 262 L210 274 L160 274 L160 284" fill="none" stroke="#ea580c" stroke-width="0.8" marker-end="url(#arr4)"/>
+<path d="M470 262 L470 274 L420 274 L420 284" fill="none" stroke="#ea580c" stroke-width="0.8" marker-end="url(#arr4)"/>
+<path d="M470 262 L470 274 L530 274 L530 284" fill="none" stroke="#ea580c" stroke-width="0.8" marker-end="url(#arr4)"/>
+
+<rect x="110" y="286" width="100" height="28" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="160" y="300" text-anchor="middle" font-size="10" fill="#7c2d12">&lt;title&gt;</text>
+<rect x="370" y="286" width="100" height="28" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="420" y="300" text-anchor="middle" font-size="10" fill="#7c2d12">&lt;div&gt;</text>
+<rect x="480" y="286" width="100" height="28" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="530" y="300" text-anchor="middle" font-size="10" fill="#7c2d12">&lt;p&gt;</text>
+</svg>
+
+<div class="warn"><strong>파서 블로킹:</strong> <code>&lt;script&gt;</code> 태그를 만나면 HTML 파싱이 일시 중단됩니다. <code>async</code>/<code>defer</code> 속성 또는 <code>&lt;/body&gt;</code> 직전 배치를 권장합니다.</div>
+</section>
+
+<!-- ══ CSSOM ══ -->
+<section id="cssom">
+<div class="sec-css"><h2>🎨 CSS 파싱 → CSSOM 생성</h2></div>
+<p>CSS도 바이트→문자→토큰→CSSOM Tree 순서로 파싱됩니다. CSSOM은 완전히 구성된 후에만 Render Tree를 만들 수 있어 <strong>렌더링 블로킹(Render-Blocking)</strong>이 발생합니다.</p>
+
+<svg viewBox="0 0 680 230" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>CSSOM 생성 파이프라인</title>
+<defs><marker id="arr6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<rect x="14" y="14" width="110" height="46" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="69" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">CSS 바이트</text>
+<text x="69" y="50" text-anchor="middle" font-size="10" fill="#5b21b6">link/style/inline</text>
+<line x1="124" y1="37" x2="136" y2="37" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr6)"/>
+
+<rect x="138" y="14" width="110" height="46" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="193" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">CSS Lexer</text>
+<text x="193" y="50" text-anchor="middle" font-size="10" fill="#5b21b6">토큰 분리</text>
+<line x1="248" y1="37" x2="260" y2="37" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr6)"/>
+
+<rect x="262" y="14" width="110" height="46" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="317" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">CSS Parser</text>
+<text x="317" y="50" text-anchor="middle" font-size="10" fill="#5b21b6">규칙 파싱</text>
+<line x1="372" y1="37" x2="384" y2="37" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr6)"/>
+
+<rect x="386" y="14" width="130" height="46" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="451" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">StyleSheet Rules</text>
+<text x="451" y="50" text-anchor="middle" font-size="10" fill="#5b21b6">선택자·속성·값</text>
+<line x1="516" y1="37" x2="528" y2="37" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr6)"/>
+
+<rect x="530" y="14" width="136" height="46" rx="6" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.2"/>
+<text x="598" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">CSSOM Tree</text>
+<text x="598" y="50" text-anchor="middle" font-size="10" fill="#5b21b6">계산된 스타일</text>
+
+<!-- Cascade -->
+<rect x="14" y="80" width="652" height="58" rx="8" fill="#f5f3ff" stroke="#a78bfa" stroke-width="0.5"/>
+<text x="30" y="98" font-size="11" font-weight="600" fill="#4c1d95">Cascade 우선순위 (높을수록 우선):</text>
+<rect x="30" y="108" width="80" height="22" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="70" y="119" text-anchor="middle" font-size="10" fill="#4c1d95">!important</text>
+<rect x="120" y="108" width="80" height="22" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="160" y="119" text-anchor="middle" font-size="10" fill="#4c1d95">inline style</text>
+<rect x="210" y="108" width="80" height="22" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="250" y="119" text-anchor="middle" font-size="10" fill="#4c1d95">ID 선택자</text>
+<rect x="300" y="108" width="96" height="22" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="348" y="119" text-anchor="middle" font-size="10" fill="#4c1d95">Class/attr/pseudo</text>
+<rect x="406" y="108" width="80" height="22" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="446" y="119" text-anchor="middle" font-size="10" fill="#4c1d95">태그 선택자</text>
+<rect x="496" y="108" width="80" height="22" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="536" y="119" text-anchor="middle" font-size="10" fill="#4c1d95">상속 (inherited)</text>
+
+<rect x="14" y="152" width="652" height="62" rx="8" fill="#f5f3ff" stroke="#a78bfa" stroke-width="0.5"/>
+<text x="30" y="170" font-size="11" font-weight="600" fill="#4c1d95">Computed Style 예시:</text>
+<text x="30" y="188" font-size="10" fill="#5b21b6">body { font-size: 16px } + p { font-size: 1.2em }  →  p의 computed value = 19.2px (em 단위 계산)</text>
+<text x="30" y="206" font-size="10" fill="#5b21b6">→ CSSOM 각 노드는 상속·cascade 적용 후 최종값 보유 — window.getComputedStyle() 로 확인 가능</text>
+</svg>
+</section>
+
+<!-- ══ V8 ENGINE ══ -->
+<section id="javascript">
+<div class="sec-js"><h2>⚡ JavaScript 엔진 — V8 아키텍처</h2></div>
+<p>V8은 <strong>AST 생성 → Ignition(바이트코드) → TurboFan(JIT 머신코드)</strong> 파이프라인을 사용합니다. 자주 실행되는 Hot Code는 기계어로 최적화됩니다.</p>
+
+<svg viewBox="0 0 680 280" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>V8 JavaScript 엔진 파이프라인</title>
+<defs><marker id="arr7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- V8 container -->
+<rect x="14" y="10" width="652" height="266" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.8" stroke-dasharray="5,3"/>
+<text x="30" y="26" font-size="10" font-weight="600" fill="#78350f">V8 JavaScript Engine (Google)</text>
+
+<rect x="30" y="34" width="96" height="52" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="78" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">Source Code</text>
+<text x="78" y="68" text-anchor="middle" font-size="10" fill="#92400e">JS 소스 파일</text>
+<line x1="126" y1="60" x2="138" y2="60" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+<rect x="140" y="34" width="96" height="52" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="188" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">Scanner</text>
+<text x="188" y="68" text-anchor="middle" font-size="10" fill="#92400e">Lexical 분석·토큰</text>
+<line x1="236" y1="60" x2="248" y2="60" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+<rect x="250" y="34" width="96" height="52" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="298" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">Parser</text>
+<text x="298" y="68" text-anchor="middle" font-size="10" fill="#92400e">AST 생성·구문분석</text>
+<line x1="346" y1="60" x2="358" y2="60" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+<rect x="360" y="34" width="120" height="52" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="420" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">Ignition</text>
+<text x="420" y="68" text-anchor="middle" font-size="10" fill="#92400e">인터프리터·Bytecode</text>
+<line x1="480" y1="60" x2="492" y2="60" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+<rect x="494" y="34" width="140" height="52" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1"/>
+<text x="564" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">TurboFan</text>
+<text x="564" y="68" text-anchor="middle" font-size="10" fill="#92400e">JIT 컴파일·머신코드</text>
+
+<!-- Deopt arrow -->
+<path d="M564 86 L564 106 L420 106 L420 88" fill="none" stroke="#d97706" stroke-width="0.8" stroke-dasharray="4,3" marker-end="url(#arr7)"/>
+<text x="492" y="102" text-anchor="middle" font-size="9.5" fill="#92400e">Deoptimize (타입 변경)</text>
+
+<!-- Detail row 1 -->
+<rect x="30" y="118" width="300" height="72" rx="6" fill="#fef9c3" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="46" y="136" font-size="11" font-weight="600" fill="#78350f">AST (Abstract Syntax Tree) 예시</text>
+<text x="46" y="154" font-size="10" fill="#92400e">function add(a,b){return a+b}</text>
+<text x="46" y="170" font-size="10" fill="#92400e">→ FunctionDeclaration</text>
+<text x="66" y="186" font-size="10" fill="#92400e">→ BinaryExpression (+) : a, b</text>
+
+<rect x="346" y="118" width="300" height="72" rx="6" fill="#fef9c3" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="362" y="136" font-size="11" font-weight="600" fill="#78350f">Hot Code 최적화 (JIT)</text>
+<text x="362" y="154" font-size="10" fill="#92400e">함수 호출 횟수 추적 → Hot 판정</text>
+<text x="362" y="170" font-size="10" fill="#92400e">→ TurboFan이 타입 특화 코드 생성</text>
+<text x="362" y="186" font-size="10" fill="#92400e">→ 타입 변경 시 Deoptimize 발생</text>
+
+<!-- Hidden classes -->
+<rect x="30" y="202" width="616" height="58" rx="6" fill="#fff7ed" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="46" y="220" font-size="11" font-weight="600" fill="#78350f">V8 Hidden Classes (숨겨진 클래스)</text>
+<text x="46" y="238" font-size="10" fill="#92400e">동일한 구조의 객체는 같은 Hidden Class 공유 → 인라인 캐시(IC) 활용으로 프로퍼티 접근 최적화</text>
+<text x="46" y="254" font-size="10" fill="#92400e">런타임에 프로퍼티 추가/삭제 시 Hidden Class 전환 발생 (성능 저하 원인 — 객체 구조는 생성 시 확정할 것)</text>
+</svg>
+
+<h3 id="event-loop">이벤트 루프 (Event Loop)</h3>
+
+<svg viewBox="0 0 680 290" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>JavaScript 이벤트 루프</title>
+<defs><marker id="arr8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Call Stack -->
+<rect x="20" y="14" width="150" height="196" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="95" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">Call Stack</text>
+<rect x="34" y="46" width="122" height="24" rx="4" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="95" y="58" text-anchor="middle" font-size="10" fill="#78350f">console.log()</text>
+<rect x="34" y="76" width="122" height="24" rx="4" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="95" y="88" text-anchor="middle" font-size="10" fill="#78350f">addEventListener()</text>
+<rect x="34" y="106" width="122" height="24" rx="4" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="95" y="118" text-anchor="middle" font-size="10" fill="#78350f">main()</text>
+<text x="95" y="196" text-anchor="middle" font-size="9.5" fill="#92400e">LIFO (후입선출)</text>
+
+<!-- Web APIs -->
+<rect x="264" y="14" width="152" height="196" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="0.8"/>
+<text x="340" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a">Web APIs</text>
+<rect x="278" y="46" width="124" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="340" y="57" text-anchor="middle" font-size="10" fill="#1e3a8a">setTimeout/setInterval</text>
+<rect x="278" y="74" width="124" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="340" y="85" text-anchor="middle" font-size="10" fill="#1e3a8a">fetch / XHR</text>
+<rect x="278" y="102" width="124" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="340" y="113" text-anchor="middle" font-size="10" fill="#1e3a8a">DOM Events</text>
+<rect x="278" y="130" width="124" height="22" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="340" y="141" text-anchor="middle" font-size="10" fill="#1e3a8a">requestAnimationFrame</text>
+
+<!-- Task / Microtask -->
+<rect x="508" y="14" width="158" height="86" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.8"/>
+<text x="587" y="33" text-anchor="middle" font-size="11" font-weight="700" fill="#134e4a">Microtask Queue</text>
+<text x="587" y="50" text-anchor="middle" font-size="10" fill="#0f766e">Promise.then()</text>
+<text x="587" y="66" text-anchor="middle" font-size="10" fill="#0f766e">queueMicrotask()</text>
+<text x="587" y="82" text-anchor="middle" font-size="10" fill="#0f766e">MutationObserver</text>
+
+<rect x="508" y="124" width="158" height="86" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="587" y="143" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">Task Queue</text>
+<text x="587" y="160" text-anchor="middle" font-size="10" fill="#166534">setTimeout callback</text>
+<text x="587" y="176" text-anchor="middle" font-size="10" fill="#166534">fetch callback</text>
+<text x="587" y="192" text-anchor="middle" font-size="10" fill="#166534">UI Events callback</text>
+
+<!-- Event Loop label -->
+<rect x="184" y="88" width="66" height="28" rx="12" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="217" y="102" text-anchor="middle" font-size="10" font-weight="600" fill="#312e81">Event Loop</text>
+
+<!-- Arrows -->
+<line x1="170" y1="100" x2="182" y2="100" stroke="#d97706" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arr8)"/>
+<line x1="264" y1="88" x2="252" y2="102" stroke="#2563eb" stroke-width="1.2" marker-end="url(#arr8)"/>
+<line x1="416" y1="57" x2="506" y2="57" stroke="#0d9488" stroke-width="1.2" marker-end="url(#arr8)"/>
+<line x1="416" y1="167" x2="506" y2="167" stroke="#16a34a" stroke-width="1.2" marker-end="url(#arr8)"/>
+<path d="M508 57 L490 57 L490 88 L252 88" fill="none" stroke="#0d9488" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr8)"/>
+<path d="M508 167 L490 167 L490 112 L252 112" fill="none" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr8)"/>
+
+<!-- Order note -->
+<rect x="20" y="224" width="646" height="52" rx="6" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="36" y="242" font-size="11" font-weight="600" fill="#78350f">실행 우선순위:</text>
+<text x="36" y="260" font-size="10" fill="#92400e">① Call Stack (동기 코드) → ② Microtask Queue 전부 처리 → ③ Task Queue에서 1개 → ④ 렌더링 기회 → ② 반복</text>
+</svg>
+</section>
+
+<!-- ══ RENDER TREE ══ -->
+<section id="render-tree">
+<div class="sec-render"><h2>🌳 Render Tree 생성</h2></div>
+<p>DOM Tree와 CSSOM Tree를 병합해 <strong>실제 화면에 표시되는 노드만</strong> 포함하는 Render Tree를 만듭니다. <code>display:none</code> 노드는 완전히 제외됩니다.</p>
+
+<svg viewBox="0 0 680 252" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>Render Tree 생성 과정</title>
+<defs><marker id="arr9" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- DOM column -->
+<rect x="14" y="14" width="185" height="220" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="0.8"/>
+<text x="106" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#7c2d12">DOM Tree</text>
+<rect x="26" y="42" width="161" height="22" rx="4" fill="#fff7ed" stroke="#ea580c" stroke-width="0.5"/>
+<text x="106" y="53" text-anchor="middle" font-size="10" fill="#7c2d12">&lt;html&gt;</text>
+<rect x="38" y="70" width="137" height="22" rx="4" fill="#fff7ed" stroke="#ea580c" stroke-width="0.5"/>
+<text x="106" y="81" text-anchor="middle" font-size="10" fill="#7c2d12">&lt;head&gt;</text>
+<rect x="50" y="98" width="113" height="22" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="0.5"/>
+<text x="106" y="109" text-anchor="middle" font-size="10" fill="#64748b">&lt;title&gt; (비표시)</text>
+<rect x="38" y="126" width="137" height="22" rx="4" fill="#fff7ed" stroke="#ea580c" stroke-width="0.5"/>
+<text x="106" y="137" text-anchor="middle" font-size="10" fill="#7c2d12">&lt;body&gt;</text>
+<rect x="50" y="154" width="113" height="22" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="0.5"/>
+<text x="106" y="165" text-anchor="middle" font-size="10" fill="#64748b">display:none 요소</text>
+<rect x="50" y="182" width="113" height="22" rx="4" fill="#fff7ed" stroke="#ea580c" stroke-width="0.5"/>
+<text x="106" y="193" text-anchor="middle" font-size="10" fill="#7c2d12">&lt;p&gt; 텍스트</text>
+<text x="106" y="224" text-anchor="middle" font-size="9.5" fill="#94a3b8">6개 노드</text>
+
+<!-- CSSOM column -->
+<rect x="248" y="14" width="185" height="220" rx="8" fill="#f5f3ff" stroke="#a78bfa" stroke-width="0.8"/>
+<text x="340" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#4c1d95">CSSOM Tree</text>
+<rect x="260" y="42" width="161" height="22" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="340" y="53" text-anchor="middle" font-size="10" fill="#4c1d95">html {font-size:16px}</text>
+<rect x="272" y="70" width="137" height="22" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="340" y="81" text-anchor="middle" font-size="10" fill="#4c1d95">head {display:none}</text>
+<rect x="272" y="98" width="137" height="22" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="340" y="109" text-anchor="middle" font-size="10" fill="#4c1d95">body {margin:8px}</text>
+<rect x="272" y="126" width="137" height="22" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="340" y="137" text-anchor="middle" font-size="10" fill="#4c1d95">p {color:#333}</text>
+<rect x="272" y="154" width="137" height="22" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="340" y="165" text-anchor="middle" font-size="10" fill="#4c1d95">::before 가상요소</text>
+
+<!-- Merge arrows -->
+<line x1="199" y1="124" x2="246" y2="124" stroke="#0d9488" stroke-width="2" marker-end="url(#arr9)"/>
+
+<!-- Render Tree column -->
+<rect x="482" y="14" width="184" height="220" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="1"/>
+<text x="574" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#134e4a">Render Tree</text>
+<rect x="494" y="42" width="160" height="22" rx="4" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="574" y="53" text-anchor="middle" font-size="10" fill="#134e4a">RenderView (root)</text>
+<rect x="506" y="70" width="136" height="22" rx="4" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="574" y="81" text-anchor="middle" font-size="10" fill="#134e4a">RenderBody</text>
+<rect x="518" y="98" width="112" height="22" rx="4" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="574" y="109" text-anchor="middle" font-size="10" fill="#134e4a">RenderBlock &lt;p&gt;</text>
+<rect x="518" y="126" width="112" height="22" rx="4" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="574" y="137" text-anchor="middle" font-size="10" fill="#134e4a">RenderText</text>
+<rect x="518" y="154" width="112" height="22" rx="4" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="574" y="165" text-anchor="middle" font-size="10" fill="#134e4a">::before content</text>
+<text x="574" y="224" text-anchor="middle" font-size="9.5" fill="#94a3b8">시각 노드만! (4개)</text>
+
+<line x1="433" y1="124" x2="480" y2="124" stroke="#0d9488" stroke-width="2" marker-end="url(#arr9)"/>
+
+<rect x="14" y="238" width="652" height="14" rx="3" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="340" y="246" text-anchor="middle" font-size="9.5" fill="#0f766e">제외: display:none | 포함(공간차지): visibility:hidden | 포함: opacity:0 | 포함: head 외 요소</text>
+</svg>
+</section>
+
+<!-- ══ LAYOUT ══ -->
+<section id="layout">
+<div class="sec-layout"><h2>📐 Layout (Reflow) — 위치와 크기 계산</h2></div>
+<p>Render Tree 각 노드에 대해 <strong>정확한 위치(x,y)와 크기(width,height)를 픽셀 단위로 계산</strong>합니다. Box Model을 기반으로 합니다.</p>
+
+<svg viewBox="0 0 680 280" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>CSS Box Model과 Layout</title>
+
+<!-- Box Model diagram -->
+<rect x="20" y="14" width="300" height="252" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="0.8"/>
+<text x="170" y="33" text-anchor="middle" font-size="11" font-weight="700" fill="#0c4a6e">CSS Box Model</text>
+
+<!-- margin area -->
+<rect x="34" y="42" width="272" height="210" rx="4" fill="#fef9c3" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="50" y="57" font-size="10" fill="#78350f">margin</text>
+<!-- border area -->
+<rect x="56" y="64" width="228" height="174" rx="4" fill="#fed7aa" stroke="#f97316" stroke-width="0.5"/>
+<text x="72" y="79" font-size="10" fill="#7c2d12">border</text>
+<!-- padding area -->
+<rect x="76" y="88" width="188" height="136" rx="4" fill="#bbf7d0" stroke="#22c55e" stroke-width="0.5"/>
+<text x="92" y="103" font-size="10" fill="#14532d">padding</text>
+<!-- content area -->
+<rect x="96" y="110" width="148" height="90" rx="4" fill="#93c5fd" stroke="#2563eb" stroke-width="0.8"/>
+<text x="170" y="149" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a8a">content</text>
+<text x="170" y="167" text-anchor="middle" font-size="10" fill="#1e40af">width × height</text>
+<text x="170" y="183" text-anchor="middle" font-size="10" fill="#1e40af">(픽셀 계산)</text>
+
+<!-- Layout types -->
+<rect x="338" y="14" width="322" height="252" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.8"/>
+<text x="499" y="33" text-anchor="middle" font-size="11" font-weight="700" fill="#134e4a">레이아웃 방식</text>
+
+<rect x="352" y="44" width="294" height="40" rx="5" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="499" y="59" text-anchor="middle" font-size="11" font-weight="600" fill="#134e4a">Normal Flow</text>
+<text x="499" y="75" text-anchor="middle" font-size="10" fill="#0f766e">block (수직) · inline (수평) 배치</text>
+
+<rect x="352" y="92" width="294" height="40" rx="5" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="499" y="107" text-anchor="middle" font-size="11" font-weight="600" fill="#134e4a">Flexbox Layout</text>
+<text x="499" y="123" text-anchor="middle" font-size="10" fill="#0f766e">1차원 · 축 기반 정렬</text>
+
+<rect x="352" y="140" width="294" height="40" rx="5" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="499" y="155" text-anchor="middle" font-size="11" font-weight="600" fill="#134e4a">CSS Grid Layout</text>
+<text x="499" y="171" text-anchor="middle" font-size="10" fill="#0f766e">2차원 · 행/열 기반 정렬</text>
+
+<rect x="352" y="188" width="294" height="40" rx="5" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.5"/>
+<text x="499" y="203" text-anchor="middle" font-size="11" font-weight="600" fill="#134e4a">Positioned Layout</text>
+<text x="499" y="219" text-anchor="middle" font-size="10" fill="#0f766e">absolute · fixed · sticky</text>
+
+<text x="499" y="256" text-anchor="middle" font-size="10" fill="#0f766e">출력: 모든 노드의 x, y, width, height (픽셀)</text>
+</svg>
+
+<div class="perf"><strong>Layout Thrashing (성능 주의):</strong> <code>element.offsetWidth</code>, <code>getBoundingClientRect()</code>, <code>scrollTop</code> 등은 읽는 순간 레이아웃을 강제 계산합니다. 루프 안에서 읽기/쓰기를 반복하면 <strong>강제 동기 레이아웃(Forced Synchronous Layout)</strong>이 발생합니다.</div>
+</section>
+
+<!-- ══ PAINT ══ -->
+<section id="paint">
+<div class="sec-paint"><h2>🖌 Paint (래스터화) — 픽셀로 그리기</h2></div>
+<p>레이아웃 완료 후 각 노드를 <strong>드로우 명령(Display List)으로 기록</strong>하고, GPU 레이어로 분리한 뒤 Skia로 픽셀 비트맵을 생성합니다.</p>
+
+<svg viewBox="0 0 680 240" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>Paint 레이어 구조</title>
+<defs><marker id="arr10" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Pipeline -->
+<rect x="14" y="14" width="140" height="52" rx="6" fill="#fdf2f8" stroke="#db2777" stroke-width="0.8"/>
+<text x="84" y="33" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">Display List</text>
+<text x="84" y="51" text-anchor="middle" font-size="10" fill="#9d174d">드로우 명령 기록</text>
+<line x1="154" y1="40" x2="166" y2="40" stroke="#db2777" stroke-width="1.5" marker-end="url(#arr10)"/>
+
+<rect x="168" y="14" width="140" height="52" rx="6" fill="#fdf2f8" stroke="#db2777" stroke-width="0.8"/>
+<text x="238" y="33" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">Layer Tree</text>
+<text x="238" y="51" text-anchor="middle" font-size="10" fill="#9d174d">레이어 분리</text>
+<line x1="308" y1="40" x2="320" y2="40" stroke="#db2777" stroke-width="1.5" marker-end="url(#arr10)"/>
+
+<rect x="322" y="14" width="152" height="52" rx="6" fill="#fdf2f8" stroke="#db2777" stroke-width="0.8"/>
+<text x="398" y="33" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">Rasterize</text>
+<text x="398" y="51" text-anchor="middle" font-size="10" fill="#9d174d">Skia → 픽셀 비트맵</text>
+<line x1="474" y1="40" x2="486" y2="40" stroke="#db2777" stroke-width="1.5" marker-end="url(#arr10)"/>
+
+<rect x="488" y="14" width="178" height="52" rx="6" fill="#fdf2f8" stroke="#db2777" stroke-width="1"/>
+<text x="577" y="33" text-anchor="middle" font-size="12" font-weight="700" fill="#831843">GPU Texture Upload</text>
+<text x="577" y="51" text-anchor="middle" font-size="10" fill="#9d174d">VRAM에 비트맵 전송</text>
+
+<!-- Layer promotion -->
+<rect x="14" y="84" width="330" height="140" rx="8" fill="#fdf2f8" stroke="#f0abfc" stroke-width="0.5"/>
+<text x="30" y="103" font-size="11" font-weight="600" fill="#831843">GPU 레이어 승격 조건 (Layer Promotion)</text>
+<text x="30" y="122" font-size="10" fill="#9d174d">• transform: translateZ(0) / translate3d()</text>
+<text x="30" y="140" font-size="10" fill="#9d174d">• will-change: transform | opacity</text>
+<text x="30" y="158" font-size="10" fill="#9d174d">• position: fixed / sticky</text>
+<text x="30" y="176" font-size="10" fill="#9d174d">• video · canvas · WebGL 요소</text>
+<text x="30" y="194" font-size="10" fill="#9d174d">• CSS filter · backdrop-filter</text>
+<text x="30" y="212" font-size="10" fill="#9d174d">• opacity &lt; 1 · mix-blend-mode</text>
+
+<!-- Paint order -->
+<rect x="358" y="84" width="308" height="140" rx="8" fill="#fdf2f8" stroke="#f0abfc" stroke-width="0.5"/>
+<text x="374" y="103" font-size="11" font-weight="600" fill="#831843">페인트 순서 (Painter's Algorithm)</text>
+<text x="374" y="122" font-size="10" fill="#9d174d">① background-color</text>
+<text x="374" y="140" font-size="10" fill="#9d174d">② background-image</text>
+<text x="374" y="158" font-size="10" fill="#9d174d">③ border</text>
+<text x="374" y="176" font-size="10" fill="#9d174d">④ children (자식 요소)</text>
+<text x="374" y="194" font-size="10" fill="#9d174d">⑤ outline</text>
+<text x="374" y="212" font-size="10" fill="#9d174d">※ z-index로 쌓임 맥락 제어</text>
+</svg>
+</section>
+
+<!-- ══ COMPOSITE ══ -->
+<section id="composite">
+<div class="sec-gpu"><h2>🎮 Composite (GPU 합성) → 화면 출력</h2></div>
+<p>페인트된 레이어들을 <strong>Compositor Thread</strong>가 GPU로 합성하여 Frame Buffer에 기록합니다. Main Thread와 독립적으로 실행되어 스크롤·줌이 빠릅니다.</p>
+
+<svg viewBox="0 0 680 260" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>Composite GPU 화면 출력</title>
+<defs><marker id="arr11" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Renderer Process -->
+<rect x="14" y="14" width="318" height="232" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="173" y="33" text-anchor="middle" font-size="11" font-weight="700" fill="#312e81">Renderer Process</text>
+
+<rect x="28" y="44" width="290" height="78" rx="6" fill="#e0e7ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="173" y="63" text-anchor="middle" font-size="11" font-weight="600" fill="#312e81">Main Thread</text>
+<text x="173" y="80" text-anchor="middle" font-size="10" fill="#3730a3">JS · Style · Layout · Paint Record</text>
+<text x="173" y="97" text-anchor="middle" font-size="10" fill="#4338ca">(여기까지 CPU 작업)</text>
+
+<rect x="28" y="132" width="290" height="102" rx="6" fill="#e0e7ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="173" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#312e81">Compositor Thread</text>
+<text x="173" y="168" text-anchor="middle" font-size="10" fill="#3730a3">Layer Tree 관리</text>
+<text x="173" y="184" text-anchor="middle" font-size="10" fill="#3730a3">스크롤·zoom 처리</text>
+<text x="173" y="200" text-anchor="middle" font-size="10" fill="#3730a3">Raster Threads에 작업 분배</text>
+<text x="173" y="216" text-anchor="middle" font-size="10" fill="#4338ca">Main Thread 독립 실행 가능!</text>
+
+<!-- GPU Process -->
+<rect x="348" y="14" width="318" height="232" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="507" y="33" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">GPU Process</text>
+
+<rect x="362" y="44" width="290" height="58" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="0.5"/>
+<text x="507" y="63" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">Rasterization</text>
+<text x="507" y="80" text-anchor="middle" font-size="10" fill="#166534">타일(256×256px) → 픽셀 → VRAM</text>
+
+<rect x="362" y="110" width="290" height="58" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="0.5"/>
+<text x="507" y="129" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">Layer Compositing</text>
+<text x="507" y="146" text-anchor="middle" font-size="10" fill="#166534">Texture 합성 · z-index 순서</text>
+
+<rect x="362" y="176" width="290" height="58" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1"/>
+<text x="507" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">Frame Buffer → 모니터</text>
+<text x="507" y="214" text-anchor="middle" font-size="10" fill="#166534">VSync · 60fps (16.67ms/frame)</text>
+<text x="507" y="228" text-anchor="middle" font-size="10" fill="#166534">requestAnimationFrame 콜백</text>
+
+<!-- Arrows -->
+<line x1="332" y1="83" x2="346" y2="83" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arr11)"/>
+<line x1="332" y1="183" x2="346" y2="139" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arr11)"/>
+</svg>
+</section>
+
+<!-- ══ PERFORMANCE ══ -->
+<section id="perf">
+<div class="sec-gpu"><h2>⚡ 렌더링 성능 — Reflow vs Repaint vs Composite</h2></div>
+<p>DOM/CSS 변경이 파이프라인의 어느 단계부터 재실행되느냐에 따라 성능 비용이 크게 다릅니다.</p>
+
+<svg viewBox="0 0 680 190" role="img" style="font-family:'Noto Sans KR',sans-serif">
+<title>렌더링 단계별 성능 비용</title>
+
+<!-- Headers -->
+<rect x="80" y="14" width="120" height="34" rx="5" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="140" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">Layout</text>
+<rect x="214" y="14" width="120" height="34" rx="5" fill="#fdf2f8" stroke="#db2777" stroke-width="0.8"/>
+<text x="274" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">Paint</text>
+<rect x="348" y="14" width="130" height="34" rx="5" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="413" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#312e81">Composite</text>
+<rect x="492" y="14" width="120" height="34" rx="5" fill="#eff6ff" stroke="#2563eb" stroke-width="0.8"/>
+<text x="552" y="31" text-anchor="middle" font-size="11" font-weight="600" fill="#1e3a8a">Screen</text>
+
+<!-- Arrows between headers -->
+<line x1="200" y1="31" x2="212" y2="31" stroke="#16a34a" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="334" y1="31" x2="346" y2="31" stroke="#db2777" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="478" y1="31" x2="490" y2="31" stroke="#6366f1" stroke-width="1.2" marker-end="url(#arr)"/>
+
+<!-- Row 1: Full reflow -->
+<rect x="14" y="66" width="54" height="32" rx="4" fill="#fee2e2" stroke="#f87171" stroke-width="0.5"/>
+<text x="41" y="82" text-anchor="middle" font-size="10" font-weight="600" fill="#991b1b">비쌈</text>
+<rect x="80" y="60" width="532" height="44" rx="6" fill="#fee2e2" stroke="#f87171" stroke-width="0.5"/>
+<text x="346" y="78" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">Reflow + Repaint + Composite</text>
+<text x="346" y="95" text-anchor="middle" font-size="10" fill="#b91c1c">width · height · top · left · font-size 등 변경</text>
+
+<!-- Row 2: Repaint only -->
+<rect x="14" y="122" width="54" height="32" rx="4" fill="#fef3c7" stroke="#fbbf24" stroke-width="0.5"/>
+<text x="41" y="138" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">보통</text>
+<rect x="214" y="116" width="398" height="44" rx="6" fill="#fef3c7" stroke="#fbbf24" stroke-width="0.5"/>
+<text x="413" y="134" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Repaint + Composite</text>
+<text x="413" y="151" text-anchor="middle" font-size="10" fill="#a16207">color · background-color · visibility 등 변경</text>
+
+<!-- Row 3: Composite only -->
+<rect x="14" y="178" width="54" height="32" rx="4" fill="#d1fae5" stroke="#34d399" stroke-width="0.5"/>
+<text x="41" y="194" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">저렴</text>
+<rect x="348" y="172" width="344" height="44" rx="6" fill="#d1fae5" stroke="#34d399" stroke-width="0.5"/>
+<text x="520" y="190" text-anchor="middle" font-size="11" font-weight="600" fill="#065f46">Composite only</text>
+<text x="520" y="207" text-anchor="middle" font-size="10" fill="#047857">transform · opacity 만 변경 (GPU 직접)</text>
+</svg>
+
+<table>
+<tr><th>CSS 속성</th><th>유발 단계</th><th>설명</th></tr>
+<tr><td><code>width, height, margin, padding, top, left, font-size</code></td><td><span class="badge b-orange">Reflow → Repaint → Composite</span></td><td>레이아웃 전체 재계산 (가장 비쌈)</td></tr>
+<tr><td><code>color, background-color, visibility, box-shadow</code></td><td><span class="badge b-pink">Repaint → Composite</span></td><td>위치 계산 없이 다시 그림</td></tr>
+<tr><td><code>transform, opacity</code></td><td><span class="badge b-green">Composite only</span></td><td>GPU가 직접 처리 (가장 저렴, 60fps 유지)</td></tr>
+<tr><td><code>will-change: transform</code></td><td><span class="badge b-green">GPU 레이어 사전 승격</span></td><td>미리 레이어 분리로 애니메이션 준비</td></tr>
+</table>
+
+<div class="note"><strong>애니메이션 황금 법칙:</strong> 애니메이션은 <code>transform</code>과 <code>opacity</code>만 사용하세요. Compositor Thread에서 Main Thread 없이 독립 실행되어 JS가 바빠도 <strong>끊김 없이 60fps</strong>를 유지합니다.</div>
+</section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vue 3 완전 학습 가이드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;font-family:'Noto Sans KR',sans-serif;color:#0f172a;display:flex}
+aside{width:225px;min-height:100vh;position:sticky;top:0;height:100vh;overflow-y:auto;
+  border-right:1px solid #e2e8f0;padding:16px 0;flex-shrink:0;background:#fafafa}
+aside h3{font-size:10px;font-weight:700;color:#94a3b8;padding:0 14px 5px;
+  letter-spacing:1.2px;text-transform:uppercase;margin-top:14px}
+aside a{display:block;padding:5px 14px;font-size:12px;color:#475569;text-decoration:none;
+  border-left:2px solid transparent;transition:all .15s}
+aside a:hover{color:#16a34a;border-left-color:#16a34a;background:#f0fdf4}
+aside a.ind{padding-left:26px;font-size:11px}
+main{flex:1;padding:32px 40px 80px;max-width:980px}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.subtitle{font-size:13px;color:#64748b;margin-bottom:36px}
+h2{font-size:15px;font-weight:700;margin:40px 0 4px;padding:10px 14px;border-radius:0 8px 8px 0;border-left:4px solid}
+.s1 h2{border-color:#16a34a;background:#f0fdf4;color:#14532d}
+.s2 h2{border-color:#0d9488;background:#f0fdfa;color:#134e4a}
+.s3 h2{border-color:#ea580c;background:#fff7ed;color:#7c2d12}
+.s4 h2{border-color:#7c3aed;background:#f5f3ff;color:#3b0764}
+.s5 h2{border-color:#d97706;background:#fffbeb;color:#78350f}
+.s6 h2{border-color:#2563eb;background:#eff6ff;color:#1e3a8a}
+.s7 h2{border-color:#db2777;background:#fdf2f8;color:#831843}
+.s8 h2{border-color:#6366f1;background:#eef2ff;color:#312e81}
+.s9 h2{border-color:#0891b2;background:#ecfeff;color:#0c4a6e}
+h3{font-size:13px;font-weight:700;margin:18px 0 6px;color:#1e293b}
+p{font-size:13px;color:#334155;line-height:1.8;margin-bottom:10px}
+ul,ol{font-size:13px;color:#334155;padding-left:20px;line-height:1.9;margin-bottom:12px}
+code{font-family:'Fira Code',monospace;font-size:11.5px;background:#f1f5f9;padding:2px 5px;border-radius:4px;color:#0f172a}
+.cb{background:#1e293b;color:#e2e8f0;font-family:'Fira Code',monospace;font-size:12px;
+  padding:14px 18px;border-radius:8px;line-height:1.75;margin:10px 0 16px;overflow-x:auto;white-space:pre}
+.cb .kw{color:#7dd3fc}.cb .fn{color:#fbbf24}.cb .str{color:#86efac}
+.cb .cm{color:#64748b}.cb .tag{color:#f9a8d4}.cb .attr{color:#fdba74}
+.note{background:#f0fdf4;border-left:3px solid #16a34a;padding:9px 13px;border-radius:0 6px 6px 0;font-size:12.5px;color:#14532d;margin:10px 0}
+.warn{background:#fefce8;border-left:3px solid #f59e0b;padding:9px 13px;border-radius:0 6px 6px 0;font-size:12.5px;color:#451a03;margin:10px 0}
+.tip{background:#f5f3ff;border-left:3px solid #7c3aed;padding:9px 13px;border-radius:0 6px 6px 0;font-size:12.5px;color:#3b0764;margin:10px 0}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;margin:2px}
+.bg{background:#dcfce7;color:#14532d}.bp{background:#f5f3ff;color:#4c1d95}
+.bb{background:#dbeafe;color:#1e3a8a}.bo{background:#ffedd5;color:#7c2d12}
+.br{background:#fce7f3;color:#831843}.bi{background:#e0e7ff;color:#312e81}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}
+.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:12.5px}
+.card h4{font-size:12px;font-weight:700;margin-bottom:6px;color:#0f172a}
+svg{display:block;width:100%;margin:14px 0;font-family:'Noto Sans KR',sans-serif}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:12px 0}
+th{background:#f1f5f9;padding:7px 10px;text-align:left;font-weight:600;border:1px solid #e2e8f0}
+td{padding:7px 10px;border:1px solid #e2e8f0;color:#334155;vertical-align:top}
+tr:nth-child(even) td{background:#f8fafc}
+</style>
+</head>
+<body>
+<aside>
+  <h3>Vue 3 학습 가이드</h3>
+  <a href="#overview">Vue 3 개요</a>
+  <a href="#mvvm">MVVM 패턴</a>
+  <a href="#vdom">Virtual DOM</a>
+  <h3>핵심 문법</h3>
+  <a href="#template">Template 디렉티브</a>
+  <a class="ind" href="#bind">v-bind · v-model</a>
+  <a class="ind" href="#condloop">v-if · v-for</a>
+  <a href="#composition">Composition API</a>
+  <a class="ind" href="#refreactive">ref · reactive</a>
+  <a class="ind" href="#computed">computed</a>
+  <a class="ind" href="#watch">watch · watchEffect</a>
+  <a href="#lifecycle">라이프사이클</a>
+  <h3>컴포넌트</h3>
+  <a href="#component">Props · Emits · Slots</a>
+  <a href="#provide">provide · inject</a>
+  <h3>생태계</h3>
+  <a href="#pinia">Pinia (상태 관리)</a>
+  <a href="#router">Vue Router</a>
+  <a href="#axios">Axios (HTTP)</a>
+  <a href="#composable">Composables</a>
+</aside>
+
+<main>
+<h1>🟢 Vue 3 완전 학습 가이드</h1>
+<p class="subtitle">MVVM · Virtual DOM · Composition API · Pinia · Vue Router · Axios · Composables</p>
+
+<!-- ══ OVERVIEW ══ -->
+<section id="overview">
+<div class="s1"><h2>🟢 Vue 3 개요</h2></div>
+<p>Vue 3는 2020년 출시된 프론트엔드 프레임워크로, <strong>Composition API</strong>와 성능 개선, TypeScript 지원 강화가 핵심입니다.</p>
+
+<svg viewBox="0 0 680 200" role="img">
+<title>Vue 3 핵심 특징</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<rect x="14" y="14" width="138" height="160" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="83" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">Composition API</text>
+<rect x="24" y="44" width="118" height="22" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="83" y="55" text-anchor="middle" font-size="10" fill="#14532d">setup() 함수</text>
+<rect x="24" y="72" width="118" height="22" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="83" y="83" text-anchor="middle" font-size="10" fill="#14532d">ref / reactive</text>
+<rect x="24" y="100" width="118" height="22" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="83" y="111" text-anchor="middle" font-size="10" fill="#14532d">computed / watch</text>
+<rect x="24" y="128" width="118" height="22" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="83" y="139" text-anchor="middle" font-size="10" fill="#14532d">Lifecycle Hooks</text>
+<text x="83" y="164" text-anchor="middle" font-size="9.5" fill="#16a34a">로직 재사용 극대화</text>
+
+<rect x="168" y="14" width="138" height="160" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="237" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#7c2d12">Reactivity System</text>
+<rect x="178" y="44" width="118" height="22" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="237" y="55" text-anchor="middle" font-size="10" fill="#7c2d12">Proxy 기반 반응형</text>
+<rect x="178" y="72" width="118" height="22" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="237" y="83" text-anchor="middle" font-size="10" fill="#7c2d12">Vue 2보다 빠름</text>
+<rect x="178" y="100" width="118" height="22" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="237" y="111" text-anchor="middle" font-size="10" fill="#7c2d12">중첩 객체 감지</text>
+<rect x="178" y="128" width="118" height="22" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="237" y="139" text-anchor="middle" font-size="10" fill="#7c2d12">Virtual DOM 개선</text>
+<text x="237" y="164" text-anchor="middle" font-size="9.5" fill="#ea580c">ES6 Proxy 사용</text>
+
+<rect x="322" y="14" width="138" height="160" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="391" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#4c1d95">TypeScript 지원</text>
+<rect x="332" y="44" width="118" height="22" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="391" y="55" text-anchor="middle" font-size="10" fill="#4c1d95">defineProps 타입</text>
+<rect x="332" y="72" width="118" height="22" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="391" y="83" text-anchor="middle" font-size="10" fill="#4c1d95">defineEmits 타입</text>
+<rect x="332" y="100" width="118" height="22" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="391" y="111" text-anchor="middle" font-size="10" fill="#4c1d95">ref&lt;T&gt; 제네릭</text>
+<rect x="332" y="128" width="118" height="22" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="391" y="139" text-anchor="middle" font-size="10" fill="#4c1d95">IDE 자동완성</text>
+<text x="391" y="164" text-anchor="middle" font-size="9.5" fill="#7c3aed">타입 안정성 ↑</text>
+
+<rect x="476" y="14" width="190" height="160" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="571" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#312e81">생태계</text>
+<rect x="486" y="44" width="170" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="571" y="55" text-anchor="middle" font-size="10" fill="#312e81">Vite (빌드 도구)</text>
+<rect x="486" y="72" width="170" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="571" y="83" text-anchor="middle" font-size="10" fill="#312e81">Pinia (상태 관리)</text>
+<rect x="486" y="100" width="170" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="571" y="111" text-anchor="middle" font-size="10" fill="#312e81">Vue Router 4</text>
+<rect x="486" y="128" width="170" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="571" y="139" text-anchor="middle" font-size="10" fill="#312e81">VueUse (Composable 모음)</text>
+<text x="571" y="164" text-anchor="middle" font-size="9.5" fill="#6366f1">Nuxt 3 (SSR/SSG)</text>
+</svg>
+</section>
+
+<!-- ══ MVVM ══ -->
+<section id="mvvm">
+<div class="s1"><h2>📐 MVVM 패턴 (Model-View-ViewModel)</h2></div>
+<p>Vue는 <strong>MVVM 패턴</strong>을 기반으로 동작합니다. ViewModel이 Model과 View 사이를 <strong>양방향 데이터 바인딩</strong>으로 연결합니다.</p>
+
+<svg viewBox="0 0 680 260" role="img">
+<title>MVVM 아키텍처</title>
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Model -->
+<rect x="14" y="30" width="180" height="210" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1"/>
+<text x="104" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">Model</text>
+<text x="104" y="68" text-anchor="middle" font-size="10" fill="#9a3412">비즈니스 로직 · 데이터</text>
+<rect x="26" y="78" width="156" height="24" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="104" y="90" text-anchor="middle" font-size="10" fill="#7c2d12">Pinia Store</text>
+<rect x="26" y="108" width="156" height="24" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="104" y="120" text-anchor="middle" font-size="10" fill="#7c2d12">API (Axios)</text>
+<rect x="26" y="138" width="156" height="24" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="104" y="150" text-anchor="middle" font-size="10" fill="#7c2d12">ref() / reactive() 데이터</text>
+<rect x="26" y="168" width="156" height="24" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="104" y="180" text-anchor="middle" font-size="10" fill="#7c2d12">computed (파생 상태)</text>
+<rect x="26" y="198" width="156" height="24" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="104" y="210" text-anchor="middle" font-size="10" fill="#7c2d12">TypeScript 타입</text>
+
+<!-- ViewModel -->
+<rect x="250" y="14" width="180" height="238" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="340" y="36" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">ViewModel</text>
+<text x="340" y="52" text-anchor="middle" font-size="10" fill="#5b21b6">Vue 컴포넌트 (setup)</text>
+<rect x="262" y="62" width="156" height="24" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="340" y="74" text-anchor="middle" font-size="10" fill="#4c1d95">data → ref / reactive</text>
+<rect x="262" y="92" width="156" height="24" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="340" y="104" text-anchor="middle" font-size="10" fill="#4c1d95">methods → 일반 함수</text>
+<rect x="262" y="122" width="156" height="24" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="340" y="134" text-anchor="middle" font-size="10" fill="#4c1d95">computed → computed()</text>
+<rect x="262" y="152" width="156" height="24" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="340" y="164" text-anchor="middle" font-size="10" fill="#4c1d95">watch → watch()</text>
+<rect x="262" y="182" width="156" height="24" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="340" y="194" text-anchor="middle" font-size="10" fill="#4c1d95">lifecycle → onMounted()</text>
+<rect x="262" y="212" width="156" height="24" rx="4" fill="#ddd6fe" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="340" y="224" text-anchor="middle" font-size="10" font-weight="600" fill="#3b0764">⟵ 양방향 데이터 바인딩 ⟶</text>
+
+<!-- View -->
+<rect x="486" y="30" width="180" height="210" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1"/>
+<text x="576" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">View</text>
+<text x="576" y="68" text-anchor="middle" font-size="10" fill="#1e40af">Template · DOM</text>
+<rect x="498" y="78" width="156" height="24" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="576" y="90" text-anchor="middle" font-size="10" fill="#1e3a8a">{{ 머스태시 보간 }}</text>
+<rect x="498" y="108" width="156" height="24" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="576" y="120" text-anchor="middle" font-size="10" fill="#1e3a8a">v-bind, v-model</text>
+<rect x="498" y="138" width="156" height="24" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="576" y="150" text-anchor="middle" font-size="10" fill="#1e3a8a">v-if, v-for</text>
+<rect x="498" y="168" width="156" height="24" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="576" y="180" text-anchor="middle" font-size="10" fill="#1e3a8a">@click, @input 이벤트</text>
+<rect x="498" y="198" width="156" height="24" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="576" y="210" text-anchor="middle" font-size="10" fill="#1e3a8a">slot, component</text>
+
+<!-- Arrows -->
+<line x1="194" y1="124" x2="248" y2="124" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr2)"/>
+<line x1="248" y1="134" x2="194" y2="134" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr2)"/>
+<line x1="430" y1="124" x2="484" y2="124" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr2)"/>
+<line x1="484" y1="134" x2="430" y2="134" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr2)"/>
+<text x="221" y="118" text-anchor="middle" font-size="9" fill="#4c1d95">데이터</text>
+<text x="221" y="148" text-anchor="middle" font-size="9" fill="#4c1d95">이벤트</text>
+<text x="457" y="118" text-anchor="middle" font-size="9" fill="#4c1d95">렌더링</text>
+<text x="457" y="148" text-anchor="middle" font-size="9" fill="#4c1d95">DOM 이벤트</text>
+</svg>
+</section>
+
+<!-- ══ VIRTUAL DOM ══ -->
+<section id="vdom">
+<div class="s2"><h2>🌳 Virtual DOM + Reactivity System</h2></div>
+<p>Vue는 실제 DOM 조작 비용을 최소화하기 위해 메모리의 <strong>가상 트리(VNode)</strong>를 이용합니다. 데이터 변경 시 새로운 VNode를 만들어 이전 것과 <strong>Diff</strong>하여 변경된 부분만 실제 DOM에 반영합니다.</p>
+
+<svg viewBox="0 0 680 280" role="img">
+<title>Virtual DOM 동작 원리</title>
+<defs><marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Reactivity trigger -->
+<rect x="14" y="14" width="150" height="64" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="89" y="34" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">반응형 데이터 변경</text>
+<text x="89" y="52" text-anchor="middle" font-size="10" fill="#9a3412">ref.value = 새값</text>
+<text x="89" y="68" text-anchor="middle" font-size="10" fill="#9a3412">reactive.prop = 새값</text>
+<line x1="164" y1="46" x2="178" y2="46" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+<!-- Scheduler -->
+<rect x="180" y="14" width="140" height="64" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="0.8"/>
+<text x="250" y="34" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">Scheduler</text>
+<text x="250" y="52" text-anchor="middle" font-size="10" fill="#9a3412">비동기 배치 처리</text>
+<text x="250" y="68" text-anchor="middle" font-size="10" fill="#9a3412">nextTick 큐</text>
+<line x1="320" y1="46" x2="334" y2="46" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+<!-- Re-render -->
+<rect x="336" y="14" width="140" height="64" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="0.8"/>
+<text x="406" y="34" text-anchor="middle" font-size="11" font-weight="600" fill="#7c2d12">render() 재실행</text>
+<text x="406" y="52" text-anchor="middle" font-size="10" fill="#9a3412">새 VNode 트리 생성</text>
+<text x="406" y="68" text-anchor="middle" font-size="10" fill="#9a3412">h() 호출</text>
+<line x1="476" y1="46" x2="490" y2="46" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+<!-- Patch/Diff -->
+<rect x="492" y="14" width="174" height="64" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1"/>
+<text x="579" y="34" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">Patch / Diff</text>
+<text x="579" y="52" text-anchor="middle" font-size="10" fill="#92400e">구버전 VNode 비교</text>
+<text x="579" y="68" text-anchor="middle" font-size="10" fill="#92400e">변경 최소화 패치</text>
+
+<!-- VNode trees -->
+<rect x="14" y="108" width="300" height="150" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.8"/>
+<text x="164" y="126" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">이전 VNode Tree</text>
+<rect x="30" y="134" width="268" height="26" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="0.5"/>
+<text x="164" y="147" text-anchor="middle" font-size="10" fill="#334155">div { id: 'app' }</text>
+<rect x="46" y="166" width="112" height="24" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="0.5"/>
+<text x="102" y="178" text-anchor="middle" font-size="10" fill="#334155">h1 { text: '안녕' }</text>
+<rect x="166" y="166" width="112" height="24" rx="4" fill="#fee2e2" stroke="#f87171" stroke-width="0.5"/>
+<text x="222" y="178" text-anchor="middle" font-size="10" fill="#991b1b">p { text: '구버전' }</text>
+<rect x="46" y="198" width="232" height="24" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="0.5"/>
+<text x="162" y="210" text-anchor="middle" font-size="10" fill="#334155">ul → li×3</text>
+<text x="164" y="244" text-anchor="middle" font-size="9.5" fill="#94a3b8">VNode = { type, props, children }</text>
+
+<rect x="366" y="108" width="300" height="150" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="516" y="126" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">새 VNode Tree (변경 후)</text>
+<rect x="382" y="134" width="268" height="26" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="516" y="147" text-anchor="middle" font-size="10" fill="#134e4a">div { id: 'app' }</text>
+<rect x="398" y="166" width="112" height="24" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="454" y="178" text-anchor="middle" font-size="10" fill="#134e4a">h1 { text: '안녕' }</text>
+<rect x="518" y="166" width="112" height="24" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="0.8"/>
+<text x="574" y="178" text-anchor="middle" font-size="10" font-weight="600" fill="#14532d">p { text: '신버전' } ★</text>
+<rect x="398" y="198" width="232" height="24" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="514" y="210" text-anchor="middle" font-size="10" fill="#134e4a">ul → li×3</text>
+<text x="516" y="244" text-anchor="middle" font-size="9.5" fill="#16a34a">★ = 실제 DOM에만 해당 노드 패치</text>
+
+<!-- Diff arrow -->
+<rect x="320" y="158" width="40" height="28" rx="12" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="340" y="172" text-anchor="middle" font-size="9" font-weight="600" fill="#78350f">Diff</text>
+</svg>
+
+<div class="note"><strong>key 속성의 중요성:</strong> <code>v-for</code>에서 <code>:key</code>를 지정하면 Diff 알고리즘이 노드를 정확히 추적할 수 있어 불필요한 DOM 재생성을 방지합니다. key는 고유한 ID를 사용하세요.</div>
+</section>
+
+<!-- ══ TEMPLATE ══ -->
+<section id="template">
+<div class="s3"><h2>📝 Template 디렉티브</h2></div>
+<p>Vue 템플릿은 HTML 기반 선언적 문법을 사용합니다. 디렉티브(directive)는 <code>v-</code> 접두사를 가집니다.</p>
+
+<h3 id="bind">v-bind · v-model · v-on</h3>
+<div class="cb"><span class="tag">&lt;template&gt;</span>
+  <span class="cm">&lt;!-- v-bind: 속성 바인딩 (약어: :) --&gt;</span>
+  <span class="tag">&lt;img</span> <span class="attr">:src</span>=<span class="str">"imageUrl"</span> <span class="attr">:alt</span>=<span class="str">"imageAlt"</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;button</span> <span class="attr">:class</span>=<span class="str">"{ active: isActive, 'btn-lg': isLarge }"</span>
+          <span class="attr">:style</span>=<span class="str">"{ color: textColor, fontSize: size + 'px' }"</span><span class="tag">&gt;</span>클릭<span class="tag">&lt;/button&gt;</span>
+
+  <span class="cm">&lt;!-- v-model: 양방향 바인딩 --&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">v-model</span>=<span class="str">"username"</span> <span class="attr">placeholder</span>=<span class="str">"이름 입력"</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;textarea</span> <span class="attr">v-model.trim</span>=<span class="str">"message"</span> <span class="tag">/&gt;</span>   <span class="cm">&lt;!-- .trim 수식어 --&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">v-model.number</span>=<span class="str">"age"</span> <span class="attr">type</span>=<span class="str">"number"</span> <span class="tag">/&gt;</span>  <span class="cm">&lt;!-- .number 수식어 --&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">v-model.lazy</span>=<span class="str">"email"</span> <span class="tag">/&gt;</span>       <span class="cm">&lt;!-- .lazy: change 이벤트에만 동기화 --&gt;</span>
+
+  <span class="cm">&lt;!-- v-on: 이벤트 바인딩 (약어: @) --&gt;</span>
+  <span class="tag">&lt;button</span> <span class="attr">@click</span>=<span class="str">"handleClick"</span><span class="tag">&gt;</span>클릭<span class="tag">&lt;/button&gt;</span>
+  <span class="tag">&lt;button</span> <span class="attr">@click.prevent</span>=<span class="str">"submit"</span><span class="tag">&gt;</span>제출<span class="tag">&lt;/button&gt;</span>    <span class="cm">&lt;!-- .prevent: preventDefault --&gt;</span>
+  <span class="tag">&lt;button</span> <span class="attr">@click.stop</span>=<span class="str">"close"</span><span class="tag">&gt;</span>닫기<span class="tag">&lt;/button&gt;</span>       <span class="cm">&lt;!-- .stop: stopPropagation --&gt;</span>
+  <span class="tag">&lt;button</span> <span class="attr">@click.once</span>=<span class="str">"init"</span><span class="tag">&gt;</span>초기화<span class="tag">&lt;/button&gt;</span>     <span class="cm">&lt;!-- .once: 한 번만 실행 --&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">@keyup.enter</span>=<span class="str">"search"</span> <span class="tag">/&gt;</span>              <span class="cm">&lt;!-- 키보드 수식어 --&gt;</span>
+<span class="tag">&lt;/template&gt;</span></div>
+
+<h3 id="condloop">v-if · v-show · v-for</h3>
+<div class="cb"><span class="tag">&lt;template&gt;</span>
+  <span class="cm">&lt;!-- v-if: 조건부 렌더링 (DOM에서 제거/추가) --&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">v-if</span>=<span class="str">"role === 'admin'"</span><span class="tag">&gt;</span>관리자 메뉴<span class="tag">&lt;/div&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">v-else-if</span>=<span class="str">"role === 'user'"</span><span class="tag">&gt;</span>일반 메뉴<span class="tag">&lt;/div&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">v-else</span><span class="tag">&gt;</span>게스트 메뉴<span class="tag">&lt;/div&gt;</span>
+
+  <span class="cm">&lt;!-- v-show: CSS display 토글 (DOM은 유지) --&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">v-show</span>=<span class="str">"isVisible"</span><span class="tag">&gt;</span>자주 토글되는 요소<span class="tag">&lt;/div&gt;</span>
+
+  <span class="cm">&lt;!-- v-for: 반복 렌더링 --&gt;</span>
+  <span class="tag">&lt;ul&gt;</span>
+    <span class="tag">&lt;li</span> <span class="attr">v-for</span>=<span class="str">"(item, index) in items"</span> <span class="attr">:key</span>=<span class="str">"item.id"</span><span class="tag">&gt;</span>
+      {{ index + 1 }}. {{ item.name }}
+    <span class="tag">&lt;/li&gt;</span>
+  <span class="tag">&lt;/ul&gt;</span>
+
+  <span class="cm">&lt;!-- 객체 반복 --&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">v-for</span>=<span class="str">"(value, key) in userObj"</span> <span class="attr">:key</span>=<span class="str">"key"</span><span class="tag">&gt;</span>
+    {{ key }}: {{ value }}
+  <span class="tag">&lt;/div&gt;</span>
+
+  <span class="cm">&lt;!-- template v-for: 래퍼 없이 여러 노드 반복 --&gt;</span>
+  <span class="tag">&lt;template</span> <span class="attr">v-for</span>=<span class="str">"item in list"</span> <span class="attr">:key</span>=<span class="str">"item.id"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;dt&gt;</span>{{ item.term }}<span class="tag">&lt;/dt&gt;</span>
+    <span class="tag">&lt;dd&gt;</span>{{ item.desc }}<span class="tag">&lt;/dd&gt;</span>
+  <span class="tag">&lt;/template&gt;</span>
+<span class="tag">&lt;/template&gt;</span></div>
+
+<table>
+<tr><th>디렉티브</th><th>약어</th><th>사용법</th><th>설명</th></tr>
+<tr><td><code>v-bind</code></td><td><code>:</code></td><td><code>:href="url"</code></td><td>속성/클래스/스타일 동적 바인딩</td></tr>
+<tr><td><code>v-model</code></td><td>-</td><td><code>v-model="value"</code></td><td>양방향 데이터 바인딩</td></tr>
+<tr><td><code>v-on</code></td><td><code>@</code></td><td><code>@click="fn"</code></td><td>DOM 이벤트 리스너</td></tr>
+<tr><td><code>v-if/v-else</code></td><td>-</td><td><code>v-if="show"</code></td><td>조건부 DOM 생성/제거</td></tr>
+<tr><td><code>v-show</code></td><td>-</td><td><code>v-show="show"</code></td><td>display CSS 토글 (DOM 유지)</td></tr>
+<tr><td><code>v-for</code></td><td>-</td><td><code>v-for="x in list"</code></td><td>배열/객체 반복 렌더링</td></tr>
+<tr><td><code>v-slot</code></td><td><code>#</code></td><td><code>#default="{ item }"</code></td><td>슬롯 콘텐츠</td></tr>
+</table>
+</section>
+
+<!-- ══ COMPOSITION API ══ -->
+<section id="composition">
+<div class="s4"><h2>🔧 Composition API</h2></div>
+<p><strong>Composition API</strong>는 Vue 3의 핵심 기능으로, 관련 로직을 함수 단위로 묶어 재사용성을 높입니다. <code>&lt;script setup&gt;</code>을 사용하면 간결하게 작성할 수 있습니다.</p>
+
+<svg viewBox="0 0 680 300" role="img">
+<title>Composition API 구조</title>
+<defs><marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<rect x="14" y="14" width="652" height="272" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="0.8" stroke-dasharray="6,3"/>
+<text x="30" y="32" font-size="11" font-weight="600" fill="#4c1d95">&lt;script setup&gt; — Composition API 구조</text>
+
+<!-- ref/reactive col -->
+<rect x="28" y="44" width="168" height="226" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="0.8"/>
+<text x="112" y="63" text-anchor="middle" font-size="11" font-weight="700" fill="#7c2d12">반응형 상태</text>
+<rect x="38" y="72" width="148" height="42" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="112" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="#7c2d12">ref()</text>
+<text x="112" y="104" text-anchor="middle" font-size="9.5" fill="#9a3412">원시값 · .value로 접근</text>
+<rect x="38" y="122" width="148" height="42" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="112" y="137" text-anchor="middle" font-size="10" font-weight="600" fill="#7c2d12">reactive()</text>
+<text x="112" y="154" text-anchor="middle" font-size="9.5" fill="#9a3412">객체/배열 · 직접 접근</text>
+<rect x="38" y="172" width="148" height="42" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="112" y="187" text-anchor="middle" font-size="10" font-weight="600" fill="#7c2d12">computed()</text>
+<text x="112" y="204" text-anchor="middle" font-size="9.5" fill="#9a3412">파생 상태 · 캐싱</text>
+<rect x="38" y="222" width="148" height="42" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="0.5"/>
+<text x="112" y="237" text-anchor="middle" font-size="10" font-weight="600" fill="#7c2d12">readonly()</text>
+<text x="112" y="254" text-anchor="middle" font-size="9.5" fill="#9a3412">읽기 전용 반응형</text>
+
+<!-- watch col -->
+<rect x="208" y="44" width="168" height="226" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="0.8"/>
+<text x="292" y="63" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">감시자</text>
+<rect x="218" y="72" width="148" height="42" rx="5" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="292" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="#78350f">watch()</text>
+<text x="292" y="104" text-anchor="middle" font-size="9.5" fill="#92400e">명시적 의존성 · lazy</text>
+<rect x="218" y="122" width="148" height="42" rx="5" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="292" y="137" text-anchor="middle" font-size="10" font-weight="600" fill="#78350f">watchEffect()</text>
+<text x="292" y="154" text-anchor="middle" font-size="9.5" fill="#92400e">자동 의존성 · 즉시 실행</text>
+<rect x="218" y="172" width="148" height="42" rx="5" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="292" y="187" text-anchor="middle" font-size="10" font-weight="600" fill="#78350f">watchPostEffect()</text>
+<text x="292" y="204" text-anchor="middle" font-size="9.5" fill="#92400e">DOM 업데이트 후 실행</text>
+<rect x="218" y="222" width="148" height="42" rx="5" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.5"/>
+<text x="292" y="237" text-anchor="middle" font-size="10" font-weight="600" fill="#78350f">watch 중단</text>
+<text x="292" y="254" text-anchor="middle" font-size="9.5" fill="#92400e">const stop = watch(); stop()</text>
+
+<!-- lifecycle col -->
+<rect x="388" y="44" width="168" height="226" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="472" y="63" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">라이프사이클</text>
+<rect x="398" y="72" width="148" height="24" rx="5" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="472" y="84" text-anchor="middle" font-size="10" fill="#14532d">onBeforeMount()</text>
+<rect x="398" y="102" width="148" height="24" rx="5" fill="#dcfce7" stroke="#16a34a" stroke-width="0.8"/>
+<text x="472" y="114" text-anchor="middle" font-size="10" font-weight="600" fill="#14532d">onMounted() ★</text>
+<rect x="398" y="132" width="148" height="24" rx="5" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="472" y="144" text-anchor="middle" font-size="10" fill="#14532d">onBeforeUpdate()</text>
+<rect x="398" y="162" width="148" height="24" rx="5" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="472" y="174" text-anchor="middle" font-size="10" fill="#14532d">onUpdated()</text>
+<rect x="398" y="192" width="148" height="24" rx="5" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="472" y="204" text-anchor="middle" font-size="10" fill="#14532d">onBeforeUnmount()</text>
+<rect x="398" y="222" width="148" height="24" rx="5" fill="#fee2e2" stroke="#f87171" stroke-width="0.8"/>
+<text x="472" y="234" text-anchor="middle" font-size="10" font-weight="600" fill="#991b1b">onUnmounted() ★</text>
+<rect x="398" y="252" width="148" height="12" rx="3" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.5"/>
+<text x="472" y="260" text-anchor="middle" font-size="9" fill="#14532d">onErrorCaptured · onActivated</text>
+
+<!-- template exposes -->
+<rect x="568" y="44" width="90" height="226" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="613" y="64" text-anchor="middle" font-size="10" font-weight="700" fill="#312e81">Template</text>
+<text x="613" y="80" text-anchor="middle" font-size="9.5" fill="#3730a3">에 자동</text>
+<text x="613" y="96" text-anchor="middle" font-size="9.5" fill="#3730a3">노출됨</text>
+<line x1="558" y1="157" x2="570" y2="157" stroke="#6366f1" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr4)"/>
+<text x="613" y="180" text-anchor="middle" font-size="9" fill="#312e81">반응형</text>
+<text x="613" y="196" text-anchor="middle" font-size="9" fill="#312e81">변수·함수</text>
+<text x="613" y="212" text-anchor="middle" font-size="9" fill="#312e81">직접 사용</text>
+</svg>
+
+<h3 id="refreactive">ref · reactive 상세</h3>
+<div class="cb"><span class="kw">import</span> { <span class="fn">ref</span>, <span class="fn">reactive</span>, <span class="fn">toRefs</span>, <span class="fn">isRef</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+
+<span class="cm">// ── ref: 원시값 포장 (Proxy가 아닌 RefImpl 객체) ──</span>
+<span class="kw">const</span> count = <span class="fn">ref</span>(0)         <span class="cm">// count.value = 0</span>
+<span class="kw">const</span> name  = <span class="fn">ref</span>(<span class="str">'홍길동'</span>)   <span class="cm">// name.value = '홍길동'</span>
+<span class="kw">const</span> list  = <span class="fn">ref</span>([])         <span class="cm">// list.value = []</span>
+
+count.value++                 <span class="cm">// JS에서는 .value 필수</span>
+<span class="cm">// template 안에서는 자동 언래핑: {{ count }} (value 불필요)</span>
+
+<span class="cm">// ── reactive: 객체 반응형 (ES6 Proxy 래핑) ──</span>
+<span class="kw">const</span> state = <span class="fn">reactive</span>({
+  user: { name: <span class="str">'이순신'</span>, age: 25 },
+  loading: <span class="kw">false</span>,
+  items: []
+})
+
+state.user.name = <span class="str">'김유신'</span>   <span class="cm">// 중첩 객체도 반응형</span>
+state.items.push({ id: 1 })  <span class="cm">// 배열 메서드도 감지</span>
+
+<span class="cm">// ── toRefs: reactive 구조분해 시 반응형 유지 ──</span>
+<span class="kw">const</span> { user, loading } = <span class="fn">toRefs</span>(state)
+<span class="cm">// user.value.name, loading.value 로 접근</span>
+
+<span class="cm">// ── ref vs reactive 선택 가이드 ──</span>
+<span class="cm">// 원시값 단일 상태 → ref</span>
+<span class="cm">// 관련 상태를 묶어서 관리 → reactive</span>
+<span class="cm">// form 데이터 → reactive가 편리</span></div>
+
+<h3 id="computed">computed</h3>
+<div class="cb"><span class="kw">import</span> { <span class="fn">ref</span>, <span class="fn">computed</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+
+<span class="kw">const</span> firstName = <span class="fn">ref</span>(<span class="str">'길동'</span>)
+<span class="kw">const</span> lastName  = <span class="fn">ref</span>(<span class="str">'홍'</span>)
+<span class="kw">const</span> items     = <span class="fn">ref</span>([1, 2, 3, 4, 5])
+
+<span class="cm">// ── 읽기 전용 computed ──</span>
+<span class="kw">const</span> fullName = <span class="fn">computed</span>(() =&gt; <span class="str">`${lastName.value}${firstName.value}`</span>)
+<span class="cm">// fullName.value → '홍길동'  (의존성 캐싱: 의존 값 변경 시에만 재계산)</span>
+
+<span class="kw">const</span> evenItems = <span class="fn">computed</span>(() =&gt; items.value.<span class="fn">filter</span>(n =&gt; n % 2 === 0))
+
+<span class="cm">// ── 읽기/쓰기 computed ──</span>
+<span class="kw">const</span> fullNameRW = <span class="fn">computed</span>({
+  <span class="fn">get</span>: () =&gt; <span class="str">`${lastName.value}${firstName.value}`</span>,
+  <span class="fn">set</span>: (val) =&gt; {
+    lastName.value  = val.slice(0, 1)
+    firstName.value = val.slice(1)
+  }
+})
+fullNameRW.value = <span class="str">'김유신'</span>  <span class="cm">// set 호출됨</span></div>
+
+<h3 id="watch">watch · watchEffect</h3>
+<div class="cb"><span class="kw">import</span> { <span class="fn">ref</span>, <span class="fn">reactive</span>, <span class="fn">watch</span>, <span class="fn">watchEffect</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+
+<span class="kw">const</span> count = <span class="fn">ref</span>(0)
+<span class="kw">const</span> user  = <span class="fn">reactive</span>({ name: <span class="str">''</span>, age: 0 })
+
+<span class="cm">// ── watch: 명시적 소스, lazy (처음엔 실행 안 함) ──</span>
+<span class="fn">watch</span>(count, (newVal, oldVal) =&gt; {
+  console.<span class="fn">log</span>(<span class="str">`${oldVal} → ${newVal}`</span>)
+})
+
+<span class="cm">// 여러 소스 동시 감시</span>
+<span class="fn">watch</span>([count, () =&gt; user.name], ([newCount, newName]) =&gt; {
+  console.<span class="fn">log</span>(newCount, newName)
+})
+
+<span class="cm">// deep 감시 (중첩 객체 변경 감지)</span>
+<span class="fn">watch</span>(user, (newUser) =&gt; { console.<span class="fn">log</span>(newUser) }, { deep: <span class="kw">true</span> })
+
+<span class="cm">// immediate: 처음부터 실행</span>
+<span class="fn">watch</span>(count, fetchData, { immediate: <span class="kw">true</span> })
+
+<span class="cm">// ── watchEffect: 자동 의존성 추적, 즉시 실행 ──</span>
+<span class="fn">watchEffect</span>(() =&gt; {
+  <span class="cm">// 내부에서 접근한 반응형 값이 자동으로 의존성 등록</span>
+  console.<span class="fn">log</span>(<span class="str">`count: ${count.value}, name: ${user.name}`</span>)
+})
+
+<span class="cm">// 감시 중단</span>
+<span class="kw">const</span> stop = <span class="fn">watchEffect</span>(() =&gt; { <span class="cm">/* ... */</span> })
+<span class="fn">stop</span>()  <span class="cm">// 명시적 중단</span></div>
+</section>
+
+<!-- ══ LIFECYCLE ══ -->
+<section id="lifecycle">
+<div class="s5"><h2>🔄 컴포넌트 라이프사이클</h2></div>
+<p>Vue 3 컴포넌트는 생성부터 파괴까지 정해진 단계를 거칩니다. 각 단계에서 훅을 호출해 특정 작업을 수행할 수 있습니다.</p>
+
+<svg viewBox="0 0 680 390" role="img">
+<title>Vue 3 컴포넌트 라이프사이클</title>
+<defs><marker id="arr5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Creation phase -->
+<rect x="220" y="14" width="240" height="36" rx="6" fill="#f8fafc" stroke="#64748b" stroke-width="0.8"/>
+<text x="340" y="32" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">컴포넌트 생성 시작</text>
+<line x1="340" y1="50" x2="340" y2="66" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+<rect x="220" y="68" width="240" height="40" rx="6" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.8"/>
+<text x="340" y="83" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">setup() 실행 (= beforeCreate + created)</text>
+<text x="340" y="99" text-anchor="middle" font-size="9.5" fill="#16a34a">ref · reactive · computed · watch 등록</text>
+<line x1="340" y1="108" x2="340" y2="124" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+<rect x="220" y="126" width="240" height="36" rx="6" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.8"/>
+<text x="340" y="144" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">onBeforeMount()</text>
+<text x="466" y="144" font-size="9.5" fill="#92400e">← DOM 아직 없음</text>
+<line x1="340" y1="162" x2="340" y2="178" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+<rect x="220" y="180" width="240" height="40" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.2"/>
+<text x="340" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">onMounted() ⭐</text>
+<text x="340" y="212" text-anchor="middle" font-size="9.5" fill="#14532d">DOM 접근 가능 · API 호출 · 3rd party 초기화</text>
+<line x1="340" y1="220" x2="340" y2="236" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+<!-- Update phase -->
+<rect x="76" y="238" width="200" height="36" rx="6" fill="#f8fafc" stroke="#64748b" stroke-width="0.5" stroke-dasharray="4,3"/>
+<text x="176" y="256" text-anchor="middle" font-size="10" fill="#334155">반응형 데이터 변경</text>
+
+<rect x="220" y="238" width="240" height="36" rx="6" fill="#fffbeb" stroke="#f59e0b" stroke-width="0.8"/>
+<text x="340" y="256" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">onBeforeUpdate()</text>
+<text x="466" y="256" font-size="9.5" fill="#92400e">← DOM 아직 이전 상태</text>
+<line x1="340" y1="274" x2="340" y2="290" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr5)"/>
+<line x1="176" y1="274" x2="220" y2="255" stroke="#64748b" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr5)"/>
+
+<rect x="220" y="292" width="240" height="36" rx="6" fill="#f0fdf4" stroke="#22c55e" stroke-width="0.8"/>
+<text x="340" y="310" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">onUpdated()</text>
+<text x="466" y="310" font-size="9.5" fill="#16a34a">← DOM 최신 상태</text>
+<line x1="340" y1="328" x2="340" y2="344" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+<!-- Unmount phase -->
+<rect x="220" y="346" width="240" height="36" rx="6" fill="#fdf2f8" stroke="#db2777" stroke-width="0.8"/>
+<text x="340" y="364" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">onBeforeUnmount()</text>
+<line x1="340" y1="382" x2="340" y2="398" stroke="#db2777" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+<!-- Side notes -->
+<text x="40" y="118" font-size="10" font-weight="600" fill="#16a34a">생성 단계</text>
+<line x1="14" y1="100" x2="14" y2="228" stroke="#16a34a" stroke-width="1.5"/>
+<line x1="14" y1="100" x2="30" y2="100" stroke="#16a34a" stroke-width="1.5"/>
+<line x1="14" y1="228" x2="30" y2="228" stroke="#16a34a" stroke-width="1.5"/>
+
+<text x="40" y="270" font-size="10" font-weight="600" fill="#d97706">업데이트 단계</text>
+<line x1="14" y1="250" x2="14" y2="328" stroke="#d97706" stroke-width="1.5"/>
+
+<text x="40" y="368" font-size="10" font-weight="600" fill="#db2777">소멸 단계</text>
+<line x1="14" y1="350" x2="14" y2="382" stroke="#db2777" stroke-width="1.5"/>
+</svg>
+</section>
+
+<!-- ══ COMPONENTS ══ -->
+<section id="component">
+<div class="s6"><h2>🧩 컴포넌트 — Props · Emits · Slots</h2></div>
+
+<svg viewBox="0 0 680 220" role="img">
+<title>컴포넌트 통신</title>
+<defs><marker id="arr6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Parent -->
+<rect x="14" y="20" width="200" height="180" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1"/>
+<text x="114" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Parent Component</text>
+<rect x="26" y="54" width="176" height="24" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="114" y="66" text-anchor="middle" font-size="10" fill="#1e3a8a">const title = ref('제목')</text>
+<rect x="26" y="84" width="176" height="24" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="0.5"/>
+<text x="114" y="96" text-anchor="middle" font-size="10" fill="#1e3a8a">const items = ref([...])</text>
+<rect x="26" y="140" width="176" height="24" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="0.8"/>
+<text x="114" y="152" text-anchor="middle" font-size="10" font-weight="600" fill="#1e3a8a">&lt;Child :title="title"</text>
+<rect x="26" y="170" width="176" height="24" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="0.8"/>
+<text x="114" y="182" text-anchor="middle" font-size="10" font-weight="600" fill="#1e3a8a">@update="handleUpdate" /&gt;</text>
+
+<!-- Child -->
+<rect x="466" y="20" width="200" height="180" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1"/>
+<text x="566" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">Child Component</text>
+<rect x="478" y="54" width="176" height="24" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="566" y="66" text-anchor="middle" font-size="10" fill="#4c1d95">defineProps(['title', 'items'])</text>
+<rect x="478" y="84" width="176" height="24" rx="4" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.5"/>
+<text x="566" y="96" text-anchor="middle" font-size="10" fill="#4c1d95">const emit = defineEmits([...])</text>
+<rect x="478" y="140" width="176" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="566" y="152" text-anchor="middle" font-size="10" font-weight="600" fill="#4c1d95">emit('update', newValue)</text>
+
+<!-- Arrows -->
+<line x1="214" y1="100" x2="326" y2="100" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arr6)"/>
+<text x="270" y="92" text-anchor="middle" font-size="10" font-weight="600" fill="#1e3a8a">Props (부모→자식)</text>
+<line x1="326" y1="130" x2="214" y2="130" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arr6)"/>
+<text x="270" y="148" text-anchor="middle" font-size="10" font-weight="600" fill="#4c1d95">Emit (자식→부모)</text>
+
+<!-- provide/inject note -->
+<rect x="270" y="162" width="140" height="36" rx="6" fill="#f0fdfa" stroke="#0d9488" stroke-width="0.8"/>
+<text x="340" y="178" text-anchor="middle" font-size="10" font-weight="600" fill="#134e4a">provide / inject</text>
+<text x="340" y="193" text-anchor="middle" font-size="9.5" fill="#0f766e">깊은 컴포넌트 전달</text>
+</svg>
+
+<div class="cb"><span class="cm">// ── Child.vue ──</span>
+<span class="kw">const</span> props = <span class="fn">defineProps</span>({
+  title:    { type: String,  required: <span class="kw">true</span> },
+  count:    { type: Number,  default: 0 },
+  items:    { type: Array,   default: () =&gt; [] },
+  callback: { type: Function }
+})
+
+<span class="kw">const</span> emit = <span class="fn">defineEmits</span>([<span class="str">'update:modelValue'</span>, <span class="str">'submit'</span>, <span class="str">'close'</span>])
+
+<span class="cm">// v-model 커스텀 구현</span>
+<span class="kw">const</span> props2 = <span class="fn">defineProps</span>([<span class="str">'modelValue'</span>])
+<span class="kw">const</span> emit2  = <span class="fn">defineEmits</span>([<span class="str">'update:modelValue'</span>])
+<span class="kw">const</span> value  = <span class="fn">computed</span>({
+  <span class="fn">get</span>: () =&gt; props2.modelValue,
+  <span class="fn">set</span>: (v) =&gt; emit2(<span class="str">'update:modelValue'</span>, v)
+})
+
+<span class="cm">// ── Slot 사용 (Parent에서) ──</span>
+<span class="cm">// &lt;Card&gt;</span>
+<span class="cm">//   &lt;template #header&gt;제목&lt;/template&gt;</span>
+<span class="cm">//   본문 콘텐츠</span>
+<span class="cm">//   &lt;template #footer="{ total }"&gt;{{ total }}개&lt;/template&gt;</span>
+<span class="cm">// &lt;/Card&gt;</span>
+
+<span class="cm">// ── defineExpose: 외부에서 접근 허용 ──</span>
+<span class="fn">defineExpose</span>({ focus, reset })</div>
+
+<h3 id="provide">provide · inject</h3>
+<div class="cb"><span class="cm">// 조상 컴포넌트 (깊이 무관하게 하위에 주입)</span>
+<span class="kw">import</span> { <span class="fn">provide</span>, <span class="fn">ref</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+<span class="kw">const</span> theme = <span class="fn">ref</span>(<span class="str">'dark'</span>)
+<span class="fn">provide</span>(<span class="str">'theme'</span>, theme)              <span class="cm">// 반응형 그대로 전달</span>
+<span class="fn">provide</span>(<span class="str">'setTheme'</span>, (t) =&gt; { theme.value = t })
+
+<span class="cm">// 자손 컴포넌트 (몇 단계 아래든 사용 가능)</span>
+<span class="kw">import</span> { <span class="fn">inject</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+<span class="kw">const</span> theme    = <span class="fn">inject</span>(<span class="str">'theme'</span>)             <span class="cm">// Ref&lt;string&gt;</span>
+<span class="kw">const</span> setTheme = <span class="fn">inject</span>(<span class="str">'setTheme'</span>)
+<span class="kw">const</span> config   = <span class="fn">inject</span>(<span class="str">'config'</span>, { default: {} })  <span class="cm">// 기본값 설정</span></div>
+</section>
+
+<!-- ══ PINIA ══ -->
+<section id="pinia">
+<div class="s7"><h2>🍍 Pinia — 상태 관리</h2></div>
+<p>Pinia는 Vue 3 공식 상태 관리 라이브러리입니다. Composition API 기반으로 작성되어 <strong>TypeScript 지원과 DevTools 연동</strong>이 뛰어납니다.</p>
+
+<svg viewBox="0 0 680 260" role="img">
+<title>Pinia 아키텍처</title>
+<defs><marker id="arr7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Pinia Store -->
+<rect x="200" y="14" width="280" height="232" rx="10" fill="#fdf2f8" stroke="#db2777" stroke-width="1"/>
+<text x="340" y="36" text-anchor="middle" font-size="12" font-weight="700" fill="#831843">Pinia Store</text>
+<text x="340" y="52" text-anchor="middle" font-size="10" fill="#9d174d">defineStore('id', setup함수)</text>
+
+<rect x="214" y="62" width="252" height="44" rx="6" fill="#fce7f3" stroke="#f472b6" stroke-width="0.8"/>
+<text x="340" y="80" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">State (ref / reactive)</text>
+<text x="340" y="97" text-anchor="middle" font-size="9.5" fill="#9d174d">const count = ref(0) · const user = reactive({...})</text>
+
+<rect x="214" y="114" width="252" height="44" rx="6" fill="#fce7f3" stroke="#f472b6" stroke-width="0.8"/>
+<text x="340" y="132" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">Getters (computed)</text>
+<text x="340" y="149" text-anchor="middle" font-size="9.5" fill="#9d174d">const double = computed(() =&gt; count.value * 2)</text>
+
+<rect x="214" y="166" width="252" height="44" rx="6" fill="#fce7f3" stroke="#f472b6" stroke-width="0.8"/>
+<text x="340" y="184" text-anchor="middle" font-size="11" font-weight="600" fill="#831843">Actions (async 함수)</text>
+<text x="340" y="201" text-anchor="middle" font-size="9.5" fill="#9d174d">async function fetchUser() { await api.get(...) }</text>
+
+<rect x="214" y="218" width="252" height="22" rx="4" fill="#fbcfe8" stroke="#db2777" stroke-width="0.5"/>
+<text x="340" y="230" text-anchor="middle" font-size="10" fill="#831843">return { count, double, fetchUser }</text>
+
+<!-- Components using store -->
+<rect x="14" y="80" width="160" height="100" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="0.8"/>
+<text x="94" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a">Component A</text>
+<text x="94" y="118" text-anchor="middle" font-size="10" fill="#1e40af">useCounterStore()</text>
+<text x="94" y="135" text-anchor="middle" font-size="10" fill="#1e40af">store.count</text>
+<text x="94" y="152" text-anchor="middle" font-size="10" fill="#1e40af">store.increment()</text>
+
+<rect x="506" y="80" width="160" height="100" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="0.8"/>
+<text x="586" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a">Component B</text>
+<text x="586" y="118" text-anchor="middle" font-size="10" fill="#1e40af">useCounterStore()</text>
+<text x="586" y="135" text-anchor="middle" font-size="10" fill="#1e40af">store.double</text>
+<text x="586" y="152" text-anchor="middle" font-size="10" fill="#1e40af">store.fetchUser()</text>
+
+<line x1="174" y1="130" x2="198" y2="130" stroke="#db2777" stroke-width="1.5" marker-end="url(#arr7)"/>
+<line x1="480" y1="130" x2="506" y2="130" stroke="#db2777" stroke-width="1.5" marker-end="url(#arr7)"/>
+<text x="94" y="200" text-anchor="middle" font-size="9.5" fill="#1e40af">동일 Store 공유</text>
+<text x="586" y="200" text-anchor="middle" font-size="9.5" fill="#1e40af">상태 자동 동기화</text>
+</svg>
+
+<div class="cb"><span class="cm">// ── stores/user.js ──</span>
+<span class="kw">import</span> { <span class="fn">defineStore</span> } <span class="kw">from</span> <span class="str">'pinia'</span>
+<span class="kw">import</span> { <span class="fn">ref</span>, <span class="fn">computed</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+<span class="kw">import</span> { api } <span class="kw">from</span> <span class="str">'@/api'</span>
+
+<span class="kw">export const</span> <span class="fn">useUserStore</span> = <span class="fn">defineStore</span>(<span class="str">'user'</span>, () =&gt; {
+  <span class="cm">// State</span>
+  <span class="kw">const</span> currentUser = <span class="fn">ref</span>(<span class="kw">null</span>)
+  <span class="kw">const</span> isLoading   = <span class="fn">ref</span>(<span class="kw">false</span>)
+  <span class="kw">const</span> users       = <span class="fn">ref</span>([])
+
+  <span class="cm">// Getters</span>
+  <span class="kw">const</span> isLoggedIn  = <span class="fn">computed</span>(() =&gt; !!currentUser.value)
+  <span class="kw">const</span> userCount   = <span class="fn">computed</span>(() =&gt; users.value.length)
+
+  <span class="cm">// Actions</span>
+  <span class="kw">async function</span> <span class="fn">login</span>(email, password) {
+    isLoading.value = <span class="kw">true</span>
+    <span class="kw">try</span> {
+      <span class="kw">const</span> { data } = <span class="kw">await</span> api.<span class="fn">post</span>(<span class="str">'/auth/login'</span>, { email, password })
+      currentUser.value = data.user
+      localStorage.<span class="fn">setItem</span>(<span class="str">'token'</span>, data.token)
+    } <span class="kw">finally</span> { isLoading.value = <span class="kw">false</span> }
+  }
+
+  <span class="kw">async function</span> <span class="fn">fetchUsers</span>() {
+    <span class="kw">const</span> { data } = <span class="kw">await</span> api.<span class="fn">get</span>(<span class="str">'/users'</span>)
+    users.value = data
+  }
+
+  <span class="kw">function</span> <span class="fn">logout</span>() { currentUser.value = <span class="kw">null</span>; localStorage.<span class="fn">removeItem</span>(<span class="str">'token'</span>) }
+
+  <span class="kw">return</span> { currentUser, isLoading, users, isLoggedIn, userCount, login, fetchUsers, logout }
+})
+
+<span class="cm">// ── 컴포넌트에서 사용 ──</span>
+<span class="kw">const</span> store = <span class="fn">useUserStore</span>()
+<span class="kw">const</span> { isLoggedIn, currentUser } = <span class="fn">storeToRefs</span>(store)  <span class="cm">// 반응형 유지 분해</span>
+<span class="kw">await</span> store.<span class="fn">login</span>(email, password)
+store.<span class="fn">logout</span>()</div>
+</section>
+
+<!-- ══ ROUTER ══ -->
+<section id="router">
+<div class="s8"><h2>🗺 Vue Router 4</h2></div>
+<p>Vue Router는 SPA의 URL 라우팅을 관리합니다. <strong>createRouter</strong>로 라우터를 생성하고 <strong>RouterView</strong>에서 매칭된 컴포넌트를 렌더링합니다.</p>
+
+<svg viewBox="0 0 680 240" role="img">
+<title>Vue Router 흐름</title>
+<defs><marker id="arr8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<rect x="14" y="20" width="130" height="56" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="79" y="42" text-anchor="middle" font-size="11" font-weight="600" fill="#312e81">URL 변경</text>
+<text x="79" y="60" text-anchor="middle" font-size="10" fill="#3730a3">/about → /user/42</text>
+<line x1="144" y1="48" x2="158" y2="48" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+<rect x="160" y="20" width="150" height="56" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="235" y="42" text-anchor="middle" font-size="11" font-weight="600" fill="#312e81">Navigation Guards</text>
+<text x="235" y="60" text-anchor="middle" font-size="10" fill="#3730a3">beforeEach · auth 확인</text>
+<line x1="310" y1="48" x2="324" y2="48" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+<rect x="326" y="20" width="150" height="56" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="0.8"/>
+<text x="401" y="42" text-anchor="middle" font-size="11" font-weight="600" fill="#312e81">Route Match</text>
+<text x="401" y="60" text-anchor="middle" font-size="10" fill="#3730a3">routes 배열에서 일치 탐색</text>
+<line x1="476" y1="48" x2="490" y2="48" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+<rect x="492" y="20" width="174" height="56" rx="8" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1"/>
+<text x="579" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">RouterView 렌더링</text>
+<text x="579" y="60" text-anchor="middle" font-size="10" fill="#5b21b6">매칭된 컴포넌트 표시</text>
+
+<!-- Router config -->
+<rect x="14" y="100" width="310" height="126" rx="8" fill="#eef2ff" stroke="#818cf8" stroke-width="0.8"/>
+<text x="30" y="119" font-size="11" font-weight="600" fill="#312e81">라우트 설정 예시</text>
+<rect x="24" y="128" width="290" height="24" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="169" y="140" text-anchor="middle" font-size="10" fill="#312e81">{ path: '/', component: HomeView }</text>
+<rect x="24" y="158" width="290" height="24" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="169" y="170" text-anchor="middle" font-size="10" fill="#312e81">{ path: '/user/:id', component: UserView }</text>
+<rect x="24" y="188" width="290" height="24" rx="4" fill="#ddd6fe" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="169" y="200" text-anchor="middle" font-size="10" fill="#4c1d95">{ path: '/admin', meta: { requiresAuth: true } }</text>
+
+<!-- Hooks -->
+<rect x="340" y="100" width="326" height="126" rx="8" fill="#eef2ff" stroke="#818cf8" stroke-width="0.8"/>
+<text x="356" y="119" font-size="11" font-weight="600" fill="#312e81">네비게이션 가드</text>
+<rect x="350" y="128" width="306" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="503" y="139" text-anchor="middle" font-size="10" fill="#312e81">router.beforeEach((to, from) =&gt; { ... })</text>
+<rect x="350" y="156" width="306" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="503" y="167" text-anchor="middle" font-size="10" fill="#312e81">router.afterEach((to, from) =&gt; { ... })</text>
+<rect x="350" y="184" width="306" height="22" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="0.5"/>
+<text x="503" y="195" text-anchor="middle" font-size="10" fill="#312e81">onBeforeRouteLeave((to, from) =&gt; { ... })</text>
+<rect x="350" y="212" width="306" height="8" rx="3" fill="#ddd6fe" stroke="#7c3aed" stroke-width="0.5"/>
+<text x="503" y="218" text-anchor="middle" font-size="9" fill="#4c1d95">false 반환 → 네비게이션 취소 | '/login' 반환 → 리다이렉트</text>
+</svg>
+
+<div class="cb"><span class="cm">// ── router/index.js ──</span>
+<span class="kw">import</span> { <span class="fn">createRouter</span>, <span class="fn">createWebHistory</span> } <span class="kw">from</span> <span class="str">'vue-router'</span>
+<span class="kw">import</span> { <span class="fn">useUserStore</span> } <span class="kw">from</span> <span class="str">'@/stores/user'</span>
+
+<span class="kw">const</span> router = <span class="fn">createRouter</span>({
+  history: <span class="fn">createWebHistory</span>(),       <span class="cm">// HTML5 History API</span>
+  routes: [
+    { path: <span class="str">'/'</span>,           component: () =&gt; <span class="kw">import</span>(<span class="str">'@/views/HomeView.vue'</span>) },
+    { path: <span class="str">'/user/:id'</span>,  component: () =&gt; <span class="kw">import</span>(<span class="str">'@/views/UserView.vue'</span>),
+      meta: { requiresAuth: <span class="kw">true</span> } },
+    { path: <span class="str">'/admin'</span>,      component: () =&gt; <span class="kw">import</span>(<span class="str">'@/views/AdminView.vue'</span>),
+      children: [                      <span class="cm">// 중첩 라우트</span>
+        { path: <span class="str">'users'</span>, component: AdminUsers },
+        { path: <span class="str">'settings'</span>, component: AdminSettings }
+      ]},
+    { path: <span class="str">'/:pathMatch(.*)*'</span>, component: NotFound }  <span class="cm">// 404</span>
+  ]
+})
+
+<span class="cm">// 전역 네비게이션 가드 (인증 체크)</span>
+router.<span class="fn">beforeEach</span>((to) =&gt; {
+  <span class="kw">const</span> store = <span class="fn">useUserStore</span>()
+  <span class="kw">if</span> (to.meta.requiresAuth &amp;&amp; !store.isLoggedIn) {
+    <span class="kw">return</span> { path: <span class="str">'/login'</span>, query: { redirect: to.fullPath } }
+  }
+})
+
+<span class="cm">// ── 컴포넌트에서 사용 ──</span>
+<span class="kw">import</span> { <span class="fn">useRouter</span>, <span class="fn">useRoute</span> } <span class="kw">from</span> <span class="str">'vue-router'</span>
+<span class="kw">const</span> router = <span class="fn">useRouter</span>()
+<span class="kw">const</span> route  = <span class="fn">useRoute</span>()
+
+<span class="cm">// 파라미터/쿼리 접근</span>
+<span class="kw">const</span> userId = route.params.id       <span class="cm">// /user/42 → '42'</span>
+<span class="kw">const</span> page   = route.query.page      <span class="cm">// ?page=2 → '2'</span>
+
+<span class="cm">// 프로그래밍 방식 이동</span>
+router.<span class="fn">push</span>(<span class="str">'/home'</span>)
+router.<span class="fn">push</span>({ name: <span class="str">'user'</span>, params: { id: 42 } })
+router.<span class="fn">replace</span>(<span class="str">'/login'</span>)         <span class="cm">// history에 남기지 않음</span>
+router.<span class="fn">go</span>(-1)                      <span class="cm">// 브라우저 뒤로</span></div>
+</section>
+
+<!-- ══ AXIOS ══ -->
+<section id="axios">
+<div class="s9"><h2>🌐 Axios — HTTP 통신</h2></div>
+<p>Axios는 Promise 기반 HTTP 클라이언트입니다. <strong>인터셉터</strong>로 토큰 주입, 에러 처리를 전역으로 관리할 수 있습니다.</p>
+
+<svg viewBox="0 0 680 230" role="img">
+<title>Axios 통신 흐름</title>
+<defs><marker id="arr9" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<rect x="14" y="20" width="130" height="60" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="0.8"/>
+<text x="79" y="42" text-anchor="middle" font-size="11" font-weight="600" fill="#1e3a8a">Vue 컴포넌트</text>
+<text x="79" y="59" text-anchor="middle" font-size="10" fill="#1e40af">/ Pinia Action</text>
+<line x1="144" y1="50" x2="158" y2="50" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr9)"/>
+
+<rect x="160" y="20" width="160" height="60" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="0.8"/>
+<text x="240" y="40" text-anchor="middle" font-size="11" font-weight="600" fill="#0c4a6e">Axios Instance</text>
+<text x="240" y="57" text-anchor="middle" font-size="10" fill="#0891b2">Request Interceptor</text>
+<text x="240" y="72" text-anchor="middle" font-size="10" fill="#0891b2">토큰 헤더 자동 주입</text>
+<line x1="320" y1="50" x2="334" y2="50" stroke="#0891b2" stroke-width="1.5" marker-end="url(#arr9)"/>
+
+<rect x="336" y="20" width="160" height="60" rx="8" fill="#f8fafc" stroke="#64748b" stroke-width="0.8"/>
+<text x="416" y="40" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">API Server</text>
+<text x="416" y="57" text-anchor="middle" font-size="10" fill="#475569">REST Endpoint</text>
+<text x="416" y="72" text-anchor="middle" font-size="10" fill="#475569">HTTP 200 / 4xx / 5xx</text>
+
+<rect x="160" y="120" width="160" height="60" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="0.8"/>
+<text x="240" y="140" text-anchor="middle" font-size="11" font-weight="600" fill="#0c4a6e">Response Interceptor</text>
+<text x="240" y="157" text-anchor="middle" font-size="10" fill="#0891b2">401 → 토큰 갱신</text>
+<text x="240" y="173" text-anchor="middle" font-size="10" fill="#0891b2">에러 공통 처리</text>
+
+<rect x="14" y="120" width="130" height="60" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="0.8"/>
+<text x="79" y="142" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">Pinia Store</text>
+<text x="79" y="159" text-anchor="middle" font-size="10" fill="#166534">data.value = res.data</text>
+<text x="79" y="175" text-anchor="middle" font-size="10" fill="#166534">→ 반응형 UI 업데이트</text>
+
+<!-- Response flow arrows -->
+<path d="M416 80 L416 100 L240 100 L240 118" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr9)"/>
+<line x1="160" y1="150" x2="146" y2="150" stroke="#0891b2" stroke-width="1.5" marker-end="url(#arr9)"/>
+<text x="530" y="100" font-size="9.5" fill="#64748b">응답 (JSON)</text>
+
+<!-- CRUD labels -->
+<rect x="336" y="100" width="330" height="120" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="0.5"/>
+<text x="352" y="119" font-size="11" font-weight="600" fill="#0c4a6e">HTTP Method → CRUD</text>
+<text x="352" y="138" font-size="10" fill="#0891b2">GET    /users          → 목록 조회 (Read)</text>
+<text x="352" y="155" font-size="10" fill="#0891b2">GET    /users/:id      → 단건 조회 (Read)</text>
+<text x="352" y="172" font-size="10" fill="#0891b2">POST   /users          → 생성 (Create)</text>
+<text x="352" y="189" font-size="10" fill="#0891b2">PUT    /users/:id      → 전체 수정 (Update)</text>
+<text x="352" y="206" font-size="10" fill="#0891b2">DELETE /users/:id      → 삭제 (Delete)</text>
+</svg>
+
+<div class="cb"><span class="cm">// ── api/index.js ── Axios 인스턴스 설정</span>
+<span class="kw">import</span> axios <span class="kw">from</span> <span class="str">'axios'</span>
+<span class="kw">import</span> router <span class="kw">from</span> <span class="str">'@/router'</span>
+
+<span class="kw">const</span> api = axios.<span class="fn">create</span>({
+  baseURL: <span class="str">'https://api.example.com/v1'</span>,
+  timeout: 10000,
+  headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> }
+})
+
+<span class="cm">// Request Interceptor: 모든 요청에 토큰 자동 추가</span>
+api.interceptors.request.<span class="fn">use</span>(
+  (config) =&gt; {
+    <span class="kw">const</span> token = localStorage.<span class="fn">getItem</span>(<span class="str">'token'</span>)
+    <span class="kw">if</span> (token) config.headers.Authorization = <span class="str">`Bearer ${token}`</span>
+    <span class="kw">return</span> config
+  },
+  (error) =&gt; Promise.<span class="fn">reject</span>(error)
+)
+
+<span class="cm">// Response Interceptor: 공통 에러 처리</span>
+api.interceptors.response.<span class="fn">use</span>(
+  (response) =&gt; response,
+  <span class="kw">async</span> (error) =&gt; {
+    <span class="kw">if</span> (error.response?.status === 401) {
+      <span class="kw">await</span> <span class="fn">refreshToken</span>()                <span class="cm">// 토큰 갱신 시도</span>
+      <span class="kw">return</span> api.<span class="fn">request</span>(error.config)   <span class="cm">// 원래 요청 재시도</span>
+    }
+    <span class="kw">if</span> (error.response?.status === 403) router.<span class="fn">push</span>(<span class="str">'/forbidden'</span>)
+    <span class="kw">return</span> Promise.<span class="fn">reject</span>(error)
+  }
+)
+
+<span class="kw">export default</span> api
+
+<span class="cm">// ── Pinia Action에서 사용 ──</span>
+<span class="kw">async function</span> <span class="fn">fetchUsers</span>(page = 1) {
+  isLoading.value = <span class="kw">true</span>
+  <span class="kw">try</span> {
+    <span class="kw">const</span> { data } = <span class="kw">await</span> api.<span class="fn">get</span>(<span class="str">`/users`</span>, { params: { page, limit: 10 } })
+    users.value = data.items
+    total.value = data.total
+  } <span class="kw">catch</span> (e) {
+    error.value = e.response?.data?.message ?? <span class="str">'오류 발생'</span>
+  } <span class="kw">finally</span> {
+    isLoading.value = <span class="kw">false</span>
+  }
+}
+
+<span class="kw">async function</span> <span class="fn">createUser</span>(payload) {
+  <span class="kw">const</span> { data } = <span class="kw">await</span> api.<span class="fn">post</span>(<span class="str">'/users'</span>, payload)
+  users.value.<span class="fn">push</span>(data)
+  <span class="kw">return</span> data
+}
+
+<span class="kw">async function</span> <span class="fn">updateUser</span>(id, payload) {
+  <span class="kw">const</span> { data } = <span class="kw">await</span> api.<span class="fn">put</span>(<span class="str">`/users/${id}`</span>, payload)
+  <span class="kw">const</span> idx = users.value.<span class="fn">findIndex</span>(u =&gt; u.id === id)
+  <span class="kw">if</span> (idx !== -1) users.value[idx] = data
+}
+
+<span class="kw">async function</span> <span class="fn">deleteUser</span>(id) {
+  <span class="kw">await</span> api.<span class="fn">delete</span>(<span class="str">`/users/${id}`</span>)
+  users.value = users.value.<span class="fn">filter</span>(u =&gt; u.id !== id)
+}</div>
+</section>
+
+<!-- ══ COMPOSABLES ══ -->
+<section id="composable">
+<div class="s9"><h2>🔁 Composables — 로직 재사용</h2></div>
+<p><strong>Composable</strong>은 Composition API를 활용해 상태/로직을 캡슐화하는 함수입니다. <code>use</code> 접두사 관례를 따릅니다.</p>
+
+<div class="grid2">
+<div>
+<div class="cb"><span class="cm">// composables/useFetch.js</span>
+<span class="kw">import</span> { <span class="fn">ref</span>, <span class="fn">watchEffect</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+<span class="kw">import</span> api <span class="kw">from</span> <span class="str">'@/api'</span>
+
+<span class="kw">export function</span> <span class="fn">useFetch</span>(url) {
+  <span class="kw">const</span> data    = <span class="fn">ref</span>(<span class="kw">null</span>)
+  <span class="kw">const</span> loading = <span class="fn">ref</span>(<span class="kw">false</span>)
+  <span class="kw">const</span> error   = <span class="fn">ref</span>(<span class="kw">null</span>)
+
+  <span class="fn">watchEffect</span>(<span class="kw">async</span> () =&gt; {
+    loading.value = <span class="kw">true</span>
+    error.value   = <span class="kw">null</span>
+    <span class="kw">try</span> {
+      <span class="kw">const</span> { data: res } = <span class="kw">await</span> api.<span class="fn">get</span>(
+        <span class="fn">toValue</span>(url))      <span class="cm">// ref 자동 해제</span>
+      data.value = res
+    } <span class="kw">catch</span> (e) {
+      error.value = e
+    } <span class="kw">finally</span> {
+      loading.value = <span class="kw">false</span>
+    }
+  })
+  <span class="kw">return</span> { data, loading, error }
+}</div>
+</div>
+<div>
+<div class="cb"><span class="cm">// composables/useLocalStorage.js</span>
+<span class="kw">import</span> { <span class="fn">ref</span>, <span class="fn">watch</span> } <span class="kw">from</span> <span class="str">'vue'</span>
+
+<span class="kw">export function</span> <span class="fn">useLocalStorage</span>(key, init) {
+  <span class="kw">const</span> stored  = localStorage.<span class="fn">getItem</span>(key)
+  <span class="kw">const</span> value   = <span class="fn">ref</span>(stored ? <span class="fn">JSON</span>.<span class="fn">parse</span>(stored) : init)
+
+  <span class="fn">watch</span>(value, (v) =&gt; {
+    localStorage.<span class="fn">setItem</span>(key, <span class="fn">JSON</span>.<span class="fn">stringify</span>(v))
+  }, { deep: <span class="kw">true</span> })
+
+  <span class="kw">return</span> value
+}
+
+<span class="cm">// 사용:</span>
+<span class="kw">const</span> theme = <span class="fn">useLocalStorage</span>(<span class="str">'theme'</span>, <span class="str">'light'</span>)
+theme.value = <span class="str">'dark'</span>  <span class="cm">// 자동 저장</span></div>
+</div>
+</div>
+
+<table>
+<tr><th>Composable</th><th>역할</th><th>주요 라이브러리 (VueUse)</th></tr>
+<tr><td><code>useFetch</code></td><td>API 호출 + 로딩/에러 상태</td><td><code>useFetch</code>, <code>useAsyncState</code></td></tr>
+<tr><td><code>useLocalStorage</code></td><td>localStorage 반응형 동기화</td><td><code>useLocalStorage</code>, <code>useSessionStorage</code></td></tr>
+<tr><td><code>useDebounce</code></td><td>입력값 디바운스 처리</td><td><code>useDebounceFn</code>, <code>useThrottleFn</code></td></tr>
+<tr><td><code>useMouse</code></td><td>마우스 좌표 추적</td><td><code>useMouse</code>, <code>useMouseInElement</code></td></tr>
+<tr><td><code>useMediaQuery</code></td><td>반응형 브레이크포인트</td><td><code>useMediaQuery</code>, <code>useBreakpoints</code></td></tr>
+<tr><td><code>useIntersectionObserver</code></td><td>무한 스크롤 / 지연 로딩</td><td><code>useIntersectionObserver</code></td></tr>
+</table>
+
+<div class="tip"><strong>Composable vs Mixin:</strong> Vue 2의 Mixin은 출처가 불명확하고 이름 충돌이 발생할 수 있었습니다. Composable은 반환값을 명시적으로 받아 사용하므로 <strong>출처가 명확하고 이름 충돌이 없으며</strong> TypeScript와 완벽하게 호환됩니다.</div>
+</section>
+
+</main>
+</body>
+</html>
